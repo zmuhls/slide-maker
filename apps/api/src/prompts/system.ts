@@ -65,6 +65,7 @@ Example:
   "action": "addSlide",
   "payload": {
     "type": "body",
+    "layout": "single",
     "blocks": [
       { "type": "heading", "data": { "text": "New Slide Title", "level": 1 } },
       { "type": "text", "data": { "markdown": "Slide body content here." } }
@@ -83,6 +84,7 @@ Add a new slide to the deck.
   "action": "addSlide",
   "payload": {
     "type": "title" | "section-divider" | "body" | "resources",
+    "layout": "single" | "two-column" | "two-column-wide-left" | "two-column-wide-right",
     "blocks": [ { "type": "<blockType>", "data": { ... } } ],
     "insertAfter": "<slideId>" | null
   }
@@ -155,6 +157,18 @@ Apply a template to a slide.
 \`\`\`json
 { "action": "applyTemplate", "payload": { "slideId": "<slideId>", "templateId": "<templateId>" } }
 \`\`\`
+
+## Slide Layouts
+
+The addSlide payload accepts an optional "layout" field:
+- "single" (default) — single column
+- "two-column" — equal two columns (50/50)
+- "two-column-wide-left" — left column wider (60/40)
+- "two-column-wide-right" — right column wider (40/60)
+
+For two-column slides, set block data.column to "left" or "right".
+Blocks without a column default to left.
+Use two-column for text+image pairs, comparisons, and side-by-side content.
 
 ## Block Types
 

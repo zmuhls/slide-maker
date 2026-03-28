@@ -8,6 +8,7 @@
       id: string;
       deckId: string;
       type: string;
+      layout?: string;
       blocks: Array<{ id: string; type: string; data: Record<string, unknown>; layout?: { x: number; y: number; width: number; height: number } | null; order: number }>;
     };
     editable: boolean;
@@ -18,6 +19,14 @@
   )
 
   let slideType = $derived(slide.type ?? 'body')
+  let slideLayout = $derived(slide.layout ?? 'single')
+
+  let leftBlocks = $derived(
+    sortedBlocks.filter((b) => (b.data as Record<string, unknown>).column !== 'right')
+  )
+  let rightBlocks = $derived(
+    sortedBlocks.filter((b) => (b.data as Record<string, unknown>).column === 'right')
+  )
 
   const API_URL = import.meta.env.PUBLIC_API_URL ?? 'http://localhost:3001'
 
@@ -41,6 +50,35 @@
   {#if sortedBlocks.length === 0}
     <div class="empty-state">
       Empty slide — use the chat to add content
+    </div>
+  {:else if slideLayout !== 'single'}
+    <div class="slide-content" class:layout-title={slideType === 'title'} class:layout-section={slideType === 'section-divider'} class:layout-body={slideType === 'body'} class:layout-resources={slideType === 'resources'}>
+      <div class="slide-columns" class:two-col={slideLayout === 'two-column'}
+           class:wide-left={slideLayout === 'two-column-wide-left'}
+           class:wide-right={slideLayout === 'two-column-wide-right'}>
+        <div class="col col-left">
+          {#each leftBlocks as block (block.id)}
+            {#if editable}
+              <BlockWrapper {block} onLayoutChange={handleLayoutChange}>
+                <BlockRenderer {block} {editable} />
+              </BlockWrapper>
+            {:else}
+              <BlockRenderer {block} {editable} />
+            {/if}
+          {/each}
+        </div>
+        <div class="col col-right">
+          {#each rightBlocks as block (block.id)}
+            {#if editable}
+              <BlockWrapper {block} onLayoutChange={handleLayoutChange}>
+                <BlockRenderer {block} {editable} />
+              </BlockWrapper>
+            {:else}
+              <BlockRenderer {block} {editable} />
+            {/if}
+          {/each}
+        </div>
+      </div>
     </div>
   {:else}
     <div class="slide-content" class:layout-title={slideType === 'title'} class:layout-section={slideType === 'section-divider'} class:layout-body={slideType === 'body'} class:layout-resources={slideType === 'resources'}>
@@ -143,4 +181,11 @@
     justify-content: flex-start;
     gap: clamp(0.35rem, 1vw, 0.6rem);
   }
+
+  /* Multi-column layouts */
+  .slide-columns { display: grid; gap: clamp(1rem, 2vw, 2rem); height: 100%; }
+  .two-col { grid-template-columns: 1fr 1fr; }
+  .wide-left { grid-template-columns: 3fr 2fr; }
+  .wide-right { grid-template-columns: 2fr 3fr; }
+  .col { display: flex; flex-direction: column; gap: 0.75rem; min-width: 0; }
 </style>

@@ -33,6 +33,7 @@ export async function applyMutation(mutation: Record<string, unknown>): Promise<
       // Persist to API first — it generates the real IDs
       const result = await apiCall(`/api/decks/${deck.id}/slides`, 'POST', {
         type: (payload.type as string) || 'body',
+        layout: (payload.layout as string) || 'single',
         blocks: blockDefs,
         insertAfter: payload.insertAfter || undefined,
       })
@@ -63,11 +64,13 @@ export async function applyMutation(mutation: Record<string, unknown>): Promise<
       const updates: Record<string, unknown> = {}
       if (payload.notes !== undefined) updates.notes = payload.notes
       if (payload.fragments !== undefined) updates.fragments = payload.fragments
+      if (payload.layout !== undefined) updates.layout = payload.layout
       await apiCall(`/api/decks/${deck.id}/slides/${slideId}`, 'PATCH', updates)
       updateSlideInDeck(slideId, (s) => ({
         ...s,
         ...(payload.notes !== undefined ? { notes: payload.notes as string | null } : {}),
         ...(payload.fragments !== undefined ? { fragments: payload.fragments as boolean } : {}),
+        ...(payload.layout !== undefined ? { layout: payload.layout as string } : {}),
       }))
       break
     }

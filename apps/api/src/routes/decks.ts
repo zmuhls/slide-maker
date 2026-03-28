@@ -208,11 +208,14 @@ decksRouter.post('/:id/slides', async (c) => {
   }
 
   const body = await c.req.json()
-  const { type, blocks: blockData, insertAfter } = body
+  const { type, layout, blocks: blockData, insertAfter } = body
 
   if (!type) {
     return c.json({ error: 'Slide type is required' }, 400)
   }
+
+  const validLayouts = ['single', 'two-column', 'two-column-wide-left', 'two-column-wide-right']
+  const slideLayout = validLayouts.includes(layout) ? layout : 'single'
 
   // Calculate order
   let order: number
@@ -254,6 +257,7 @@ decksRouter.post('/:id/slides', async (c) => {
     id: slideId,
     deckId,
     type,
+    layout: slideLayout,
     order,
     notes: null,
     fragments: false,
@@ -318,6 +322,10 @@ decksRouter.patch('/:id/slides/:slideId', async (c) => {
 
   if (body.notes !== undefined) updates.notes = body.notes
   if (body.fragments !== undefined) updates.fragments = body.fragments
+  if (body.layout !== undefined) {
+    const validLayouts = ['single', 'two-column', 'two-column-wide-left', 'two-column-wide-right']
+    if (validLayouts.includes(body.layout)) updates.layout = body.layout
+  }
 
   await db.update(slides).set(updates).where(eq(slides.id, slideId))
 

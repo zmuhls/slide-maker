@@ -49,6 +49,7 @@ export const slides = sqliteTable('slides', {
   id: text('id').primaryKey(),
   deckId: text('deck_id').notNull().references(() => decks.id, { onDelete: 'cascade' }),
   type: text('type', { enum: ['title', 'section-divider', 'body', 'resources'] }).notNull(),
+  layout: text('layout').notNull().default('single'),
   order: integer('order').notNull(),
   notes: text('notes'),
   fragments: integer('fragments', { mode: 'boolean' }).notNull().default(false),
