@@ -20,6 +20,11 @@
   "dependencies": {
     "@chenglou/pretext": "^0.0.2",
     "@slide-maker/shared": "workspace:*",
+    "@tiptap/core": "^3.21.0",
+    "@tiptap/extension-link": "^3.21.0",
+    "@tiptap/extension-placeholder": "^3.21.0",
+    "@tiptap/pm": "^3.21.0",
+    "@tiptap/starter-kit": "^3.21.0",
     "moveable": "^0.53.0",
     "svelte-dnd-action": "^0.9.69",
     "svelte-moveable": "^0.45.0"

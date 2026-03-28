@@ -34,9 +34,29 @@
   let wrapperEl: HTMLDivElement | undefined = $state()
   let moveableInstance: Moveable | null = null
   let isDragging = $state(false)
+  let editMode = $state(false)
+
+  function handleDoubleClick() {
+    editMode = true
+    if (moveableInstance) {
+      moveableInstance.draggable = false
+    }
+  }
+
+  function handleClickOutside(e: MouseEvent) {
+    if (editMode && targetEl && !targetEl.contains(e.target as Node)) {
+      editMode = false
+      if (moveableInstance) {
+        moveableInstance.draggable = true
+      }
+    }
+  }
 
   onMount(() => {
     if (!targetEl || !wrapperEl) return
+
+    // Listen for clicks outside to exit edit mode
+    document.addEventListener('mousedown', handleClickOutside)
 
     // If no explicit layout, measure the element's natural size
     if (!hasLayout) {
@@ -96,6 +116,7 @@
   })
 
   onDestroy(() => {
+    document.removeEventListener('mousedown', handleClickOutside)
     if (moveableInstance) {
       moveableInstance.destroy()
       moveableInstance = null
@@ -108,7 +129,11 @@
     class="block-moveable-target"
     class:is-dragging={isDragging}
     class:has-layout={hasLayout}
+    class:edit-mode={editMode}
     bind:this={targetEl}
+    ondblclick={handleDoubleClick}
+    role="button"
+    tabindex="0"
     style:transform={hasLayout ? `translate(${x}px, ${y}px)` : undefined}
     style:width={hasLayout ? `${width}px` : undefined}
     style:height={hasLayout ? `${height}px` : undefined}
@@ -146,6 +171,26 @@
     cursor: grabbing;
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
     z-index: 10;
+  }
+
+  /* When NOT in edit mode, block inner content so moveable gets all events */
+  .block-moveable-target:not(.edit-mode) :global(*) {
+    pointer-events: none;
+  }
+
+  /* When IN edit mode, allow inner content to receive focus/clicks */
+  .block-moveable-target.edit-mode {
+    cursor: text;
+  }
+
+  .block-moveable-target.edit-mode :global(*) {
+    pointer-events: auto;
+  }
+
+  .block-moveable-target.edit-mode {
+    outline: 2px solid rgba(59, 130, 246, 0.7) !important;
+    outline-offset: 2px;
+    border-radius: 2px;
   }
 
   /* Style the moveable control handles */

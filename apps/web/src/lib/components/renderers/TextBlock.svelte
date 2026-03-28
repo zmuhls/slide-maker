@@ -1,5 +1,6 @@
 <script lang="ts">
   import { fitText } from '$lib/utils/text-measure'
+  import RichTextEditor from './RichTextEditor.svelte'
 
   let { data = {}, editable = false, onchange }: { data: Record<string, unknown>; editable: boolean; onchange?: (newData: Record<string, unknown>) => void } = $props()
 
@@ -83,19 +84,13 @@
     return html
   }
 
-  let renderedHtml = $derived(markdownToHtml(text))
+  // Use stored HTML if available (from TipTap edits), otherwise convert markdown
+  let renderedHtml = $derived(
+    typeof data.html === 'string' ? data.html : markdownToHtml(text)
+  )
 
-  let saveTimer: ReturnType<typeof setTimeout> | undefined
-
-  function handleInput(e: Event) {
-    const target = e.target as HTMLElement
-    const newText = target.innerText ?? ''
-    data.markdown = newText
-    data.text = newText
-    clearTimeout(saveTimer)
-    saveTimer = setTimeout(() => {
-      onchange?.({ ...data, markdown: newText, text: newText })
-    }, 500)
+  function handleRichTextChange(html: string) {
+    onchange?.({ ...data, html })
   }
 </script>
 
@@ -104,13 +99,15 @@
   class="text-block"
   class:column-left={column === 'left'}
   class:column-right={column === 'right'}
-  contenteditable={editable}
-  oninput={handleInput}
-  role={editable ? 'textbox' : undefined}
   style:font-size={fittedFontSize ? `${fittedFontSize}px` : undefined}
 >
   {#if editable}
-    {text}
+    <RichTextEditor
+      content={renderedHtml}
+      {editable}
+      placeholder="Type text here..."
+      onchange={handleRichTextChange}
+    />
   {:else}
     {@html renderedHtml}
   {/if}
@@ -154,9 +151,4 @@
   }
   .column-left { text-align: left; }
   .column-right { text-align: right; }
-  .text-block[contenteditable="true"]:focus {
-    outline: 1px dashed var(--color-primary);
-    outline-offset: 2px;
-    border-radius: var(--radius-sm);
-  }
 </style>
