@@ -1,0 +1,28 @@
+import Anthropic from '@anthropic-ai/sdk'
+import { env } from '../env.js'
+
+const client = new Anthropic({ apiKey: env.anthropicApiKey })
+
+export async function* streamAnthropic(
+  systemPrompt: string,
+  messages: { role: 'user' | 'assistant'; content: string }[],
+  model: string = 'claude-sonnet-4-20250514',
+): AsyncGenerator<string> {
+  const stream = client.messages.stream({
+    model,
+    max_tokens: 4096,
+    system: systemPrompt,
+    messages,
+  })
+
+  for await (const event of stream) {
+    if (event.type === 'content_block_delta' && event.delta.type === 'text_delta') {
+      yield event.delta.text
+    }
+  }
+}
+
+export const ANTHROPIC_MODELS = [
+  { id: 'claude-sonnet-4-20250514', name: 'Claude Sonnet 4', provider: 'anthropic' },
+  { id: 'claude-haiku-4-5-20251001', name: 'Claude Haiku 4.5', provider: 'anthropic' },
+]
