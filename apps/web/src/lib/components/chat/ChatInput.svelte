@@ -1,9 +1,7 @@
 <script lang="ts">
   import { chatStreaming } from '$lib/stores/chat'
   import { currentDeck } from '$lib/stores/deck'
-  import { activeSlideId } from '$lib/stores/ui'
   import { api } from '$lib/api'
-  import { applyMutation } from '$lib/utils/mutations'
   import { get } from 'svelte/store'
 
   interface Props {
@@ -52,30 +50,10 @@
     try {
       for (const file of Array.from(files)) {
         const result = await api.uploadFile(deck.id, file)
-        if (result?.file && file.type.startsWith('image/')) {
-          // Auto-insert image into active slide
-          const slideId = get(activeSlideId)
-          if (slideId) {
-            const API_URL = import.meta.env.PUBLIC_API_URL ?? 'http://localhost:3001'
-            await applyMutation({
-              action: 'addBlock',
-              payload: {
-                slideId,
-                block: {
-                  type: 'image',
-                  data: {
-                    src: `${API_URL}${result.file.url}`,
-                    alt: file.name,
-                    caption: '',
-                  },
-                },
-              },
-            })
-          }
-          // Also mention it in the chat input
-          text += (text ? '\n' : '') + `[Uploaded: ${file.name}]`
-        } else {
-          text += (text ? '\n' : '') + `[Uploaded file: ${file.name}]`
+        if (result?.file) {
+          // Just mention in chat — let the user tell the AI what to do with it
+          const label = file.type.startsWith('image/') ? 'image' : 'file'
+          text += (text ? '\n' : '') + `[Uploaded ${label}: ${file.name}]`
         }
       }
     } catch (err: any) {
