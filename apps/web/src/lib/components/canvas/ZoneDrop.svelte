@@ -1,5 +1,6 @@
 <script lang="ts">
   import { dndzone } from 'svelte-dnd-action'
+  import ModuleRenderer from '$lib/components/renderers/ModuleRenderer.svelte'
 
   type Module = {
     id: string
@@ -56,9 +57,14 @@
   {#if items.length === 0}
     <div class="empty-hint">+ Add module</div>
   {:else}
-    {#each items as module (module.id)}
+    {#each items as mod (mod.id)}
       <div class="module-item">
-        {module.type}: {JSON.stringify(module.data).slice(0, 60)}
+        <ModuleRenderer
+          module={mod}
+          {editable}
+          onchange={(newData) => onModuleDataChange?.(mod.id, newData)}
+          oneditorready={onEditorReady}
+        />
       </div>
     {/each}
   {/if}
