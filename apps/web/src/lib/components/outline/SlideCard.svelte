@@ -1,8 +1,9 @@
 <script lang="ts">
   import { get } from 'svelte/store'
+  import { dndzone } from 'svelte-dnd-action'
   import BlockItem from './BlockItem.svelte'
   import { activeSlideId } from '$lib/stores/ui'
-  import { currentDeck, removeSlideFromDeck } from '$lib/stores/deck'
+  import { currentDeck, removeSlideFromDeck, updateSlideInDeck } from '$lib/stores/deck'
 
   let { slide, active, index }: {
     slide: {
@@ -17,6 +18,20 @@
   } = $props()
 
   let deleting = $state(false)
+  let blockItems = $state(slide.blocks)
+
+  $effect(() => {
+    blockItems = slide.blocks
+  })
+
+  function handleDndConsider(e: CustomEvent<{ items: typeof blockItems }>) {
+    blockItems = e.detail.items
+  }
+
+  function handleDndFinalize(e: CustomEvent<{ items: typeof blockItems }>) {
+    blockItems = e.detail.items
+    updateSlideInDeck(slide.id, (s) => ({ ...s, blocks: blockItems }))
+  }
 
   function handleClick() {
     activeSlideId.set(slide.id)
@@ -73,10 +88,12 @@
     </button>
   </div>
 
-  {#if active && slide.blocks.length > 0}
-    <div class="blocks-list">
-      {#each slide.blocks as block (block.id)}
-        <BlockItem {block} />
+  {#if active && blockItems.length > 0}
+    <div class="blocks-list" use:dndzone={{ items: blockItems, flipDurationMs: 200, dropTargetStyle: {} }} onconsider={handleDndConsider} onfinalize={handleDndFinalize}>
+      {#each blockItems as block (block.id)}
+        <div>
+          <BlockItem {block} />
+        </div>
       {/each}
     </div>
   {/if}

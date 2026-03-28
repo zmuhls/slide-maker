@@ -16,7 +16,7 @@
 </script>
 
 <div class="block-item">
-  <span class="drag-handle">{'\u2261'}</span>
+  <span class="drag-handle">{'\u283F'}</span>
   <span class="block-label">{label}</span>
 </div>
 
