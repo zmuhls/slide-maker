@@ -44,6 +44,21 @@
       body: JSON.stringify({ layout }),
     }).catch(console.error)
   }
+
+  function handleDataChange(blockId: string, newData: Record<string, unknown>) {
+    // Update store
+    updateSlideInDeck(slide.id, (s) => ({
+      ...s,
+      blocks: s.blocks.map((b) => b.id === blockId ? { ...b, data: newData } : b),
+    }))
+    // Persist to API
+    fetch(`${API_URL}/api/decks/${slide.deckId}/slides/${slide.id}/blocks/${blockId}`, {
+      method: 'PATCH',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ data: newData }),
+    }).catch(console.error)
+  }
 </script>
 
 <div class="slide" data-slide-type={slideType}>
@@ -60,10 +75,10 @@
           {#each leftBlocks as block (block.id)}
             {#if editable}
               <BlockWrapper {block} onLayoutChange={handleLayoutChange}>
-                <BlockRenderer {block} {editable} />
+                <BlockRenderer {block} {editable} onDataChange={handleDataChange} />
               </BlockWrapper>
             {:else}
-              <BlockRenderer {block} {editable} />
+              <BlockRenderer {block} {editable} onDataChange={handleDataChange} />
             {/if}
           {/each}
         </div>
@@ -71,10 +86,10 @@
           {#each rightBlocks as block (block.id)}
             {#if editable}
               <BlockWrapper {block} onLayoutChange={handleLayoutChange}>
-                <BlockRenderer {block} {editable} />
+                <BlockRenderer {block} {editable} onDataChange={handleDataChange} />
               </BlockWrapper>
             {:else}
-              <BlockRenderer {block} {editable} />
+              <BlockRenderer {block} {editable} onDataChange={handleDataChange} />
             {/if}
           {/each}
         </div>
@@ -85,10 +100,10 @@
       {#each sortedBlocks as block (block.id)}
         {#if editable}
           <BlockWrapper {block} onLayoutChange={handleLayoutChange}>
-            <BlockRenderer {block} {editable} />
+            <BlockRenderer {block} {editable} onDataChange={handleDataChange} />
           </BlockWrapper>
         {:else}
-          <BlockRenderer {block} {editable} />
+          <BlockRenderer {block} {editable} onDataChange={handleDataChange} />
         {/if}
       {/each}
     </div>

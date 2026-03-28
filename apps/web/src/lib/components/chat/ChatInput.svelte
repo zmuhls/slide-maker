@@ -1,5 +1,10 @@
 <script lang="ts">
   import { chatStreaming } from '$lib/stores/chat'
+  import { currentDeck } from '$lib/stores/deck'
+  import { activeSlideId } from '$lib/stores/ui'
+  import { api } from '$lib/api'
+  import { applyMutation } from '$lib/utils/mutations'
+  import { get } from 'svelte/store'
 
   interface Props {
     onsend: (text: string) => void
@@ -7,6 +12,8 @@
 
   let { onsend }: Props = $props()
   let text = $state('')
+  let dragOver = $state(false)
+  let uploading = $state(false)
 
   function handleSubmit() {
     const trimmed = text.trim()
@@ -21,18 +28,83 @@
       handleSubmit()
     }
   }
+
+  function handleDragOver(e: DragEvent) {
+    e.preventDefault()
+    dragOver = true
+  }
+
+  function handleDragLeave() {
+    dragOver = false
+  }
+
+  async function handleDrop(e: DragEvent) {
+    e.preventDefault()
+    dragOver = false
+
+    const files = e.dataTransfer?.files
+    if (!files?.length) return
+
+    const deck = get(currentDeck)
+    if (!deck) return
+
+    uploading = true
+    try {
+      for (const file of Array.from(files)) {
+        const result = await api.uploadFile(deck.id, file)
+        if (result?.file && file.type.startsWith('image/')) {
+          // Auto-insert image into active slide
+          const slideId = get(activeSlideId)
+          if (slideId) {
+            const API_URL = import.meta.env.PUBLIC_API_URL ?? 'http://localhost:3001'
+            await applyMutation({
+              action: 'addBlock',
+              payload: {
+                slideId,
+                block: {
+                  type: 'image',
+                  data: {
+                    src: `${API_URL}${result.file.url}`,
+                    alt: file.name,
+                    caption: '',
+                  },
+                },
+              },
+            })
+          }
+          // Also mention it in the chat input
+          text += (text ? '\n' : '') + `[Uploaded: ${file.name}]`
+        } else {
+          text += (text ? '\n' : '') + `[Uploaded file: ${file.name}]`
+        }
+      }
+    } catch (err: any) {
+      text += `\n[Upload failed: ${err.message}]`
+    } finally {
+      uploading = false
+    }
+  }
 </script>
 
-<div class="chat-input">
+<div
+  class="chat-input"
+  class:drag-over={dragOver}
+  ondragover={handleDragOver}
+  ondragleave={handleDragLeave}
+  ondrop={handleDrop}
+>
+  {#if dragOver}
+    <div class="drop-overlay">Drop file to upload</div>
+  {/if}
   <textarea
     bind:value={text}
-    placeholder="Ask the AI to create or edit slides..."
+    placeholder="Ask the AI to create or edit slides... (drop files here)"
     onkeydown={handleKeydown}
-    disabled={$chatStreaming}
+    disabled={$chatStreaming || uploading}
     rows={2}
   ></textarea>
-  <button onclick={handleSubmit} disabled={$chatStreaming || !text.trim()}>
-    {#if $chatStreaming}
+  <button onclick={handleSubmit} disabled={$chatStreaming || uploading || !text.trim()}>
+    {#if $chatStreaming || uploading}
       <span class="spinner"></span>
     {:else}
       Send
@@ -47,6 +119,28 @@
     padding: 8px;
     border-top: 1px solid var(--color-border);
     background: var(--color-bg);
+    position: relative;
+  }
+
+  .chat-input.drag-over {
+    border-color: var(--color-primary);
+    background: rgba(59, 115, 230, 0.05);
+  }
+
+  .drop-overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(59, 115, 230, 0.1);
+    border: 2px dashed var(--color-primary);
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--color-primary);
+    z-index: 5;
+    pointer-events: none;
   }
 
   textarea {

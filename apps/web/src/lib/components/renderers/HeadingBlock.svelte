@@ -1,7 +1,7 @@
 <script lang="ts">
   import { fitText } from '$lib/utils/text-measure'
 
-  let { data = {}, editable = false }: { data: Record<string, unknown>; editable: boolean } = $props()
+  let { data = {}, editable = false, onchange }: { data: Record<string, unknown>; editable: boolean; onchange?: (newData: Record<string, unknown>) => void } = $props()
 
   let level = $derived(typeof data.level === 'number' ? Math.min(Math.max(data.level, 1), 4) : 1)
   let text = $derived(typeof data.text === 'string' ? data.text : '')
@@ -28,9 +28,17 @@
     fittedFontSize = size < cfg.base ? size : undefined
   })
 
+  let saveTimer: ReturnType<typeof setTimeout> | undefined
+
   function handleInput(e: Event) {
     const target = e.target as HTMLElement
-    data.text = target.textContent ?? ''
+    const newText = target.textContent ?? ''
+    data.text = newText
+    // Debounce save
+    clearTimeout(saveTimer)
+    saveTimer = setTimeout(() => {
+      onchange?.({ ...data, text: newText })
+    }, 500)
   }
 </script>
 

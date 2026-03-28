@@ -1,7 +1,7 @@
 <script lang="ts">
   import { fitText } from '$lib/utils/text-measure'
 
-  let { data = {}, editable = false }: { data: Record<string, unknown>; editable: boolean } = $props()
+  let { data = {}, editable = false, onchange }: { data: Record<string, unknown>; editable: boolean; onchange?: (newData: Record<string, unknown>) => void } = $props()
 
   let text = $derived(typeof data.markdown === 'string' ? data.markdown : typeof data.text === 'string' ? data.text : '')
   let column = $derived(typeof data.column === 'string' ? data.column : '')
@@ -85,9 +85,17 @@
 
   let renderedHtml = $derived(markdownToHtml(text))
 
+  let saveTimer: ReturnType<typeof setTimeout> | undefined
+
   function handleInput(e: Event) {
     const target = e.target as HTMLElement
-    data.text = target.innerText ?? ''
+    const newText = target.innerText ?? ''
+    data.markdown = newText
+    data.text = newText
+    clearTimeout(saveTimer)
+    saveTimer = setTimeout(() => {
+      onchange?.({ ...data, markdown: newText, text: newText })
+    }, 500)
   }
 </script>
 
