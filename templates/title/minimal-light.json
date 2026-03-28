@@ -1,0 +1,8 @@
+{
+  "name": "Minimal Light",
+  "slideType": "title",
+  "blocks": [
+    {"type": "heading", "data": {"text": "", "level": 1}},
+    {"type": "text", "data": {"markdown": "", "column": "full"}}
+  ]
+}

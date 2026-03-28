@@ -1,0 +1,8 @@
+{
+  "name": "Step Procedure",
+  "slideType": "body",
+  "blocks": [
+    {"type": "heading", "data": {"text": "", "level": 2}},
+    {"type": "steps", "data": {"steps": [{"label": "Step 1", "content": ""}, {"label": "Step 2", "content": ""}, {"label": "Step 3", "content": ""}]}}
+  ]
+}

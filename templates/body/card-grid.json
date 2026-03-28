@@ -1,0 +1,8 @@
+{
+  "name": "Card Grid",
+  "slideType": "body",
+  "blocks": [
+    {"type": "heading", "data": {"text": "", "level": 2}},
+    {"type": "card-grid", "data": {"cards": [{"title": "", "content": ""}, {"title": "", "content": ""}, {"title": "", "content": ""}], "columns": 3}}
+  ]
+}

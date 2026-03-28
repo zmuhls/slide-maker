@@ -1,0 +1,8 @@
+{
+  "name": "Process Flow",
+  "slideType": "body",
+  "blocks": [
+    {"type": "heading", "data": {"text": "", "level": 2}},
+    {"type": "card-grid", "data": {"cards": [{"title": "Input", "content": "", "color": "#3B73E6"}, {"title": "Process", "content": "", "color": "#2FB8D6"}, {"title": "Output", "content": "", "color": "#10b981"}], "columns": 3}}
+  ]
+}
