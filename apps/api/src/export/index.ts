@@ -1,6 +1,10 @@
 import archiver from 'archiver'
+import path from 'node:path'
+import fs from 'node:fs'
 import { PassThrough } from 'stream'
 import { renderDeckHtml } from './html-renderer.js'
+
+const UPLOAD_DIR = path.resolve(import.meta.dirname ?? '.', '..', '..', 'uploads')
 
 const BASE_THEME_CSS = `/* Reset */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -147,13 +151,21 @@ interface ExportTheme {
   colors: unknown
 }
 
+interface ExportFile {
+  id: string
+  filename: string
+  path: string
+  mimeType: string
+}
+
 export async function exportDeckAsZip(
   slug: string,
   slideList: ExportSlide[],
   theme: ExportTheme | null,
   deckName: string,
+  files?: ExportFile[],
 ): Promise<Buffer> {
-  const html = renderDeckHtml(deckName, slideList, theme)
+  const html = renderDeckHtml(deckName, slideList, theme, files)
 
   const themeCss = BASE_THEME_CSS + '\n\n/* Theme overrides */\n' + (theme?.css || '')
 
@@ -181,6 +193,15 @@ export async function exportDeckAsZip(
     archive.append(html, { name: `${slug}/index.html` })
     archive.append(themeCss, { name: `${slug}/css/theme.css` })
     archive.append(manifest, { name: `${slug}/manifest.json` })
+
+    if (files?.length) {
+      for (const file of files) {
+        const filePath = path.join(UPLOAD_DIR, file.path)
+        if (fs.existsSync(filePath)) {
+          archive.file(filePath, { name: `${slug}/assets/${file.filename}` })
+        }
+      }
+    }
 
     archive.finalize()
   })

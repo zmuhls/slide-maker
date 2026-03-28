@@ -2,7 +2,7 @@ import { Hono } from 'hono'
 import { eq, and, inArray } from 'drizzle-orm'
 import type { Session, User } from 'lucia'
 import { db } from '../db/index.js'
-import { decks, deckAccess, slides, contentBlocks, themes } from '../db/schema.js'
+import { decks, deckAccess, slides, contentBlocks, themes, uploadedFiles } from '../db/schema.js'
 import { authMiddleware } from '../middleware/auth.js'
 import { exportDeckAsZip } from '../export/index.js'
 
@@ -79,6 +79,10 @@ exportRouter.post('/:id/export', async (c) => {
     theme = await db.select().from(themes).where(eq(themes.id, deck.themeId)).get() || null
   }
 
+  // Load uploaded files
+  const files = await db.select().from(uploadedFiles)
+    .where(eq(uploadedFiles.deckId, deckId)).all()
+
   const zipBuffer = await exportDeckAsZip(
     deck.slug,
     slidesWithBlocks,
@@ -89,6 +93,7 @@ exportRouter.post('/:id/export', async (c) => {
       colors: theme.colors,
     } : null,
     deck.name,
+    files,
   )
 
   const filename = `${deck.slug}.zip`

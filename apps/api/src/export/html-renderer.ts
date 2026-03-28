@@ -30,7 +30,14 @@ interface Theme {
   colors: unknown
 }
 
-function renderBlock(block: Block): string {
+interface ExportFile {
+  id: string
+  filename: string
+  path: string
+  mimeType: string
+}
+
+function renderBlock(block: Block, files?: ExportFile[]): string {
   const data = block.data || {}
 
   switch (block.type) {
@@ -47,7 +54,15 @@ function renderBlock(block: Block): string {
     }
 
     case 'image': {
-      const src = String(data.src || data.url || '')
+      let src = String(data.src || data.url || '')
+      // Rewrite API file URLs to local asset paths
+      if (src.includes('/api/decks/') && src.includes('/files/')) {
+        const fileId = src.split('/files/').pop()
+        const matchedFile = files?.find(f => f.id === fileId)
+        if (matchedFile) {
+          src = `assets/${matchedFile.filename}`
+        }
+      }
       const alt = String(data.alt || '')
       const caption = String(data.caption || '')
       let html = `<figure><img src="${escapeHtml(src)}" alt="${escapeHtml(alt)}" loading="lazy" />`
@@ -102,7 +117,7 @@ function renderBlock(block: Block): string {
   }
 }
 
-function renderSlide(slide: Slide, index: number): string {
+function renderSlide(slide: Slide, index: number, files?: ExportFile[]): string {
   const isFirst = index === 0
   const activeClass = isFirst ? ' active' : ''
   const ariaHidden = isFirst ? 'false' : 'true'
@@ -113,7 +128,7 @@ function renderSlide(slide: Slide, index: number): string {
     .sort((a, b) => a.order - b.order)
     .map((block) => {
       const fragmentAttr = slide.fragments ? ' class="fragment"' : ''
-      return `      <div${fragmentAttr}>${renderBlock(block)}</div>`
+      return `      <div${fragmentAttr}>${renderBlock(block, files)}</div>`
     })
     .join('\n')
 
@@ -126,9 +141,10 @@ export function renderDeckHtml(
   deckName: string,
   slideList: Slide[],
   theme: Theme | null,
+  files?: ExportFile[],
 ): string {
   const sortedSlides = [...slideList].sort((a, b) => a.order - b.order)
-  const slidesHtml = sortedSlides.map((slide, i) => renderSlide(slide, i)).join('\n\n')
+  const slidesHtml = sortedSlides.map((slide, i) => renderSlide(slide, i, files)).join('\n\n')
   const themeCss = theme?.css || ''
   const title = escapeHtml(deckName)
 
