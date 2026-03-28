@@ -65,6 +65,10 @@ export const api = {
   approveUser: (id: string) => request(`/api/admin/users/${id}/approve`, { method: 'POST' }),
   rejectUser: (id: string) => request(`/api/admin/users/${id}/reject`, { method: 'POST' }),
 
+  // Chat
+  getChatHistory: (deckId: string) =>
+    request<{ messages: any[] }>(`/api/chat/${deckId}/history`),
+
   // Files
   uploadFile: async (deckId: string, file: File) => {
     const formData = new FormData()

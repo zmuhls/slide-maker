@@ -26,6 +26,16 @@
     dragItems = (deck?.slides ?? []).map((s: any) => ({ ...s }))
   })
 
+  // Scroll to newly active slide
+  $effect(() => {
+    if (activeId) {
+      requestAnimationFrame(() => {
+        const el = document.querySelector(`[data-slide-id="${activeId}"]`)
+        el?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+      })
+    }
+  })
+
   function handleConsider(e: CustomEvent<{ items: any[] }>) {
     dragItems = e.detail.items
   }

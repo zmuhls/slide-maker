@@ -70,7 +70,7 @@
   }
 </script>
 
-<div class="slide-card" class:active onclick={handleClick} onkeydown={(e) => e.key === 'Enter' && handleClick()} role="button" tabindex="0">
+<div class="slide-card" class:active data-slide-id={slide.id} onclick={handleClick} onkeydown={(e) => e.key === 'Enter' && handleClick()} role="button" tabindex="0">
   <div class="card-header">
     <span class="drag-handle" title="Drag to reorder">{'\u2807'}</span>
     <span class="arrow">{active ? '\u25BC' : '\u25B6'}</span>

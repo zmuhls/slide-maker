@@ -4,6 +4,7 @@
   import { api } from '$lib/api';
   import { currentDeck } from '$lib/stores/deck';
   import { activeSlideId } from '$lib/stores/ui';
+  import { chatMessages } from '$lib/stores/chat';
   import EditorShell from '$lib/components/editor/EditorShell.svelte';
 
   let loading = $state(true);
@@ -40,6 +41,21 @@
         activeSlideId.set(deck.slides[0].id);
       }
 
+      // Load chat history
+      try {
+        const historyRes = await api.getChatHistory(deckId);
+        if (historyRes?.messages?.length) {
+          chatMessages.set(historyRes.messages.map((m: any, i: number) => ({
+            id: `hist-${i}`,
+            role: m.role,
+            content: m.content,
+            streaming: false,
+          })));
+        }
+      } catch {
+        // Non-critical — chat works without history
+      }
+
       // Try to acquire lock
       try {
         const lockRes = await api.acquireLock(deckId);
@@ -68,6 +84,7 @@
     if (heartbeatInterval) {
       clearInterval(heartbeatInterval);
     }
+    chatMessages.set([]);
     window.removeEventListener('beforeunload', handleBeforeUnload);
     if (!readOnly && deckId) {
       releaseLockQuietly();

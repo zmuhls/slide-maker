@@ -61,9 +61,11 @@
 
     // Create streaming assistant message
     const assistantId = addAssistantMessage()
+    appendToAssistant(assistantId, 'Thinking...')
     chatStreaming.set(true)
 
     let fullText = ''
+    let firstChunk = true
 
     await streamChat(
       text,
@@ -72,8 +74,16 @@
       modelId,
       history,
       (chunk) => {
+        if (firstChunk) {
+          // Replace "Thinking..." with first real content
+          chatMessages.update((msgs) =>
+            msgs.map((m) => m.id === assistantId ? { ...m, content: chunk } : m)
+          )
+          firstChunk = false
+        } else {
+          appendToAssistant(assistantId, chunk)
+        }
         fullText += chunk
-        appendToAssistant(assistantId, chunk)
       },
       async () => {
         finishAssistant(assistantId)
