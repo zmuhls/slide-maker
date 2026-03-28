@@ -23,9 +23,7 @@
   let toolbarEl: HTMLDivElement | undefined = $state(undefined)
   let editor: Editor | null = $state(null)
   let saveTimer: ReturnType<typeof setTimeout> | undefined
-  let showToolbar = $state(false)
-  let toolbarX = $state(0)
-  let toolbarY = $state(0)
+  // Toolbar state tracking
 
   // Toolbar active states
   let isBold = $state(false)
@@ -44,21 +42,6 @@
   }
 
   function positionToolbar() {
-    if (!editor || !editorEl) {
-      showToolbar = false
-      return
-    }
-    const { from, to } = editor.state.selection
-    if (from === to) {
-      showToolbar = false
-      return
-    }
-    // Get the selection coordinates
-    const coords = editor.view.coordsAtPos(from)
-    const editorRect = editorEl.getBoundingClientRect()
-    toolbarX = coords.left - editorRect.left
-    toolbarY = coords.top - editorRect.top - 44
-    showToolbar = true
     updateToolbarState()
   }
 
@@ -84,10 +67,7 @@
         positionToolbar()
       },
       onBlur: () => {
-        // Delay hide so toolbar button clicks register
-        setTimeout(() => {
-          showToolbar = false
-        }, 200)
+        updateToolbarState()
       },
     })
   })
@@ -148,12 +128,11 @@
   }
 </script>
 
-<div class="rich-text-editor {className}" style="position: relative;">
-  {#if showToolbar && editable}
+<div class="rich-text-editor {className}">
+  {#if editable}
     <div
       bind:this={toolbarEl}
-      class="floating-toolbar"
-      style="left: {toolbarX}px; top: {toolbarY}px;"
+      class="editor-toolbar"
     >
       <button
         class="toolbar-btn"
@@ -263,17 +242,15 @@
     height: 0;
   }
 
-  /* Floating toolbar */
-  .floating-toolbar {
-    position: absolute;
-    z-index: 50;
+  /* Editor toolbar — persistent bar above text */
+  .editor-toolbar {
     display: flex;
     align-items: center;
     gap: 2px;
-    padding: 4px;
+    padding: 3px 4px;
+    margin-bottom: 6px;
     background: #1e293b;
     border-radius: 6px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
     white-space: nowrap;
   }
 
