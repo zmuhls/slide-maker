@@ -64,4 +64,25 @@ export const api = {
     request<{ users: any[] }>(`/api/admin/users${status ? `?status=${status}` : ''}`),
   approveUser: (id: string) => request(`/api/admin/users/${id}/approve`, { method: 'POST' }),
   rejectUser: (id: string) => request(`/api/admin/users/${id}/reject`, { method: 'POST' }),
+
+  // Files
+  uploadFile: async (deckId: string, file: File) => {
+    const formData = new FormData()
+    formData.append('file', file)
+    const res = await fetch(`${API_URL}/api/decks/${deckId}/files`, {
+      method: 'POST',
+      credentials: 'include',
+      body: formData,
+      // NO Content-Type header — browser sets it with boundary for multipart
+    })
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({ error: res.statusText }))
+      throw new Error(body.error ?? 'Upload failed')
+    }
+    return res.json()
+  },
+  listFiles: (deckId: string) =>
+    request<{ files: any[] }>(`/api/decks/${deckId}/files`),
+  deleteFile: (deckId: string, fileId: string) =>
+    request(`/api/decks/${deckId}/files/${fileId}`, { method: 'DELETE' }),
 }

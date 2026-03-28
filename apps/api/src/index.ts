@@ -10,6 +10,7 @@ import chat from './routes/chat.js'
 import providers from './routes/providers.js'
 import resources from './routes/resources.js'
 import sharing from './routes/sharing.js'
+import filesRouter from './routes/files.js'
 
 const app = new Hono()
 
@@ -22,6 +23,7 @@ app.get('/api/health', (c) => c.json({ status: 'ok' }))
 
 app.route('/api/auth', auth)
 app.route('/api/admin', admin)
+app.route('/api/decks', filesRouter)
 app.route('/api/decks', decksRouter)
 app.route('/api/decks', exportRouter)
 app.route('/api/decks', sharing)

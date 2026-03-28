@@ -25,3 +25,6 @@ dist/
 *.db
 *.db-journal
 data/
+
+# Uploads
+apps/api/uploads/
