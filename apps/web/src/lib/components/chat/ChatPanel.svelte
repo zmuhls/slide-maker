@@ -1,5 +1,6 @@
 <script lang="ts">
   import { get } from 'svelte/store'
+  import { api } from '$lib/api'
   import ModelSelector from './ModelSelector.svelte'
   import ChatMessage from './ChatMessage.svelte'
   import ChatInput from './ChatInput.svelte'
@@ -47,6 +48,74 @@
   async function handleSend(text: string) {
     const deck = get(currentDeck)
     if (!deck) return
+
+    // Handle /search command
+    if (text.trim().startsWith('/search ')) {
+      const query = text.trim().slice(8).trim()
+      if (!query) return
+      addUserMessage(text)
+      const searchMsgId = addAssistantMessage()
+      appendToAssistant(searchMsgId, 'Searching the web...')
+
+      try {
+        const results = await api.webSearch(query)
+        let response = `**Search results for "${query}":**\n\n`
+
+        if (results.images?.length) {
+          response += `**Images found (${results.images.length}):**\n`
+          // Auto-download first image and add to slide
+          const imgUrl = results.images[0]
+          try {
+            const downloaded = await api.downloadImage(imgUrl, deck.id, `${query.replace(/\s+/g, '-').slice(0, 30)}.jpg`)
+            if (downloaded?.file) {
+              const slideId = get(activeSlideId)
+              if (slideId) {
+                const API_URL = import.meta.env.PUBLIC_API_URL ?? 'http://localhost:3001'
+                await applyMutation({
+                  action: 'addBlock',
+                  payload: {
+                    slideId,
+                    block: {
+                      type: 'image',
+                      zone: 'stage',
+                      data: { src: `${API_URL}${downloaded.file.url}`, alt: query, caption: '' },
+                    },
+                  },
+                })
+                response += `\nImage downloaded and added to the active slide.\n`
+              } else {
+                response += `\nImage downloaded to Files. Select a slide to insert it.\n`
+              }
+            }
+          } catch {
+            response += `\nCouldn't download the image automatically. Here are the URLs:\n`
+            results.images.slice(0, 3).forEach((img: string, i: number) => {
+              response += `${i + 1}. ${img}\n`
+            })
+          }
+        }
+
+        if (results.answer) {
+          response += `\n**Answer:** ${results.answer}\n`
+        }
+
+        if (results.results?.length) {
+          response += `\n**Sources:**\n`
+          results.results.slice(0, 3).forEach((r: any) => {
+            response += `- [${r.title}](${r.url})\n`
+          })
+        }
+
+        chatMessages.update((msgs) =>
+          msgs.map((m) => m.id === searchMsgId ? { ...m, content: response, streaming: false } : m)
+        )
+      } catch (err: any) {
+        chatMessages.update((msgs) =>
+          msgs.map((m) => m.id === searchMsgId ? { ...m, content: `Search failed: ${err.message}`, streaming: false } : m)
+        )
+      }
+      return
+    }
 
     const modelId = get(selectedModelId)
     const slideId = get(activeSlideId)

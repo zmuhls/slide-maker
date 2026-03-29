@@ -81,7 +81,8 @@ function renderModule(mod: Module): string {
     case 'text': {
       const content = String(d.html || d.content || d.text || '')
       // If data.html exists, trust it as pre-rendered HTML; otherwise escape
-      const body = d.html ? content : esc(content)
+      // Always escape — data.html from TipTap/AI is not trusted in srcdoc context
+      const body = esc(content)
       return `<div class="text-body">${body}</div>`
     }
 

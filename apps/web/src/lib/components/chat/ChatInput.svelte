@@ -107,7 +107,7 @@
   {/if}
   <textarea
     bind:value={text}
-    placeholder="Ask the AI to create or edit slides... (drop files here)"
+    placeholder="Ask AI, /add module, /search images..."
     onkeydown={handleKeydown}
     disabled={$chatStreaming || uploading}
     rows={2}

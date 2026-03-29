@@ -1,4 +1,5 @@
 <script lang="ts">
+  import DOMPurify from 'dompurify'
   import type { ChatMsg } from '$lib/stores/chat'
 
   interface Props {
@@ -46,7 +47,7 @@
   <div class="message-role">{isUser ? 'You' : 'AI'}</div>
   <div class="message-content">
     {#if message.content}
-      {@html renderContent(message.content)}
+      {@html DOMPurify.sanitize(renderContent(message.content))}
     {/if}
     {#if message.streaming}
       <span class="cursor-blink"></span>
