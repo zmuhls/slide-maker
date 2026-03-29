@@ -14,12 +14,16 @@
 
   import type { Editor } from '@tiptap/core'
 
-  let { module, editable = false, onchange, oneditorready, ondelete }: {
+  let { module, editable = false, onchange, oneditorready, ondelete, onmoveup, onmovedown, isFirst = false, isLast = false }: {
     module: { id: string; type: string; data: Record<string, unknown>; stepOrder?: number | null };
     editable: boolean;
     onchange?: (newData: Record<string, unknown>) => void;
     oneditorready?: (editor: Editor) => void;
     ondelete?: () => void;
+    onmoveup?: () => void;
+    onmovedown?: () => void;
+    isFirst?: boolean;
+    isLast?: boolean;
   } = $props()
 
   const rendererMap: Record<string, any> = {
@@ -101,6 +105,12 @@
 >
   {#if editable}
     <div class="module-controls">
+      {#if !isFirst}
+        <button class="ctrl-btn" onclick={() => onmoveup?.()} title="Move up">▲</button>
+      {/if}
+      {#if !isLast}
+        <button class="ctrl-btn" onclick={() => onmovedown?.()} title="Move down">▼</button>
+      {/if}
       <button
         class="ctrl-btn delete-btn"
         class:confirming={confirmDelete}

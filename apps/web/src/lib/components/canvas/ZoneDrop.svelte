@@ -41,25 +41,6 @@
   let highlightedIds = $state<Set<string>>(new Set())
   let knownIds: Set<string> = new Set()
 
-  // Shift+drag reorder state
-  let draggingId = $state<string | null>(null)
-  let dragOverId = $state<string | null>(null)
-  let shiftHeld = $state(false)
-
-  function onKeyDown(e: KeyboardEvent) { if (e.key === 'Shift') shiftHeld = true }
-  function onKeyUp(e: KeyboardEvent) { if (e.key === 'Shift') shiftHeld = false }
-
-  $effect(() => {
-    if (editable) {
-      window.addEventListener('keydown', onKeyDown)
-      window.addEventListener('keyup', onKeyUp)
-      return () => {
-        window.removeEventListener('keydown', onKeyDown)
-        window.removeEventListener('keyup', onKeyUp)
-      }
-    }
-  })
-
   $effect(() => {
     items = modules.map((m) => ({ ...m }))
 
@@ -77,50 +58,19 @@
     knownIds = currentIds
   })
 
-  // Shift+drag reorder handlers
-  function handleDragStart(e: DragEvent, modId: string) {
-    draggingId = modId
-    e.dataTransfer!.effectAllowed = 'move'
-    e.dataTransfer!.setData('text/plain', modId)
-  }
-
-  function handleDragOver(e: DragEvent, modId: string) {
-    if (!draggingId) return
-    e.preventDefault()
-    e.dataTransfer!.dropEffect = 'move'
-    dragOverId = modId
-  }
-
-  function handleDragLeave() {
-    dragOverId = null
-  }
-
-  function handleDrop(e: DragEvent, targetId: string) {
-    e.preventDefault()
-    if (!draggingId || draggingId === targetId) {
-      draggingId = null
-      dragOverId = null
-      return
-    }
-
-    const fromIdx = items.findIndex(m => m.id === draggingId)
-    const toIdx = items.findIndex(m => m.id === targetId)
-    if (fromIdx < 0 || toIdx < 0) return
+  function moveModule(modId: string, direction: 'up' | 'down') {
+    const idx = items.findIndex(m => m.id === modId)
+    if (idx < 0) return
+    const targetIdx = direction === 'up' ? idx - 1 : idx + 1
+    if (targetIdx < 0 || targetIdx >= items.length) return
 
     const reordered = [...items]
-    const [moved] = reordered.splice(fromIdx, 1)
-    reordered.splice(toIdx, 0, moved)
+    const temp = reordered[idx]
+    reordered[idx] = reordered[targetIdx]
+    reordered[targetIdx] = temp
 
     items = reordered.map((m, i) => ({ ...m, order: i }))
     onReorder?.(zone, items)
-
-    draggingId = null
-    dragOverId = null
-  }
-
-  function handleDragEnd() {
-    draggingId = null
-    dragOverId = null
   }
 
   function togglePicker(e: MouseEvent) {
@@ -151,24 +101,17 @@
       {/if}
     </div>
   {:else}
-    {#each items as mod (mod.id)}
-      <div
-        class="module-item"
-        class:just-added={highlightedIds.has(mod.id)}
-        class:drag-over={dragOverId === mod.id}
-        class:dragging={draggingId === mod.id}
-        draggable={editable && shiftHeld ? 'true' : 'false'}
-        ondragstart={(e) => handleDragStart(e, mod.id)}
-        ondragover={(e) => handleDragOver(e, mod.id)}
-        ondragleave={handleDragLeave}
-        ondrop={(e) => handleDrop(e, mod.id)}
-        ondragend={handleDragEnd}
-      >
+    {#each items as mod, i (mod.id)}
+      <div class="module-item" class:just-added={highlightedIds.has(mod.id)}>
         <ModuleRenderer
           module={mod}
           {editable}
           onchange={(newData) => onModuleDataChange?.(mod.id, newData)}
           ondelete={() => onModuleDelete?.(mod.id)}
+          onmoveup={() => moveModule(mod.id, 'up')}
+          onmovedown={() => moveModule(mod.id, 'down')}
+          isFirst={i === 0}
+          isLast={i === items.length - 1}
           oneditorready={onEditorReady}
         />
       </div>
@@ -208,7 +151,6 @@
     justify-content: center;
     padding: 1rem;
     min-height: 2.5rem;
-    position: relative;
   }
 
   .empty-hint {
@@ -233,21 +175,11 @@
     font-size: 0.75rem;
     color: inherit;
     word-break: break-all;
-    transition: background 0.15s ease, border-color 0.15s ease;
-    border: 2px solid transparent;
+    transition: background 0.15s ease;
   }
 
   .module-item:hover {
     background: rgba(255, 255, 255, 0.14);
-  }
-
-  .module-item.dragging {
-    opacity: 0.4;
-  }
-
-  .module-item.drag-over {
-    border-color: var(--color-primary, #3b82f6);
-    background: rgba(59, 130, 246, 0.1);
   }
 
   .module-item.just-added {
@@ -260,7 +192,6 @@
   }
 
   .add-module-row {
-    position: relative;
     display: flex;
     justify-content: center;
     padding: 0.25rem 0;
