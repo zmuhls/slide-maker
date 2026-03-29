@@ -19,9 +19,9 @@
 
   import { API_URL } from '$lib/api'
 
-  // Resolve relative /api/ URLs to absolute for blob/srcdoc contexts
+  // Resolve relative /api/ URLs to absolute for srcdoc contexts
   function resolveUrls(html: string): string {
-    return html.replace(/(href|src)=['"]\/api\//g, `$1="${API_URL}/api/`)
+    return html.replace(/(href|src)=(['"])\/api\//g, `$1=$2${API_URL}/api/`)
   }
 
   // Use srcdoc for rawSource (inherits parent origin for relative URLs), src for external
