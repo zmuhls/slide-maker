@@ -4,6 +4,7 @@
   import { currentDeck } from '$lib/stores/deck'
   import { activeSlideId } from '$lib/stores/ui'
   import { API_URL } from '$lib/api'
+  import ShareDeckDialog from '$lib/components/gallery/ShareDeckDialog.svelte'
 
   type CanvasMode = 'edit' | 'view'
   let {
@@ -65,6 +66,8 @@
 
     showBranding = false
   }
+
+  let showShare = $state(false)
 
   let exporting = $state(false)
 
@@ -156,8 +159,15 @@
     <button class="export-btn" onclick={handleExport} disabled={exporting || !$currentDeck}>
       {exporting ? '...' : 'Export'}
     </button>
+    <button class="share-btn" onclick={() => { showShare = true }} disabled={!$currentDeck}>
+      Share
+    </button>
   </div>
 </div>
+
+{#if showShare && $currentDeck}
+  <ShareDeckDialog deckId={$currentDeck.id} onclose={() => showShare = false} />
+{/if}
 
 <style>
   .canvas-toolbar {
@@ -320,6 +330,26 @@
     background: var(--color-ghost-bg);
   }
   .export-btn:disabled {
+    opacity: 0.5;
+    cursor: default;
+  }
+  .share-btn {
+    background: transparent;
+    color: var(--color-text-secondary);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    padding: 0.4rem 0.85rem;
+    font-size: 0.9375rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: color 0.15s, border-color 0.15s, background 0.15s;
+  }
+  .share-btn:hover:not(:disabled) {
+    color: var(--color-primary);
+    border-color: var(--color-primary);
+    background: var(--color-ghost-bg);
+  }
+  .share-btn:disabled {
     opacity: 0.5;
     cursor: default;
   }

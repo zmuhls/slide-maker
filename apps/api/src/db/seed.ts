@@ -256,44 +256,51 @@ events.forEach((ev,i)=>{
 });
 <\/script></body></html>`
 
-  // ── Choropleth Map (US states) ────────────────────────────────────
-  const choroplethSource = `<!DOCTYPE html><html><head><style>
-body{margin:0;font-family:Inter,sans-serif;background:#0d1117;color:#e2e8f0;display:flex;align-items:center;justify-content:center;height:100vh;padding:20px}
-.map-container{position:relative;width:100%;max-width:700px}
-svg{width:100%;height:auto}
-.state{stroke:#1e293b;stroke-width:0.5;transition:opacity 0.2s;cursor:pointer}
-.state:hover{opacity:0.8;stroke:#f0f0f0;stroke-width:1.5}
-.tooltip{position:absolute;background:#1e293b;padding:6px 12px;border-radius:6px;font-size:12px;pointer-events:none;opacity:0;transition:opacity 0.2s;white-space:nowrap;z-index:10}
-.legend-bar{display:flex;align-items:center;gap:8px;margin-top:12px;justify-content:center}
+  // ── Choropleth Map (US states) — D3 + TopoJSON ───────────────────
+  const choroplethSource = `<!DOCTYPE html><html><head>
+<script src="https://unpkg.com/d3@7/dist/d3.min.js"><\/script>
+<script src="https://unpkg.com/topojson-client@3/dist/topojson-client.min.js"><\/script>
+<style>
+body{margin:0;font-family:Inter,system-ui,sans-serif;background:#0d1117;color:#e2e8f0;display:flex;align-items:center;justify-content:center;height:100vh;overflow:hidden}
+.container{position:relative;width:96%;max-width:960px}
+.tooltip{position:absolute;background:#1e293b;color:#e2e8f0;padding:6px 12px;border-radius:6px;font-size:12px;pointer-events:none;opacity:0;transition:opacity .15s;white-space:nowrap;z-index:10;box-shadow:0 2px 8px rgba(0,0,0,.3)}
+.legend{display:flex;align-items:center;gap:8px;justify-content:center;margin-top:8px}
 .legend-gradient{width:200px;height:10px;border-radius:5px}
 .legend-label{font-size:11px;color:#94a3b8}
+path.state{stroke:#1e293b;stroke-width:.5;cursor:pointer;transition:opacity .15s}
+path.state:hover{opacity:.8;stroke:#f0f0f0;stroke-width:1.5}
 </style></head><body>
-<div class="map-container">
-<svg id="map" viewBox="0 0 960 600"></svg>
-<div id="tooltip" class="tooltip"></div>
-<div class="legend-bar"><span class="legend-label">Low</span><div class="legend-gradient" style="background:linear-gradient(to right,#1e3a5f,#3b82f6,#60a5fa)"></div><span class="legend-label">High</span></div>
+<div class="container" id="root">
+<svg id="map"></svg>
+<div id="tip" class="tooltip"></div>
+<div class="legend"><span class="legend-label">Low</span><div class="legend-gradient" id="lg"></div><span class="legend-label">High</span></div>
 </div>
 <script>
-const el=document.currentScript?.parentElement||document.body;
+const el=document.getElementById('root');
 const cfgStr=el.getAttribute('data-config');
-let stateData={CA:85,TX:72,NY:90,FL:68,IL:55,PA:60,OH:45,GA:62,NC:58,MI:40,NJ:75,VA:65,WA:80,AZ:50,MA:88,TN:42,IN:38,MO:35,MD:70,WI:44};
-try{if(cfgStr){const c=JSON.parse(cfgStr);if(c.stateData)stateData=c.stateData;}}catch(e){}
-const states={CA:"M 90 340 L 70 280 L 55 210 L 80 200 L 100 250 L 130 320 L 120 380 L 90 400 Z",TX:"M 340 400 L 380 350 L 440 340 L 500 360 L 510 420 L 480 470 L 420 480 L 350 460 Z",NY:"M 780 140 L 810 120 L 840 130 L 830 170 L 800 190 L 770 180 Z",FL:"M 680 430 L 720 420 L 750 450 L 740 500 L 700 520 L 670 480 Z",IL:"M 560 220 L 580 200 L 590 250 L 580 300 L 560 290 Z",PA:"M 740 180 L 790 170 L 800 200 L 760 210 Z",OH:"M 650 200 L 680 190 L 690 230 L 660 240 Z",GA:"M 660 370 L 700 360 L 710 410 L 680 420 Z",NC:"M 700 320 L 780 300 L 790 330 L 710 340 Z",MI:"M 580 140 L 620 130 L 640 160 L 610 180 L 580 170 Z",NJ:"M 800 200 L 820 195 L 815 220 L 795 215 Z",VA:"M 700 270 L 770 250 L 780 280 L 710 300 Z",WA:"M 90 60 L 150 50 L 160 100 L 100 110 Z",AZ:"M 150 340 L 210 320 L 230 380 L 180 400 Z",MA:"M 830 140 L 860 135 L 855 155 L 825 160 Z",TN:"M 580 310 L 670 300 L 675 325 L 585 335 Z",IN:"M 590 230 L 620 220 L 625 270 L 595 280 Z",MO:"M 490 270 L 540 260 L 550 310 L 500 320 Z",MD:"M 760 240 L 800 235 L 795 255 L 755 260 Z",WI:"M 530 130 L 570 120 L 580 170 L 540 180 Z"};
-const vals=Object.values(stateData);
-const min=Math.min(...vals),max=Math.max(...vals);
-const svg=document.getElementById("map");
-const tooltip=document.getElementById("tooltip");
-function getColor(v){const t=(v-min)/(max-min||1);const r=Math.round(30+t*66);const g=Math.round(58+t*107);const b=Math.round(95+t*155);return "rgb("+r+","+g+","+b+")";}
-Object.entries(states).forEach(([abbr,d])=>{
-  const path=document.createElementNS("http://www.w3.org/2000/svg","path");
-  path.setAttribute("d",d);path.setAttribute("class","state");
-  const val=stateData[abbr];
-  path.setAttribute("fill",val!=null?getColor(val):"#1e293b");
-  path.addEventListener("mouseenter",(e)=>{tooltip.textContent=abbr+": "+(val!=null?val:"N/A");tooltip.style.opacity="1";});
-  path.addEventListener("mousemove",(e)=>{const r=e.currentTarget.closest(".map-container").getBoundingClientRect();tooltip.style.left=(e.clientX-r.left+10)+"px";tooltip.style.top=(e.clientY-r.top-30)+"px";});
-  path.addEventListener("mouseleave",()=>{tooltip.style.opacity="0";});
-  svg.appendChild(path);
-});
+let cfg={states:{California:80,Texas:72,New_York:90,Florida:68,Illinois:55,Pennsylvania:60,Ohio:45,Georgia:62,North_Carolina:58,Michigan:40},colorScale:'blues'};
+try{if(cfgStr){const c=JSON.parse(cfgStr);Object.assign(cfg,c);}}catch(e){}
+const scales={blues:['#eff6ff','#3b82f6','#1e3a8a'],greens:['#f0fdf4','#22c55e','#14532d'],reds:['#fef2f2','#ef4444','#7f1d1d'],purples:['#faf5ff','#a855f7','#581c87']};
+const pal=scales[cfg.colorScale]||scales.blues;
+const nameMap=new Map();
+Object.entries(cfg.states).forEach(([k,v])=>{nameMap.set(k.replace(/_/g,' '),v);});
+const vals=Object.values(cfg.states);
+const mn=Math.min(...vals),mx=Math.max(...vals);
+const color=d3.scaleLinear().domain([mn,(mn+mx)/2,mx]).range(pal).clamp(true);
+document.getElementById('lg').style.background='linear-gradient(to right,'+pal.join(',')+')';
+const w=960,h=600;
+const svg=d3.select('#map').attr('viewBox','0 0 '+w+' '+h).attr('width','100%');
+const tip=document.getElementById('tip');
+const proj=d3.geoAlbersUsa().scale(1280).translate([w/2,h/2]);
+const path=d3.geoPath().projection(proj);
+d3.json('https://cdn.jsdelivr.net/npm/us-atlas@3/states-10m.json').then(us=>{
+  const states=topojson.feature(us,us.objects.states).features;
+  svg.selectAll('path.state').data(states).join('path').attr('class','state').attr('d',path)
+    .attr('fill',d=>{const v=nameMap.get(d.properties.name);return v!=null?color(v):'#1e293b';})
+    .on('mouseenter',function(ev,d){const v=nameMap.get(d.properties.name);tip.textContent=d.properties.name+': '+(v!=null?v:'N/A');tip.style.opacity='1';})
+    .on('mousemove',function(ev){const r=el.getBoundingClientRect();tip.style.left=(ev.clientX-r.left+12)+'px';tip.style.top=(ev.clientY-r.top-28)+'px';})
+    .on('mouseleave',function(){tip.style.opacity='0';});
+}).catch(e=>console.error('Map load error:',e));
 <\/script></body></html>`
 
   const starterArtifacts = [
@@ -374,13 +381,19 @@ Object.entries(states).forEach(([abbr,d])=>{
       type: 'map' as const,
       source: choroplethSource,
       config: {
-        stateData: {
+        states: {
           type: 'object',
-          label: 'State Values',
+          label: 'State Values (full names, underscores for spaces)',
           default: {
-            CA: 85, TX: 72, NY: 90, FL: 68, IL: 55,
-            PA: 60, OH: 45, GA: 62, NC: 58, MI: 40,
+            California: 80, Texas: 72, New_York: 90, Florida: 68, Illinois: 55,
+            Pennsylvania: 60, Ohio: 45, Georgia: 62, North_Carolina: 58, Michigan: 40,
           },
+        },
+        colorScale: {
+          type: 'string',
+          label: 'Color Scale',
+          default: 'blues',
+          enum: ['blues', 'greens', 'reds', 'purples'],
         },
       },
       builtIn: true,

@@ -133,6 +133,16 @@ export const deckLocks = sqliteTable('deck_locks', {
   expiresAt: integer('expires_at', { mode: 'timestamp_ms' }).notNull(),
 })
 
+// ── Deck Presence (collaborative awareness) ──
+
+export const deckPresence = sqliteTable('deck_presence', {
+  deckId: text('deck_id').notNull().references(() => decks.id, { onDelete: 'cascade' }),
+  userId: text('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  userName: text('user_name').notNull(),
+  activeSlideId: text('active_slide_id'),
+  lastSeen: integer('last_seen', { mode: 'timestamp_ms' }).notNull(),
+})
+
 // ── Token Usage ──
 
 export const tokenUsage = sqliteTable('token_usage', {

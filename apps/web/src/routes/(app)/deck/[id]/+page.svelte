@@ -11,7 +11,6 @@
 
   let loading = $state(true);
   let error = $state('');
-  let readOnly = $state(false);
   let lockedByName = $state('');
   let heartbeatInterval: ReturnType<typeof setInterval> | undefined;
   let deckId = '';
@@ -40,7 +39,7 @@
   }
 
   function handleBeforeUnload() {
-    if (!readOnly && deckId) {
+    if (deckId) {
       // Use sendBeacon for reliable unload
       const url = `${API_URL}/api/decks/${deckId}/lock`;
       navigator.sendBeacon?.(url); // sendBeacon only does POST, so we also try fetch
@@ -73,18 +72,17 @@
         // Non-critical — chat works without history
       }
 
-      // Try to acquire lock
+      // Try to acquire lock — show warning instead of blocking
       try {
         const lockRes = await api.acquireLock(deckId);
         if (!lockRes.locked) {
-          readOnly = true;
+          // Someone else is editing — show a warning but allow editing
           lockedByName = lockRes.lockedBy?.name ?? 'another user';
-        } else {
-          // Start heartbeat every 2 minutes
-          heartbeatInterval = setInterval(() => {
-            api.refreshLock(deckId).catch(() => {});
-          }, 2 * 60 * 1000);
         }
+        // Start heartbeat every 2 minutes regardless
+        heartbeatInterval = setInterval(() => {
+          api.refreshLock(deckId).catch(() => {});
+        }, 2 * 60 * 1000);
       } catch {
         // If lock endpoint fails entirely, allow editing (graceful degradation)
       }
@@ -105,7 +103,7 @@
     chatMessages.set([]);
     window.removeEventListener('beforeunload', handleBeforeUnload);
     window.removeEventListener('keydown', handleKeyboard);
-    if (!readOnly && deckId) {
+    if (deckId) {
       releaseLockQuietly();
     }
   });
@@ -125,12 +123,12 @@
     <a href="{base}/">Back to decks</a>
   </div>
 {:else}
-  {#if readOnly}
+  {#if lockedByName}
     <div class="lock-banner">
-      This deck is being edited by {lockedByName}. You are in read-only mode.
+      {lockedByName} is also editing this deck
     </div>
   {/if}
-  <EditorShell editable={!readOnly} />
+  <EditorShell editable={true} />
 {/if}
 
 <style>

@@ -1,8 +1,9 @@
 import { Hono } from 'hono'
 import { eq, and } from 'drizzle-orm'
 import type { Session, User } from 'lucia'
+import { lt } from 'drizzle-orm'
 import { db } from '../db/index.js'
-import { decks, deckAccess, deckLocks, users } from '../db/schema.js'
+import { decks, deckAccess, deckLocks, deckPresence, users } from '../db/schema.js'
 import { authMiddleware } from '../middleware/auth.js'
 
 type AuthEnv = {
@@ -258,6 +259,97 @@ sharing.post('/:id/lock/heartbeat', async (c) => {
     .where(eq(deckLocks.deckId, deckId))
 
   return c.json({ locked: true, expiresAt: newExpiry })
+})
+
+// ── Presence ──
+
+const PRESENCE_TTL_MS = 2 * 60 * 1000 // 2 minutes
+
+// POST /:id/presence — Heartbeat: upsert my presence
+sharing.post('/:id/presence', async (c) => {
+  const user = c.get('user')
+  const deckId = c.req.param('id')
+
+  // Must have access
+  const access = await db
+    .select()
+    .from(deckAccess)
+    .where(and(eq(deckAccess.deckId, deckId), eq(deckAccess.userId, user.id)))
+    .get()
+
+  if (!access) {
+    return c.json({ error: 'Not found or no access' }, 404)
+  }
+
+  const body = await c.req.json().catch(() => ({}))
+  const activeSlideId = body.activeSlideId ?? null
+  const now = new Date()
+
+  // Delete stale presences (older than 2 minutes)
+  const cutoff = new Date(now.getTime() - PRESENCE_TTL_MS)
+  await db.delete(deckPresence).where(
+    and(eq(deckPresence.deckId, deckId), lt(deckPresence.lastSeen, cutoff))
+  )
+
+  // Upsert this user's presence
+  const existing = await db
+    .select()
+    .from(deckPresence)
+    .where(and(eq(deckPresence.deckId, deckId), eq(deckPresence.userId, user.id)))
+    .get()
+
+  if (existing) {
+    await db
+      .update(deckPresence)
+      .set({ userName: user.name, activeSlideId, lastSeen: now })
+      .where(and(eq(deckPresence.deckId, deckId), eq(deckPresence.userId, user.id)))
+  } else {
+    await db.insert(deckPresence).values({
+      deckId,
+      userId: user.id,
+      userName: user.name,
+      activeSlideId,
+      lastSeen: now,
+    })
+  }
+
+  // Return all active presences for this deck
+  const presences = await db
+    .select()
+    .from(deckPresence)
+    .where(eq(deckPresence.deckId, deckId))
+
+  return c.json({ presences })
+})
+
+// GET /:id/presence — Get who's online on this deck
+sharing.get('/:id/presence', async (c) => {
+  const user = c.get('user')
+  const deckId = c.req.param('id')
+
+  // Must have access
+  const access = await db
+    .select()
+    .from(deckAccess)
+    .where(and(eq(deckAccess.deckId, deckId), eq(deckAccess.userId, user.id)))
+    .get()
+
+  if (!access) {
+    return c.json({ error: 'Not found or no access' }, 404)
+  }
+
+  // Clean stale presences
+  const cutoff = new Date(Date.now() - PRESENCE_TTL_MS)
+  await db.delete(deckPresence).where(
+    and(eq(deckPresence.deckId, deckId), lt(deckPresence.lastSeen, cutoff))
+  )
+
+  const presences = await db
+    .select()
+    .from(deckPresence)
+    .where(eq(deckPresence.deckId, deckId))
+
+  return c.json({ presences })
 })
 
 export default sharing

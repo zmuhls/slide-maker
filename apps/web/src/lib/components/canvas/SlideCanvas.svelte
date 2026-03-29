@@ -1,13 +1,14 @@
 <script lang="ts">
-  import { untrack } from 'svelte'
+  import { untrack, onMount, onDestroy } from 'svelte'
   import '$lib/framework-preview.css'
-  import { API_URL } from '$lib/api'
+  import { api, API_URL } from '$lib/api'
   import { currentDeck } from '$lib/stores/deck'
   import { activeSlideId } from '$lib/stores/ui'
   import { activeTheme, ensureThemesLoaded, isDark } from '$lib/stores/themes'
   import { renderSlideHtml } from '$lib/utils/slide-html'
   import CanvasToolbar from './CanvasToolbar.svelte'
   import FormatToolbar from './FormatToolbar.svelte'
+  import PresenceBar from './PresenceBar.svelte'
   import SlideRenderer from './SlideRenderer.svelte'
   import type { Editor } from '@tiptap/core'
 
@@ -108,11 +109,69 @@
       `--layout-grid-bg: ${gridBg}`,
     ].join('; ')
   })
+
+  // ── Presence ──
+  type PresenceUser = {
+    userId: string
+    userName: string
+    activeSlideId: string | null
+    slideNumber?: number
+  }
+
+  let otherUsers: PresenceUser[] = $state([])
+  let presenceInterval: ReturnType<typeof setInterval> | undefined
+  let currentUserId: string | null = $state(null)
+
+  async function sendPresenceHeartbeat() {
+    const deck = $currentDeck
+    if (!deck) return
+    try {
+      const res = await api.updatePresence(deck.id, $activeSlideId)
+      if (res?.presences) {
+        const slides = [...(deck.slides ?? [])].sort((a, b) => a.order - b.order)
+        otherUsers = res.presences
+          .filter((p: any) => p.userId !== currentUserId)
+          .map((p: any) => ({
+            userId: p.userId,
+            userName: p.userName,
+            activeSlideId: p.activeSlideId,
+            slideNumber: p.activeSlideId
+              ? slides.findIndex((s) => s.id === p.activeSlideId) + 1
+              : undefined,
+          }))
+      }
+    } catch {
+      // Non-critical
+    }
+  }
+
+  // Send heartbeat on activeSlideId change
+  $effect(() => {
+    // eslint-disable-next-line @typescript-eslint/no-unused-expressions
+    $activeSlideId
+    sendPresenceHeartbeat()
+  })
+
+  onMount(async () => {
+    try {
+      const me = await api.me()
+      currentUserId = me?.user?.id ?? null
+    } catch {
+      // best effort
+    }
+    sendPresenceHeartbeat()
+    presenceInterval = setInterval(sendPresenceHeartbeat, 30_000)
+  })
+
+  onDestroy(() => {
+    if (presenceInterval) clearInterval(presenceInterval)
+  })
 </script>
 
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 <div class="slide-canvas" onkeydown={handleCanvasKeydown}>
   <CanvasToolbar {canvasMode} onSetMode={setMode} onPreview={openPreview} />
+  <PresenceBar {otherUsers} />
   {#if editable && canvasMode === 'edit'}
     <FormatToolbar editor={activeEditor} />
   {/if}

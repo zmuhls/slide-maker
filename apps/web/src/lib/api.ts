@@ -40,6 +40,12 @@ export const api = {
   getCollaborators: (id: string) =>
     request<{ collaborators: any[] }>(`/api/decks/${id}/collaborators`),
 
+  // Presence
+  updatePresence: (deckId: string, activeSlideId: string | null) =>
+    request<{ presences: any[] }>('/api/decks/' + deckId + '/presence', { method: 'POST', body: JSON.stringify({ activeSlideId }) }),
+  getPresence: (deckId: string) =>
+    request<{ presences: any[] }>('/api/decks/' + deckId + '/presence'),
+
   // Locking
   acquireLock: async (id: string): Promise<{ locked: boolean; by?: string; lockedBy?: { name: string; since: string } }> => {
     const res = await fetch(`${API_URL}/api/decks/${id}/lock`, {
