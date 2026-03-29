@@ -39,29 +39,6 @@
 
   let Renderer = $derived(rendererMap[module.type] ?? null)
 
-  // Vertical resize
-  let customHeight = $state<number | null>(null)
-  let resizing = $state(false)
-
-  function startResize(e: MouseEvent) {
-    e.preventDefault()
-    resizing = true
-    const startY = e.clientY
-    const startH = (e.currentTarget as HTMLElement).parentElement?.offsetHeight ?? 100
-
-    function onMove(ev: MouseEvent) {
-      const newH = Math.max(30, startH + (ev.clientY - startY))
-      customHeight = newH
-    }
-    function onUp() {
-      resizing = false
-      window.removeEventListener('mousemove', onMove)
-      window.removeEventListener('mouseup', onUp)
-    }
-    window.addEventListener('mousemove', onMove)
-    window.addEventListener('mouseup', onUp)
-  }
-
   // Delete confirmation
   let confirmDelete = $state(false)
 
@@ -80,9 +57,6 @@
   class="module-wrapper"
   class:editable
   class:is-step={module.stepOrder != null}
-  class:resizing
-  style:height={customHeight ? `${customHeight}px` : undefined}
-  style:overflow={customHeight ? 'hidden' : undefined}
 >
   {#if module.stepOrder != null}
     <span class="step-badge">Step {module.stepOrder + 1}</span>
@@ -105,12 +79,7 @@
     <div class="unknown-module">Unknown module type: {module.type}</div>
   {/if}
 
-  {#if editable}
-    <!-- svelte-ignore a11y_no_static_element_interactions -->
-    <div class="resize-handle" onmousedown={startResize}>
-      <div class="resize-line"></div>
-    </div>
-  {/if}
+
 </div>
 
 <style>
@@ -122,9 +91,6 @@
     outline: 1px dashed rgba(59, 115, 230, 0.4);
     outline-offset: 2px;
     border-radius: var(--radius-sm);
-  }
-  .module-wrapper.resizing {
-    user-select: none;
   }
   .is-step {
     opacity: 0.7;
@@ -182,33 +148,6 @@
     border-color: #dc2626;
     padding: 0 6px;
     font-weight: 600;
-  }
-
-  /* Resize handle */
-  .resize-handle {
-    position: absolute;
-    bottom: -3px;
-    left: 10%;
-    right: 10%;
-    height: 6px;
-    cursor: ns-resize;
-    display: none;
-    align-items: center;
-    justify-content: center;
-    z-index: 5;
-  }
-  .module-wrapper.editable:hover .resize-handle {
-    display: flex;
-  }
-  .resize-line {
-    width: 32px;
-    height: 3px;
-    background: var(--color-border);
-    border-radius: 2px;
-    transition: background 0.15s;
-  }
-  .resize-handle:hover .resize-line {
-    background: var(--color-primary);
   }
 
   .unknown-module {
