@@ -34,7 +34,47 @@
 .slide-frame .slide[data-layout="layout-divider"],
 .slide-frame .slide[data-layout="closing-slide"] {
   background: var(--theme-primary, #1e3a5f) !important;
-  color: white !important;
+  color: var(--theme-primary-text, #ffffff) !important;
+}
+
+/* Headings/text inside primary-bg slides use primary-text color */
+.slide-frame .slide[data-layout="title-slide"] h1,
+.slide-frame .slide[data-layout="title-slide"] h2,
+.slide-frame .slide[data-layout="title-slide"] h3,
+.slide-frame .slide[data-layout="title-slide"] h4,
+.slide-frame .slide[data-layout="title-slide"] .heading,
+.slide-frame .slide[data-layout="layout-divider"] h1,
+.slide-frame .slide[data-layout="layout-divider"] h2,
+.slide-frame .slide[data-layout="layout-divider"] .heading,
+.slide-frame .slide[data-layout="closing-slide"] h1,
+.slide-frame .slide[data-layout="closing-slide"] h2,
+.slide-frame .slide[data-layout="closing-slide"] .heading {
+  color: var(--theme-primary-text, #ffffff) !important;
+}
+
+.slide-frame .slide[data-layout="title-slide"] p,
+.slide-frame .slide[data-layout="title-slide"] .text-block,
+.slide-frame .slide[data-layout="layout-divider"] p,
+.slide-frame .slide[data-layout="closing-slide"] p,
+.slide-frame .slide[data-layout="closing-slide"] .text-block {
+  color: var(--theme-primary-text-muted, rgba(255,255,255,0.7)) !important;
+}
+
+/* TipTap content inside primary-bg slides */
+.slide-frame .slide[data-layout="title-slide"] .tiptap,
+.slide-frame .slide[data-layout="title-slide"] .tiptap p,
+.slide-frame .slide[data-layout="layout-divider"] .tiptap,
+.slide-frame .slide[data-layout="closing-slide"] .tiptap,
+.slide-frame .slide[data-layout="closing-slide"] .tiptap p {
+  color: var(--theme-primary-text-muted, rgba(255,255,255,0.7)) !important;
+}
+
+/* Labels on primary-bg slides need visibility */
+.slide-frame .slide[data-layout="title-slide"] .label,
+.slide-frame .slide[data-layout="layout-divider"] .label,
+.slide-frame .slide[data-layout="closing-slide"] .label {
+  background: rgba(255,255,255,0.15) !important;
+  color: var(--theme-primary-text, #ffffff) !important;
 }
 
 /* ── Split layout: stage gets subtle treatment ───────────────────── */
