@@ -258,7 +258,11 @@ ${templatesList}
 ## Uploaded Files
 ${files?.length ? files.map((f) => `- "${f.filename}" (${f.mimeType}) → use src: "${f.url}" in image modules`).join('\n') : '(no files uploaded)'}
 
-IMPORTANT: When the user asks to add an uploaded file to a slide, use the EXACT url from the list above as the image src. Do NOT make up URLs or use external image services.
+IMAGE RULES:
+- For uploaded files: use the EXACT url from the list above as the image src.
+- NEVER make up or guess image URLs. Never invent URLs from wikimedia, unsplash, or other sites.
+- If the user wants an image from the web, tell them to use the /search command in the chat to find and download images. The app will search the web and download the image for them.
+- If no image is available, use an empty src with a descriptive alt text as placeholder.
 
 ## Guidelines
 - ALWAYS include conversational text alongside mutations. Never respond with only mutation blocks.

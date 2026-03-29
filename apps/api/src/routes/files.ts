@@ -19,7 +19,8 @@ type AuthEnv = {
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const UPLOADS_DIR = path.resolve(__dirname, '../../uploads')
 
-const MAX_FILE_SIZE = 10 * 1024 * 1024 // 10MB
+const MAX_FILE_SIZE = 10 * 1024 * 1024 // 10MB per file
+const MAX_TOTAL_UPLOADS = 50 * 1024 * 1024 // 50MB total per deck
 
 const ALLOWED_TYPES = new Set([
   'image/png',
@@ -71,7 +72,22 @@ filesRouter.post('/:deckId/files', authMiddleware, async (c) => {
   }
 
   if (file.size > MAX_FILE_SIZE) {
-    return c.json({ error: 'File too large (max 10MB)' }, 400)
+    return c.json({ error: 'File too large (max 10MB per file)' }, 400)
+  }
+
+  // Check total uploads for this deck
+  const deckDir = path.join(UPLOADS_DIR, deckId)
+  let currentTotal = 0
+  if (fs.existsSync(deckDir)) {
+    const files = fs.readdirSync(deckDir)
+    for (const f of files) {
+      const stat = fs.statSync(path.join(deckDir, f))
+      currentTotal += stat.size
+    }
+  }
+  if (currentTotal + file.size > MAX_TOTAL_UPLOADS) {
+    const usedMB = Math.round(currentTotal / 1024 / 1024)
+    return c.json({ error: `Upload limit reached (${usedMB}MB / 50MB used). Delete some files first.` }, 400)
   }
 
   if (!ALLOWED_TYPES.has(file.type)) {
@@ -81,7 +97,6 @@ filesRouter.post('/:deckId/files', authMiddleware, async (c) => {
   const fileId = createId()
   const ext = MIME_TO_EXT[file.type] ?? ''
   const diskFilename = `${fileId}${ext}`
-  const deckDir = path.join(UPLOADS_DIR, deckId)
   const filePath = path.join(deckDir, diskFilename)
 
   // Ensure directory exists
@@ -116,6 +131,17 @@ filesRouter.post('/:deckId/files', authMiddleware, async (c) => {
 filesRouter.get('/:deckId/files', authMiddleware, async (c) => {
   const deckId = c.req.param('deckId')!
 
+  const user = c.get('user')
+  const access = await db
+    .select()
+    .from(deckAccess)
+    .where(and(eq(deckAccess.deckId, deckId), eq(deckAccess.userId, user.id)))
+    .get()
+
+  if (!access) {
+    return c.json({ error: 'Not found or no access' }, 404)
+  }
+
   const files = await db
     .select()
     .from(uploadedFiles)
@@ -147,12 +173,20 @@ filesRouter.get('/:deckId/files/:fileId', async (c) => {
     return c.json({ error: 'File not found' }, 404)
   }
 
-  if (!fs.existsSync(file.path)) {
+  // Resolve path — may be absolute or relative to UPLOADS_DIR
+  const resolvedPath = path.isAbsolute(file.path) ? file.path : path.join(UPLOADS_DIR, file.path)
+
+  if (!fs.existsSync(resolvedPath)) {
     return c.json({ error: 'File not found on disk' }, 404)
   }
 
-  const data = fs.readFileSync(file.path)
+  const data = fs.readFileSync(resolvedPath)
   c.header('Content-Type', file.mimeType)
+  // Force download for SVG to prevent script execution
+  if (file.mimeType === 'image/svg+xml') {
+    const safeName = path.basename(file.filename).replace(/[^\w.\-]/g, '_')
+    c.header('Content-Disposition', `attachment; filename="${safeName}"`)
+  }
   c.header('Cache-Control', 'public, max-age=86400')
   return c.body(data)
 })
@@ -185,8 +219,9 @@ filesRouter.delete('/:deckId/files/:fileId', authMiddleware, async (c) => {
   }
 
   // Delete from disk
-  if (fs.existsSync(file.path)) {
-    fs.unlinkSync(file.path)
+  const deletePath = path.isAbsolute(file.path) ? file.path : path.join(UPLOADS_DIR, file.path)
+  if (fs.existsSync(deletePath)) {
+    fs.unlinkSync(deletePath)
   }
 
   // Delete from DB

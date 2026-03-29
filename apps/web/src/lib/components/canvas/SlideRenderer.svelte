@@ -217,52 +217,18 @@
     position: relative;
   }
 
-  /* ── Title Slide: gradient navy to teal, white text, centered ── */
-  .slide[data-layout="title-slide"] {
-    background: linear-gradient(135deg, var(--navy) 0%, var(--teal) 100%);
-    color: white;
-    padding: clamp(1.5rem, 4vw, 3rem);
-  }
-
-  /* ── Layout Divider: gradient teal to blue, centered, white ── */
-  .slide[data-layout="layout-divider"] {
-    background: linear-gradient(135deg, var(--teal) 0%, var(--blue) 100%);
-    color: white;
-    padding: clamp(1.5rem, 4vw, 3rem);
-  }
-
-  /* ── Closing Slide: gradient navy to dark ── */
+  /* ── Title/Divider/Closing: padding only, colors from framework-preview.css ── */
+  .slide[data-layout="title-slide"],
+  .slide[data-layout="layout-divider"],
   .slide[data-layout="closing-slide"] {
-    background: linear-gradient(135deg, var(--navy) 0%, #0b1a3e 100%);
-    color: white;
     padding: clamp(1.5rem, 4vw, 3rem);
   }
 
-  /* ── Layout Split: flex row, light bg ── */
-  .slide[data-layout="layout-split"] {
-    background: white;
-    color: var(--stone);
-    padding: clamp(1rem, 2.5vw, 2rem);
-  }
-
-  /* ── Layout Content: standard body ── */
-  .slide[data-layout="layout-content"] {
-    background: white;
-    color: var(--stone);
-    padding: clamp(1.25rem, 3vw, 2.5rem);
-  }
-
-  /* ── Layout Grid: standard body ── */
-  .slide[data-layout="layout-grid"] {
-    background: white;
-    color: var(--stone);
-    padding: clamp(1.25rem, 3vw, 2.5rem);
-  }
-
-  /* ── Layout Full Dark: dark bg, light text ── */
+  /* ── Layout Split/Content/Grid: inherit from framework-preview.css ── */
+  .slide[data-layout="layout-split"],
+  .slide[data-layout="layout-content"],
+  .slide[data-layout="layout-grid"],
   .slide[data-layout="layout-full-dark"] {
-    background: #0b0e14;
-    color: #e2e8f0;
     padding: clamp(1.25rem, 3vw, 2.5rem);
   }
 

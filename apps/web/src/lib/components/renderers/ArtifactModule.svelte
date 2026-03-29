@@ -1,19 +1,37 @@
 <script lang="ts">
   let { data, editing = false } = $props<{
-    data: { src?: string; url?: string; config?: Record<string, unknown>; width?: string; height?: string; alt?: string }
+    data: {
+      src?: string
+      url?: string
+      rawSource?: string
+      config?: Record<string, unknown>
+      width?: string
+      height?: string
+      alt?: string
+    }
     editing?: boolean
   }>()
 
-  const src = $derived(data.src || data.url || '')
   const width = $derived(data.width || '100%')
   const height = $derived(data.height || '400px')
   const alt = $derived(data.alt || 'Interactive visualization')
+
+  // Build iframe src: prefer rawSource with config injected, fallback to src/url
+  let iframeSrc = $derived.by(() => {
+    if (data.rawSource) {
+      const blob = new Blob([data.rawSource], { type: 'text/html' })
+      return URL.createObjectURL(blob)
+    }
+    const src = data.src || data.url || ''
+    // Only allow http(s) and blob URLs to prevent javascript: and data: injection
+    return /^(https?:\/\/|blob:)/i.test(src) ? src : ''
+  })
 </script>
 
 <div class="artifact-module" style="width: {width};">
-  {#if src}
+  {#if iframeSrc}
     <iframe
-      {src}
+      src={iframeSrc}
       style="width: 100%; height: {height}; border: none; border-radius: 8px;"
       sandbox="allow-scripts"
       loading="lazy"
@@ -21,7 +39,7 @@
     ></iframe>
   {:else}
     <div class="artifact-placeholder">
-      <span class="artifact-icon">🧩</span>
+      <span class="artifact-icon">?</span>
       <p>No artifact source URL configured</p>
     </div>
   {/if}

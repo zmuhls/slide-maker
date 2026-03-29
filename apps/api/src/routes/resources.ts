@@ -30,6 +30,21 @@ resourcesRouter.post('/themes', authMiddleware, async (c) => {
   const themeColors = colors ?? { primary: '#3b82f6', secondary: '#6366f1', accent: '#2FB8D6', bg: '#ffffff' }
   const themeFonts = fonts ?? { heading: 'Outfit', body: 'Inter' }
 
+  // Validate color values to prevent CSS injection
+  const hexColorRegex = /^#[0-9a-fA-F]{3,8}$/
+  const fontNameRegex = /^[a-zA-Z0-9 \-]+$/
+
+  for (const [key, val] of Object.entries(themeColors)) {
+    if (val && typeof val === 'string' && !hexColorRegex.test(val)) {
+      return c.json({ error: `Invalid color value for ${key}` }, 400)
+    }
+  }
+  for (const [key, val] of Object.entries(themeFonts)) {
+    if (val && typeof val === 'string' && !fontNameRegex.test(val)) {
+      return c.json({ error: `Invalid font name for ${key}` }, 400)
+    }
+  }
+
   const css = `
 :root {
   --slide-bg: ${themeColors.bg || '#ffffff'};

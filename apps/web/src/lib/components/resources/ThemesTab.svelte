@@ -1,15 +1,9 @@
 <script lang="ts">
   import { get } from 'svelte/store'
   import { currentDeck } from '$lib/stores/deck'
+  import { themesStore, themesLoaded, ensureThemesLoaded, type ThemeData } from '$lib/stores/themes'
 
-  interface Theme {
-    id: string
-    name: string
-    css: string
-    fonts: { heading?: string; body?: string } | unknown
-    colors: { primary?: string; secondary?: string; accent?: string; bg?: string } | unknown
-    builtIn: boolean
-  }
+  type Theme = ThemeData
 
   const API_URL = import.meta.env.PUBLIC_API_URL ?? 'http://localhost:3001'
 
@@ -17,10 +11,11 @@
     'Inter', 'Outfit', 'Roboto', 'Open Sans', 'Lato', 'Montserrat',
     'Poppins', 'Raleway', 'Nunito', 'Playfair Display', 'Merriweather',
     'Source Sans Pro', 'PT Sans', 'Work Sans', 'DM Sans', 'Space Grotesk',
+    'Georgia',
   ]
 
-  let themes = $state<Theme[]>([])
-  let loading = $state(true)
+  let themes = $derived($themesStore)
+  let loading = $derived(!$themesLoaded)
   let error = $state<string | null>(null)
   let applying = $state<string | null>(null)
   let deckThemeId = $state<string | null>(null)
@@ -43,20 +38,7 @@
     return unsub
   })
 
-  async function fetchThemes() {
-    try {
-      const res = await fetch(`${API_URL}/api/themes`, { credentials: 'include' })
-      const data = await res.json()
-      themes = data.themes ?? []
-      loading = false
-    } catch (err) {
-      console.error('Failed to fetch themes:', err)
-      error = 'Failed to load themes'
-      loading = false
-    }
-  }
-
-  $effect(() => { fetchThemes() })
+  $effect(() => { ensureThemesLoaded() })
 
   async function applyTheme(themeId: string) {
     const deck = get(currentDeck)
@@ -100,7 +82,7 @@
       if (res.ok) {
         const data = await res.json()
         if (data.theme) {
-          themes = [...themes, data.theme]
+          themesStore.update((t) => [...t, data.theme])
         }
         showCreateForm = false
         formName = ''

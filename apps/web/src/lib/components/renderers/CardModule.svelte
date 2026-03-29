@@ -1,5 +1,6 @@
 <script lang="ts">
   import RichTextEditor from './RichTextEditor.svelte'
+  import DOMPurify from 'dompurify'
   import type { Editor } from '@tiptap/core'
 
   let { data = {}, editable = false, onchange, oneditorready }: {
@@ -9,7 +10,7 @@
     oneditorready?: (editor: Editor) => void;
   } = $props()
 
-  let content = $derived(typeof data.content === 'string' ? data.content : '')
+  let content = $derived(DOMPurify.sanitize(typeof data.content === 'string' ? data.content : ''))
   let variant = $derived(typeof data.variant === 'string' ? data.variant : 'default')
 
   function handleRichTextChange(html: string) {

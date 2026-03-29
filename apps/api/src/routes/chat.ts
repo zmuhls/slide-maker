@@ -6,6 +6,7 @@ import type { Session, User } from 'lucia'
 import { db } from '../db/index.js'
 import { decks, deckAccess, slides, contentBlocks, chatMessages, templates, themes, uploadedFiles } from '../db/schema.js'
 import { authMiddleware } from '../middleware/auth.js'
+import { chatRateLimit } from '../middleware/rate-limit.js'
 import { getModelStream } from '../providers/index.js'
 import { buildSystemPrompt } from '../prompts/system.js'
 
@@ -21,7 +22,7 @@ const chat = new Hono<AuthEnv>()
 chat.use('*', authMiddleware)
 
 // POST / — Stream chat response via SSE
-chat.post('/', async (c) => {
+chat.post('/', chatRateLimit, async (c) => {
   const user = c.get('user')
   const body = await c.req.json()
   const { message, deckId, activeSlideId, modelId, history } = body
@@ -130,12 +131,17 @@ chat.post('/', async (c) => {
   })
 
   // Prepare messages for the LLM
-  const chatHistory: { role: 'user' | 'assistant'; content: string }[] = Array.isArray(history)
-    ? history.map((h: { role: string; content: string }) => ({
-        role: h.role as 'user' | 'assistant',
-        content: h.content,
-      }))
-    : []
+  // Reconstruct chat history server-side from DB (never trust client-supplied history)
+  const dbMessages = await db
+    .select()
+    .from(chatMessages)
+    .where(eq(chatMessages.deckId, deckId))
+    .orderBy(chatMessages.createdAt)
+
+  const chatHistory: { role: 'user' | 'assistant'; content: string }[] = dbMessages.map((m) => ({
+    role: m.role as 'user' | 'assistant',
+    content: m.content,
+  }))
 
   chatHistory.push({ role: 'user', content: message })
 
@@ -183,7 +189,8 @@ chat.post('/', async (c) => {
         createdAt: new Date(),
       })
     } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : 'Unknown streaming error'
+      console.error('AI streaming error:', err)
+      const errorMessage = 'An error occurred while generating the response'
       await stream.writeSSE({
         data: JSON.stringify({ type: 'error', message: errorMessage }),
       })

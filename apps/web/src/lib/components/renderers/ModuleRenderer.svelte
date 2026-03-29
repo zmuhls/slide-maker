@@ -88,10 +88,10 @@
       const newH = Math.max(30, startH + (ev.clientY - startY))
       customW = newW
       customH = newH
-      // Scale content to fit the new size
+      // Scale content proportionally — both up and down
       const scaleX = newW / Math.max(naturalW, 1)
       const scaleY = newH / Math.max(naturalH, 1)
-      scaleFactor = Math.min(scaleX, scaleY, 1) // Never scale up, only down
+      scaleFactor = Math.min(scaleX, scaleY)
     }
     function onUp() {
       resizing = false
@@ -148,7 +148,7 @@
     <span class="step-badge">Step {module.stepOrder + 1}</span>
   {/if}
 
-  <div class="module-content" style:transform={scaleFactor < 1 ? `scale(${scaleFactor})` : undefined} style:transform-origin={scaleFactor < 1 ? 'top center' : undefined}>
+  <div class="module-content" style:transform={scaleFactor !== 1 ? `scale(${scaleFactor})` : undefined} style:transform-origin={scaleFactor !== 1 ? 'top center' : undefined}>
     {#if Renderer}
       <Renderer data={module.data} {editable} {onchange} oneditorready={module.type === 'text' ? oneditorready : undefined} />
     {:else}

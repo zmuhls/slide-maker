@@ -1,4 +1,6 @@
 <script lang="ts">
+  import DOMPurify from 'dompurify'
+
   let { data = {}, editable = false, onchange }: {
     data: Record<string, unknown>;
     editable: boolean;
@@ -25,7 +27,7 @@
         <h4>{panel.title}</h4>
       {/if}
       <div class="panel-content">
-        {@html panel.content}
+        {@html DOMPurify.sanitize(panel.content)}
       </div>
     </div>
   {/each}

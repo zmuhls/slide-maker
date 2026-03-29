@@ -1,3 +1,4 @@
+import sanitizeHtml from 'sanitize-html'
 import { NAVIGATION_JS } from './navigation.js'
 import { CAROUSEL_JS } from './carousel.js'
 
@@ -8,6 +9,22 @@ function esc(str: string): string {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;')
+}
+
+const SAFE_HTML_OPTIONS: sanitizeHtml.IOptions = {
+  allowedTags: sanitizeHtml.defaults.allowedTags.concat(['h1', 'h2', 'h3', 'h4', 'figure', 'figcaption', 'img', 'pre', 'code', 'span', 'br']),
+  allowedAttributes: {
+    ...sanitizeHtml.defaults.allowedAttributes,
+    img: ['src', 'alt', 'loading'],
+    a: ['href', 'target', 'rel'],
+    code: ['class'],
+    span: ['class'],
+  },
+  allowedSchemes: ['http', 'https', 'mailto'],
+}
+
+function sanitize(html: string): string {
+  return sanitizeHtml(html, SAFE_HTML_OPTIONS)
 }
 
 // ── Types ───────────────────────────────────────────────────────────
@@ -67,7 +84,7 @@ function renderModule(mod: Module, files?: ExportFile[]): string {
     case 'text': {
       const content = String(d.html || d.content || d.text || '')
       // If data.html exists, trust it as pre-rendered HTML; otherwise escape
-      const body = d.html ? content : esc(content)
+      const body = d.html ? sanitize(content) : esc(content)
       const cls = mod.stepOrder != null ? 'text-body step-hidden' : 'text-body'
       const ds = mod.stepOrder != null ? ` data-step="${mod.stepOrder}"` : ''
       return `<div class="${cls}"${ds}>${body}</div>`
@@ -177,7 +194,8 @@ function renderModule(mod: Module, files?: ExportFile[]): string {
     }
 
     case 'artifact': {
-      const src = String(d.src || d.url || '')
+      const rawSrc = String(d.src || d.url || '')
+      const src = /^https?:\/\//i.test(rawSrc) ? rawSrc : ''
       const width = String(d.width || '100%')
       const height = String(d.height || '400px')
       const alt = esc(String(d.alt || 'Interactive visualization'))
@@ -243,7 +261,7 @@ function renderSlide(slide: Slide, index: number, files?: ExportFile[]): string 
 export function renderDeckHtml(
   deckName: string,
   slideList: Slide[],
-  _theme: unknown,
+  theme: any,
   files?: ExportFile[],
 ): string {
   const sorted = [...slideList].sort((a, b) => a.order - b.order)
@@ -251,14 +269,73 @@ export function renderDeckHtml(
   const slideCount = sorted.length
   const title = esc(deckName)
 
+  // Generate theme CSS overrides
+  const colors = theme?.colors ?? {}
+  const fonts = theme?.fonts ?? {}
+  const bg = colors.bg ?? '#111827'
+  const primary = colors.primary ?? '#1e3a5f'
+  const secondary = colors.secondary ?? '#3b82f6'
+  const accent = colors.accent ?? '#64b5f6'
+  const headingFont = fonts.heading ?? 'Outfit'
+  const bodyFont = fonts.body ?? 'Inter'
+
+  // Detect dark/light
+  function lum(hex: string): number {
+    if (!hex || hex.length < 7) return 0
+    const r = parseInt(hex.slice(1, 3), 16)
+    const g = parseInt(hex.slice(3, 5), 16)
+    const b = parseInt(hex.slice(5, 7), 16)
+    return r * 0.299 + g * 0.587 + b * 0.114
+  }
+  const isDarkBg = lum(bg) < 128
+  const isDarkPrimary = lum(primary) < 128
+  const text = isDarkBg ? '#f0f0f0' : '#1a1a2e'
+  const textMuted = isDarkBg ? 'rgba(240,240,240,0.65)' : 'rgba(26,26,46,0.65)'
+  const primaryText = isDarkPrimary ? '#ffffff' : '#1a1a2e'
+  const cardBg = isDarkBg ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)'
+  const border = isDarkBg ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.08)'
+
+  const themeCss = `
+    :root {
+      --theme-bg: ${bg};
+      --theme-text: ${text};
+      --theme-text-muted: ${textMuted};
+      --theme-primary: ${primary};
+      --theme-primary-text: ${primaryText};
+      --theme-secondary: ${secondary};
+      --theme-accent: ${accent};
+      --theme-heading-font: '${headingFont}';
+      --theme-body-font: '${bodyFont}';
+      --theme-card-bg: ${cardBg};
+      --theme-border: ${border};
+    }
+    html, body { background: ${bg}; color: ${text}; font-family: '${bodyFont}', sans-serif; }
+    h1, h2, h3, h4 { font-family: '${headingFont}', sans-serif; }
+    .title-slide, .layout-divider, .closing-slide { background: ${primary}; color: ${primaryText}; }
+    .card { background: ${cardBg}; border-color: ${border}; }
+    .card-cyan { border-left-color: ${accent}; }
+    .label-cyan { background: ${accent}1a; color: ${accent}; }
+    .label-blue { background: ${secondary}1a; color: ${secondary}; }
+    .tip-box { background: ${accent}0d; border-color: ${accent}1f; }
+    .tip-box strong { color: ${accent}; }
+    .stream-list li { border-left-color: ${accent}; background: ${cardBg}; color: ${textMuted}; }
+    .text-body { color: ${textMuted}; }
+    .comparison-panel { background: ${cardBg}; border-color: ${border}; }
+    .flow-node { background: ${cardBg}; border-color: ${border}; }
+  `
+
+  // Include fonts from theme
+  const fontUrl = `https://fonts.googleapis.com/css2?family=${encodeURIComponent(bodyFont)}:wght@400;500;600;700&family=${encodeURIComponent(headingFont)}:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap`
+
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>${title}</title>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="${fontUrl}" rel="stylesheet">
   <link rel="stylesheet" href="css/styles.css">
+  <style>${themeCss}</style>
 </head>
 <body>
   <a href="#deck" class="skip-link">Skip to slides</a>

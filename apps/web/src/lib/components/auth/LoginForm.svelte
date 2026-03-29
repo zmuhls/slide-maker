@@ -62,7 +62,7 @@
     </button>
 
     <p class="form-footer">
-      Don't have an account? <a href="/register">Register</a>
+      Don't have an account? <a href="{base}/register">Register</a>
     </p>
   </div>
 </form>

@@ -89,4 +89,16 @@ export const api = {
     request<{ files: any[] }>(`/api/decks/${deckId}/files`),
   deleteFile: (deckId: string, fileId: string) =>
     request(`/api/decks/${deckId}/files/${fileId}`, { method: 'DELETE' }),
+
+  // Search
+  webSearch: (query: string) =>
+    request<{ answer?: string; results: any[]; images: string[] }>('/api/search', {
+      method: 'POST',
+      body: JSON.stringify({ query }),
+    }),
+  downloadImage: (url: string, deckId: string, filename?: string) =>
+    request<{ file: { id: string; url: string; filename: string } }>('/api/search/download-image', {
+      method: 'POST',
+      body: JSON.stringify({ url, deckId, filename }),
+    }),
 }

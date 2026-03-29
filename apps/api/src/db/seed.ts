@@ -55,131 +55,312 @@ async function seedTemplates() {
   console.log(`Seeded ${count} templates.`)
 }
 
-async function seedThemes() {
-  const defaultTheme = {
-    id: 'cuny-ai-lab-default',
-    name: 'CUNY AI Lab',
-    css: `
+function generateThemeCss(colors: { primary: string; secondary: string; accent: string; bg: string }, fonts: { heading: string; body: string }): string {
+  return `
 :root {
-  --slide-bg: #ffffff;
+  --slide-bg: ${colors.bg};
   --slide-text: #333333;
-  --slide-heading-color: #1D3A83;
-  --slide-accent: #3B73E6;
-  --slide-accent-secondary: #2FB8D6;
-  --slide-font-heading: 'Outfit', system-ui, sans-serif;
-  --slide-font-body: 'Inter', system-ui, sans-serif;
+  --slide-heading-color: ${colors.primary};
+  --slide-accent: ${colors.secondary};
+  --slide-accent-secondary: ${colors.accent};
+  --slide-font-heading: '${fonts.heading}', system-ui, sans-serif;
+  --slide-font-body: '${fonts.body}', system-ui, sans-serif;
 }
-    `,
-    fonts: { heading: 'Outfit', body: 'Inter' },
-    colors: { primary: '#1D3A83', secondary: '#3B73E6', accent: '#2FB8D6', bg: '#ffffff' },
-    builtIn: true,
-    createdBy: null,
+  `
+}
+
+async function seedThemes() {
+  // Clear existing built-in themes before re-seeding
+  await db.delete(themes).where(eq(themes.builtIn, true))
+  console.log('Cleared existing built-in themes.')
+
+  const themeList = [
+    {
+      id: 'cuny-ai-lab-default',
+      name: 'CUNY AI Lab',
+      colors: { primary: '#1D3A83', secondary: '#3B73E6', accent: '#2FB8D6', bg: '#ffffff' },
+      fonts: { heading: 'Outfit', body: 'Inter' },
+    },
+    {
+      id: 'cuny-dark',
+      name: 'CUNY Dark',
+      colors: { primary: '#1e3a5f', secondary: '#3b82f6', accent: '#64b5f6', bg: '#111827' },
+      fonts: { heading: 'Outfit', body: 'Inter' },
+    },
+    {
+      id: 'cuny-light',
+      name: 'CUNY Light',
+      colors: { primary: '#1D3A83', secondary: '#3B73E6', accent: '#2FB8D6', bg: '#ffffff' },
+      fonts: { heading: 'Outfit', body: 'Inter' },
+    },
+    {
+      id: 'warm-academic',
+      name: 'Warm Academic',
+      colors: { primary: '#7c3aed', secondary: '#a78bfa', accent: '#f59e0b', bg: '#faf5ef' },
+      fonts: { heading: 'Georgia', body: 'Inter' },
+    },
+    {
+      id: 'slate-minimal',
+      name: 'Slate Minimal',
+      colors: { primary: '#334155', secondary: '#64748b', accent: '#0ea5e9', bg: '#f8fafc' },
+      fonts: { heading: 'Inter', body: 'Inter' },
+    },
+    {
+      id: 'midnight',
+      name: 'Midnight',
+      colors: { primary: '#312e81', secondary: '#6366f1', accent: '#a78bfa', bg: '#0f0e17' },
+      fonts: { heading: 'Outfit', body: 'Inter' },
+    },
+    {
+      id: 'forest',
+      name: 'Forest',
+      colors: { primary: '#065f46', secondary: '#059669', accent: '#34d399', bg: '#f0fdf4' },
+      fonts: { heading: 'Outfit', body: 'Inter' },
+    },
+  ]
+
+  for (const t of themeList) {
+    await db.insert(themes).values({
+      id: t.id,
+      name: t.name,
+      css: generateThemeCss(t.colors, t.fonts),
+      fonts: t.fonts,
+      colors: t.colors,
+      builtIn: true,
+      createdBy: null,
+    }).onConflictDoNothing()
   }
 
-  await db.insert(themes).values(defaultTheme).onConflictDoNothing()
-  console.log('Seeded default theme: CUNY AI Lab')
+  console.log(`Seeded ${themeList.length} themes.`)
 }
 
 async function seedArtifacts() {
   // Clear existing built-in artifacts before re-seeding
   await db.delete(artifacts).where(eq(artifacts.builtIn, true))
 
-  const barChartSource = [
-    '<!DOCTYPE html><html><head><style>',
-    'body{margin:0;font-family:Inter,sans-serif;background:#0d1117;color:#e2e8f0;display:flex;align-items:flex-end;justify-content:center;height:100vh;padding:20px 40px 40px}',
-    '.chart{display:flex;align-items:flex-end;gap:12px;height:80%;width:100%}',
-    '.bar-group{flex:1;display:flex;flex-direction:column;align-items:center;height:100%;justify-content:flex-end}',
-    '.bar{width:100%;border-radius:6px 6px 0 0;background:linear-gradient(180deg,#3b82f6,#1e3a5f);transition:all 0.3s;cursor:pointer;min-height:4px;position:relative}',
-    '.bar:hover{background:linear-gradient(180deg,#60a5fa,#3b82f6);transform:scaleX(1.05)}',
-    '.bar:hover .tooltip{opacity:1}',
-    '.tooltip{position:absolute;top:-28px;left:50%;transform:translateX(-50%);background:#1e293b;padding:2px 8px;border-radius:4px;font-size:12px;white-space:nowrap;opacity:0;transition:opacity 0.2s}',
-    '.label{margin-top:8px;font-size:12px;color:#94a3b8;text-align:center}',
-    '</style></head><body>',
-    '<div class="chart" id="chart"></div>',
-    '<script>',
-    'const data=[{label:"Mon",value:42},{label:"Tue",value:78},{label:"Wed",value:55},{label:"Thu",value:91},{label:"Fri",value:63},{label:"Sat",value:35},{label:"Sun",value:48}];',
-    'const max=Math.max(...data.map(d=>d.value));',
-    'const chart=document.getElementById("chart");',
-    'data.forEach(d=>{const g=document.createElement("div");g.className="bar-group";',
-    'const b=document.createElement("div");b.className="bar";b.style.height=(d.value/max*100)+"%";',
-    'const t=document.createElement("span");t.className="tooltip";t.textContent=d.value;',
-    'b.appendChild(t);g.appendChild(b);',
-    'const l=document.createElement("div");l.className="label";l.textContent=d.label;',
-    'g.appendChild(l);chart.appendChild(g)});',
-    '<\/script></body></html>',
-  ].join('\n')
+  // ── Bar Chart ─────────────────────────────────────────────────────
+  const barChartSource = `<!DOCTYPE html><html><head><style>
+body{margin:0;font-family:Inter,sans-serif;background:#0d1117;color:#e2e8f0;display:flex;align-items:flex-end;justify-content:center;height:100vh;padding:20px 40px 40px}
+.chart{display:flex;align-items:flex-end;gap:12px;height:80%;width:100%}
+.bar-group{flex:1;display:flex;flex-direction:column;align-items:center;height:100%;justify-content:flex-end}
+.bar{width:100%;border-radius:6px 6px 0 0;background:linear-gradient(180deg,#3b82f6,#1e3a5f);transition:all 0.3s;cursor:pointer;min-height:4px;position:relative}
+.bar:hover{background:linear-gradient(180deg,#60a5fa,#3b82f6);transform:scaleX(1.05)}
+.bar:hover .tooltip{opacity:1}
+.tooltip{position:absolute;top:-28px;left:50%;transform:translateX(-50%);background:#1e293b;padding:2px 8px;border-radius:4px;font-size:12px;white-space:nowrap;opacity:0;transition:opacity 0.2s}
+.label{margin-top:8px;font-size:12px;color:#94a3b8;text-align:center}
+</style></head><body>
+<div class="chart" id="chart"></div>
+<script>
+const el=document.currentScript?.parentElement||document.body;
+const cfgStr=el.getAttribute('data-config');
+let data=[{label:"Mon",value:42},{label:"Tue",value:78},{label:"Wed",value:55},{label:"Thu",value:91},{label:"Fri",value:63},{label:"Sat",value:35},{label:"Sun",value:48}];
+try{if(cfgStr){const c=JSON.parse(cfgStr);if(c.data)data=c.data;}}catch(e){}
+const max=Math.max(...data.map(d=>d.value));
+const chart=document.getElementById("chart");
+data.forEach(d=>{const g=document.createElement("div");g.className="bar-group";
+const b=document.createElement("div");b.className="bar";b.style.height=(d.value/max*100)+"%";
+const t=document.createElement("span");t.className="tooltip";t.textContent=d.value;
+b.appendChild(t);g.appendChild(b);
+const l=document.createElement("div");l.className="label";l.textContent=d.label;
+g.appendChild(l);chart.appendChild(g)});
+<\/script></body></html>`
 
-  const flowDiagramSource = [
-    '<!DOCTYPE html><html><head><style>',
-    'body{margin:0;font-family:Inter,sans-serif;background:#0d1117;display:flex;align-items:center;justify-content:center;height:100vh}',
-    'svg text{fill:#e2e8f0;font-size:13px;text-anchor:middle;dominant-baseline:central;font-family:Inter,sans-serif}',
-    '.node rect{fill:#1e293b;stroke:#3b82f6;stroke-width:2;rx:10;ry:10;transition:all 0.3s}',
-    '.node:hover rect{fill:#1e3a5f;stroke:#60a5fa;filter:drop-shadow(0 0 8px rgba(59,130,246,0.4))}',
-    '.arrow{stroke:#475569;stroke-width:2;marker-end:url(#arrowhead)}',
-    '@keyframes dash{to{stroke-dashoffset:-20}}',
-    '.arrow{stroke-dasharray:8 4;animation:dash 1s linear infinite}',
-    '</style></head><body>',
-    '<svg viewBox="0 0 700 160" width="700" height="160">',
-    '<defs><marker id="arrowhead" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#475569"/></marker></defs>',
-    '<g class="node" transform="translate(10,50)"><rect width="120" height="60"/><text x="60" y="30">Input</text></g>',
-    '<line class="arrow" x1="130" y1="80" x2="180" y2="80"/>',
-    '<g class="node" transform="translate(180,50)"><rect width="120" height="60"/><text x="60" y="30">Process</text></g>',
-    '<line class="arrow" x1="300" y1="80" x2="350" y2="80"/>',
-    '<g class="node" transform="translate(350,50)"><rect width="120" height="60"/><text x="60" y="30">Validate</text></g>',
-    '<line class="arrow" x1="470" y1="80" x2="520" y2="80"/>',
-    '<g class="node" transform="translate(520,50)"><rect width="120" height="60"/><text x="60" y="30">Output</text></g>',
-    '</svg></body></html>',
-  ].join('\n')
+  // ── Pie Chart ─────────────────────────────────────────────────────
+  const pieChartSource = `<!DOCTYPE html><html><head><style>
+body{margin:0;font-family:Inter,sans-serif;background:#0d1117;color:#e2e8f0;display:flex;align-items:center;justify-content:center;height:100vh;gap:40px}
+svg{filter:drop-shadow(0 4px 12px rgba(0,0,0,0.3))}
+.legend{display:flex;flex-direction:column;gap:8px}
+.legend-item{display:flex;align-items:center;gap:8px;font-size:13px}
+.legend-dot{width:12px;height:12px;border-radius:50%}
+</style></head><body>
+<svg id="pie" width="220" height="220" viewBox="0 0 220 220"></svg>
+<div class="legend" id="legend"></div>
+<script>
+const el=document.currentScript?.parentElement||document.body;
+const cfgStr=el.getAttribute('data-config');
+let segments=[{label:"Research",value:35,color:"#3b82f6"},{label:"Teaching",value:25,color:"#6366f1"},{label:"Admin",value:20,color:"#f59e0b"},{label:"Service",value:20,color:"#10b981"}];
+try{if(cfgStr){const c=JSON.parse(cfgStr);if(c.segments)segments=c.segments;}}catch(e){}
+const total=segments.reduce((s,d)=>s+d.value,0);
+const svg=document.getElementById("pie");
+const legend=document.getElementById("legend");
+const cx=110,cy=110,r=100;
+let cumAngle=-Math.PI/2;
+segments.forEach(seg=>{
+  const angle=(seg.value/total)*2*Math.PI;
+  const x1=cx+r*Math.cos(cumAngle),y1=cy+r*Math.sin(cumAngle);
+  cumAngle+=angle;
+  const x2=cx+r*Math.cos(cumAngle),y2=cy+r*Math.sin(cumAngle);
+  const large=angle>Math.PI?1:0;
+  const path=document.createElementNS("http://www.w3.org/2000/svg","path");
+  path.setAttribute("d","M "+cx+" "+cy+" L "+x1+" "+y1+" A "+r+" "+r+" 0 "+large+" 1 "+x2+" "+y2+" Z");
+  path.setAttribute("fill",seg.color);path.setAttribute("stroke","#0d1117");path.setAttribute("stroke-width","2");
+  path.style.transition="transform 0.2s";path.style.transformOrigin="center";
+  path.addEventListener("mouseenter",()=>path.style.transform="scale(1.04)");
+  path.addEventListener("mouseleave",()=>path.style.transform="scale(1)");
+  svg.appendChild(path);
+  const item=document.createElement("div");item.className="legend-item";
+  item.innerHTML='<span class="legend-dot" style="background:'+seg.color+'"></span>'+seg.label+" ("+Math.round(seg.value/total*100)+"%)";
+  legend.appendChild(item);
+});
+<\/script></body></html>`
 
-  const dataTableSource = [
-    '<!DOCTYPE html><html><head><style>',
-    'body{margin:0;font-family:Inter,sans-serif;background:#0d1117;color:#e2e8f0;padding:16px}',
-    'table{width:100%;border-collapse:collapse;font-size:13px}',
-    'th{background:#1e293b;padding:10px 14px;text-align:left;cursor:pointer;user-select:none;border-bottom:2px solid #334155;font-weight:600;transition:background 0.2s}',
-    'th:hover{background:#334155}',
-    'td{padding:8px 14px;border-bottom:1px solid #1e293b}',
-    'tr:nth-child(even){background:rgba(255,255,255,0.02)}',
-    'tr:hover{background:rgba(59,130,246,0.08)}',
-    '</style></head><body>',
-    '<table><thead><tr><th>Name</th><th>Category</th><th>Score</th><th>Status</th></tr></thead>',
-    '<tbody>',
-    '<tr><td>GPT-4o</td><td>Language</td><td>94</td><td>Active</td></tr>',
-    '<tr><td>Claude 3.5</td><td>Language</td><td>96</td><td>Active</td></tr>',
-    '<tr><td>Gemini Pro</td><td>Multimodal</td><td>89</td><td>Active</td></tr>',
-    '<tr><td>Llama 3</td><td>Open Source</td><td>85</td><td>Active</td></tr>',
-    '<tr><td>Mistral Large</td><td>Language</td><td>88</td><td>Active</td></tr>',
-    '</tbody></table>',
-    '</body></html>',
-  ].join('\n')
+  // ── Timeline ──────────────────────────────────────────────────────
+  const timelineSource = `<!DOCTYPE html><html><head><style>
+body{margin:0;font-family:Inter,sans-serif;background:#0d1117;color:#e2e8f0;display:flex;align-items:center;justify-content:center;height:100vh;padding:40px}
+.timeline{position:relative;width:100%;padding:20px 0}
+.timeline-line{position:absolute;top:50%;left:0;right:0;height:2px;background:#334155}
+.timeline-items{display:flex;justify-content:space-between;position:relative}
+.timeline-item{display:flex;flex-direction:column;align-items:center;gap:8px;flex:1;position:relative}
+.timeline-dot{width:16px;height:16px;border-radius:50%;background:#3b82f6;border:3px solid #0d1117;z-index:1;transition:transform 0.2s}
+.timeline-item:hover .timeline-dot{transform:scale(1.3)}
+.timeline-label{font-size:11px;color:#94a3b8;font-weight:600;text-transform:uppercase;letter-spacing:0.05em}
+.timeline-desc{font-size:12px;color:#cbd5e1;text-align:center;max-width:120px;line-height:1.4}
+</style></head><body>
+<div class="timeline">
+<div class="timeline-line"></div>
+<div class="timeline-items" id="items"></div>
+</div>
+<script>
+const el=document.currentScript?.parentElement||document.body;
+const cfgStr=el.getAttribute('data-config');
+let events=[{label:"Q1 2024",desc:"Project kickoff and planning"},{label:"Q2 2024",desc:"Research and data collection"},{label:"Q3 2024",desc:"Model development"},{label:"Q4 2024",desc:"Testing and validation"},{label:"Q1 2025",desc:"Deployment and launch"}];
+try{if(cfgStr){const c=JSON.parse(cfgStr);if(c.events)events=c.events;}}catch(e){}
+const container=document.getElementById("items");
+events.forEach((ev,i)=>{
+  const item=document.createElement("div");item.className="timeline-item";
+  const colors=["#3b82f6","#6366f1","#8b5cf6","#a78bfa","#c4b5fd"];
+  item.innerHTML='<div class="timeline-label">'+ev.label+'</div><div class="timeline-dot" style="background:'+colors[i%colors.length]+'"></div><div class="timeline-desc">'+ev.desc+'</div>';
+  container.appendChild(item);
+});
+<\/script></body></html>`
+
+  // ── Choropleth Map (US states) ────────────────────────────────────
+  const choroplethSource = `<!DOCTYPE html><html><head><style>
+body{margin:0;font-family:Inter,sans-serif;background:#0d1117;color:#e2e8f0;display:flex;align-items:center;justify-content:center;height:100vh;padding:20px}
+.map-container{position:relative;width:100%;max-width:700px}
+svg{width:100%;height:auto}
+.state{stroke:#1e293b;stroke-width:0.5;transition:opacity 0.2s;cursor:pointer}
+.state:hover{opacity:0.8;stroke:#f0f0f0;stroke-width:1.5}
+.tooltip{position:absolute;background:#1e293b;padding:6px 12px;border-radius:6px;font-size:12px;pointer-events:none;opacity:0;transition:opacity 0.2s;white-space:nowrap;z-index:10}
+.legend-bar{display:flex;align-items:center;gap:8px;margin-top:12px;justify-content:center}
+.legend-gradient{width:200px;height:10px;border-radius:5px}
+.legend-label{font-size:11px;color:#94a3b8}
+</style></head><body>
+<div class="map-container">
+<svg id="map" viewBox="0 0 960 600"></svg>
+<div id="tooltip" class="tooltip"></div>
+<div class="legend-bar"><span class="legend-label">Low</span><div class="legend-gradient" style="background:linear-gradient(to right,#1e3a5f,#3b82f6,#60a5fa)"></div><span class="legend-label">High</span></div>
+</div>
+<script>
+const el=document.currentScript?.parentElement||document.body;
+const cfgStr=el.getAttribute('data-config');
+let stateData={CA:85,TX:72,NY:90,FL:68,IL:55,PA:60,OH:45,GA:62,NC:58,MI:40,NJ:75,VA:65,WA:80,AZ:50,MA:88,TN:42,IN:38,MO:35,MD:70,WI:44};
+try{if(cfgStr){const c=JSON.parse(cfgStr);if(c.stateData)stateData=c.stateData;}}catch(e){}
+const states={CA:"M 90 340 L 70 280 L 55 210 L 80 200 L 100 250 L 130 320 L 120 380 L 90 400 Z",TX:"M 340 400 L 380 350 L 440 340 L 500 360 L 510 420 L 480 470 L 420 480 L 350 460 Z",NY:"M 780 140 L 810 120 L 840 130 L 830 170 L 800 190 L 770 180 Z",FL:"M 680 430 L 720 420 L 750 450 L 740 500 L 700 520 L 670 480 Z",IL:"M 560 220 L 580 200 L 590 250 L 580 300 L 560 290 Z",PA:"M 740 180 L 790 170 L 800 200 L 760 210 Z",OH:"M 650 200 L 680 190 L 690 230 L 660 240 Z",GA:"M 660 370 L 700 360 L 710 410 L 680 420 Z",NC:"M 700 320 L 780 300 L 790 330 L 710 340 Z",MI:"M 580 140 L 620 130 L 640 160 L 610 180 L 580 170 Z",NJ:"M 800 200 L 820 195 L 815 220 L 795 215 Z",VA:"M 700 270 L 770 250 L 780 280 L 710 300 Z",WA:"M 90 60 L 150 50 L 160 100 L 100 110 Z",AZ:"M 150 340 L 210 320 L 230 380 L 180 400 Z",MA:"M 830 140 L 860 135 L 855 155 L 825 160 Z",TN:"M 580 310 L 670 300 L 675 325 L 585 335 Z",IN:"M 590 230 L 620 220 L 625 270 L 595 280 Z",MO:"M 490 270 L 540 260 L 550 310 L 500 320 Z",MD:"M 760 240 L 800 235 L 795 255 L 755 260 Z",WI:"M 530 130 L 570 120 L 580 170 L 540 180 Z"};
+const vals=Object.values(stateData);
+const min=Math.min(...vals),max=Math.max(...vals);
+const svg=document.getElementById("map");
+const tooltip=document.getElementById("tooltip");
+function getColor(v){const t=(v-min)/(max-min||1);const r=Math.round(30+t*66);const g=Math.round(58+t*107);const b=Math.round(95+t*155);return "rgb("+r+","+g+","+b+")";}
+Object.entries(states).forEach(([abbr,d])=>{
+  const path=document.createElementNS("http://www.w3.org/2000/svg","path");
+  path.setAttribute("d",d);path.setAttribute("class","state");
+  const val=stateData[abbr];
+  path.setAttribute("fill",val!=null?getColor(val):"#1e293b");
+  path.addEventListener("mouseenter",(e)=>{tooltip.textContent=abbr+": "+(val!=null?val:"N/A");tooltip.style.opacity="1";});
+  path.addEventListener("mousemove",(e)=>{const r=e.currentTarget.closest(".map-container").getBoundingClientRect();tooltip.style.left=(e.clientX-r.left+10)+"px";tooltip.style.top=(e.clientY-r.top-30)+"px";});
+  path.addEventListener("mouseleave",()=>{tooltip.style.opacity="0";});
+  svg.appendChild(path);
+});
+<\/script></body></html>`
 
   const starterArtifacts = [
     {
       id: 'artifact-bar-chart',
       name: 'Interactive Bar Chart',
-      description: 'A responsive bar chart with hover tooltips. Edit the data array to customize values and labels.',
+      description: 'A responsive bar chart with hover tooltips. Configure labels and values via the data config.',
       type: 'chart' as const,
       source: barChartSource,
-      config: {},
+      config: {
+        data: {
+          type: 'array',
+          label: 'Data Points',
+          itemShape: { label: 'string', value: 'number' },
+          default: [
+            { label: 'Mon', value: 42 },
+            { label: 'Tue', value: 78 },
+            { label: 'Wed', value: 55 },
+            { label: 'Thu', value: 91 },
+            { label: 'Fri', value: 63 },
+            { label: 'Sat', value: 35 },
+            { label: 'Sun', value: 48 },
+          ],
+        },
+      },
       builtIn: true,
       createdBy: null,
     },
     {
-      id: 'artifact-flow-diagram',
-      name: 'Process Flow Diagram',
-      description: 'An animated SVG flow diagram showing a multi-step process. Nodes pulse on hover.',
+      id: 'artifact-pie-chart',
+      name: 'Pie Chart',
+      description: 'A colorful pie chart with hover effects and legend. Configure segments via config.',
+      type: 'chart' as const,
+      source: pieChartSource,
+      config: {
+        segments: {
+          type: 'array',
+          label: 'Segments',
+          itemShape: { label: 'string', value: 'number', color: 'string' },
+          default: [
+            { label: 'Research', value: 35, color: '#3b82f6' },
+            { label: 'Teaching', value: 25, color: '#6366f1' },
+            { label: 'Admin', value: 20, color: '#f59e0b' },
+            { label: 'Service', value: 20, color: '#10b981' },
+          ],
+        },
+      },
+      builtIn: true,
+      createdBy: null,
+    },
+    {
+      id: 'artifact-timeline',
+      name: 'Timeline',
+      description: 'A horizontal timeline with labeled events. Configure events via config.',
       type: 'diagram' as const,
-      source: flowDiagramSource,
-      config: {},
+      source: timelineSource,
+      config: {
+        events: {
+          type: 'array',
+          label: 'Events',
+          itemShape: { label: 'string', desc: 'string' },
+          default: [
+            { label: 'Q1 2024', desc: 'Project kickoff and planning' },
+            { label: 'Q2 2024', desc: 'Research and data collection' },
+            { label: 'Q3 2024', desc: 'Model development' },
+            { label: 'Q4 2024', desc: 'Testing and validation' },
+            { label: 'Q1 2025', desc: 'Deployment and launch' },
+          ],
+        },
+      },
       builtIn: true,
       createdBy: null,
     },
     {
-      id: 'artifact-data-table',
-      name: 'Data Table',
-      description: 'A sortable HTML table with alternating row colors.',
-      type: 'widget' as const,
-      source: dataTableSource,
-      config: {},
+      id: 'artifact-choropleth-map',
+      name: 'US Choropleth Map',
+      description: 'A US states map colored by value. Configure state-value pairs via config.',
+      type: 'map' as const,
+      source: choroplethSource,
+      config: {
+        stateData: {
+          type: 'object',
+          label: 'State Values',
+          default: {
+            CA: 85, TX: 72, NY: 90, FL: 68, IL: 55,
+            PA: 60, OH: 45, GA: 62, NC: 58, MI: 40,
+          },
+        },
+      },
       builtIn: true,
       createdBy: null,
     },
@@ -193,9 +374,15 @@ async function seedArtifacts() {
 }
 
 async function seedAdminUsers() {
+  const adminPassword = process.env.ADMIN_SEED_PASSWORD
+  if (!adminPassword) {
+    console.log('Skipping admin seed: ADMIN_SEED_PASSWORD env var not set')
+    return
+  }
+
   const admins = [
-    { email: 'smorello@gc.cuny.edu', password: 'Gremlins2025!', name: 'Stefano Morello' },
-    { email: 'zmuhlbauer@gc.cuny.edu', password: 'Gremlins2025!', name: 'Zach Muhlbauer' },
+    { email: 'smorello@gc.cuny.edu', password: adminPassword, name: 'Stefano Morello' },
+    { email: 'zmuhlbauer@gc.cuny.edu', password: adminPassword, name: 'Zach Muhlbauer' },
   ]
 
   for (const admin of admins) {

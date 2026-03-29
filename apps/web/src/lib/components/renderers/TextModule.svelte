@@ -1,6 +1,7 @@
 <script lang="ts">
   import { fitText } from '$lib/utils/text-measure'
   import RichTextEditor from './RichTextEditor.svelte'
+  import DOMPurify from 'dompurify'
 
   import type { Editor } from '@tiptap/core'
   let { data = {}, editable = false, onchange, oneditorready }: { data: Record<string, unknown>; editable: boolean; onchange?: (newData: Record<string, unknown>) => void; oneditorready?: (editor: Editor) => void } = $props()
@@ -79,13 +80,16 @@
     let html = text
     html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
     html = html.replace(/\*(.+?)\*/g, '<em>$1</em>')
-    html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>')
+    html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (_m, label, url) => {
+      const safe = /^https?:\/\//i.test(url) ? url : '#'
+      return `<a href="${safe}" target="_blank" rel="noopener">${label}</a>`
+    })
     html = html.replace(/`([^`]+)`/g, '<code>$1</code>')
     return html
   }
 
   let renderedHtml = $derived(
-    typeof data.html === 'string' ? data.html : markdownToHtml(text)
+    DOMPurify.sanitize(typeof data.html === 'string' ? data.html : markdownToHtml(text))
   )
 
   function handleRichTextChange(html: string) {

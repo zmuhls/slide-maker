@@ -54,7 +54,11 @@
       element: editorEl,
       extensions: [
         StarterKit.configure({ link: false }),
-        Link.configure({ openOnClick: false }),
+        Link.configure({
+          openOnClick: false,
+          protocols: ['http', 'https', 'mailto'],
+          validate: (href: string) => /^https?:\/\/|^mailto:/i.test(href),
+        }),
         Placeholder.configure({ placeholder }),
       ],
       content,
@@ -114,7 +118,7 @@
       editor.chain().focus().unsetLink().run()
     } else {
       const url = prompt('Enter URL:')
-      if (url) {
+      if (url && /^https?:\/\//i.test(url)) {
         editor.chain().focus().setLink({ href: url }).run()
       }
     }
