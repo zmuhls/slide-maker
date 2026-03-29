@@ -1,9 +1,0 @@
-{
-  "name": "Branded Hero",
-  "slideType": "title",
-  "blocks": [
-    {"type": "heading", "data": {"text": "", "level": 1}},
-    {"type": "heading", "data": {"text": "", "level": 2}},
-    {"type": "text", "data": {"markdown": "", "column": "full"}}
-  ]
-}

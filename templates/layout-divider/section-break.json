@@ -1,0 +1,8 @@
+{
+  "name": "Section Break",
+  "layout": "layout-divider",
+  "modules": [
+    { "type": "label", "zone": "hero", "data": { "text": "", "color": "cyan" } },
+    { "type": "heading", "zone": "hero", "data": { "text": "", "level": 1 } }
+  ]
+}

@@ -1,8 +1,0 @@
-{
-  "name": "Sidebar Label",
-  "slideType": "section-divider",
-  "blocks": [
-    {"type": "heading", "data": {"text": "", "level": 2}},
-    {"type": "text", "data": {"markdown": ""}}
-  ]
-}

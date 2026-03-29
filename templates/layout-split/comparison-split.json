@@ -1,0 +1,8 @@
+{
+  "name": "Comparison Split",
+  "layout": "layout-split",
+  "modules": [
+    { "type": "heading", "zone": "content", "data": { "text": "", "level": 2 } },
+    { "type": "comparison", "zone": "stage", "data": { "left": { "title": "", "items": [] }, "right": { "title": "", "items": [] } } }
+  ]
+}

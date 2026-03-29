@@ -1,0 +1,9 @@
+{
+  "name": "Recap",
+  "layout": "closing-slide",
+  "modules": [
+    { "type": "heading", "zone": "hero", "data": { "text": "", "level": 2 } },
+    { "type": "text", "zone": "hero", "data": { "markdown": "" } },
+    { "type": "stream-list", "zone": "hero", "data": { "items": [] } }
+  ]
+}

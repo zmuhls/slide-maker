@@ -1,8 +1,0 @@
-{
-  "name": "Link List",
-  "slideType": "resources",
-  "blocks": [
-    {"type": "heading", "data": {"text": "Resources", "level": 2}},
-    {"type": "text", "data": {"markdown": "- [Resource 1]()\n- [Resource 2]()\n- [Resource 3]()"}}
-  ]
-}

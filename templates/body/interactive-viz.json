@@ -1,9 +1,0 @@
-{
-  "name": "Interactive Visualization",
-  "slideType": "body",
-  "blocks": [
-    {"type": "heading", "data": {"text": "", "level": 2}},
-    {"type": "embed", "data": {"src": "", "title": ""}},
-    {"type": "text", "data": {"markdown": ""}}
-  ]
-}

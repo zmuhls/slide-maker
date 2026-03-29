@@ -1,0 +1,10 @@
+{
+  "name": "Text & Image",
+  "layout": "layout-split",
+  "modules": [
+    { "type": "label", "zone": "content", "data": { "text": "", "color": "cyan" } },
+    { "type": "heading", "zone": "content", "data": { "text": "", "level": 2 } },
+    { "type": "text", "zone": "content", "data": { "markdown": "" } },
+    { "type": "image", "zone": "stage", "data": { "src": "", "alt": "" } }
+  ]
+}

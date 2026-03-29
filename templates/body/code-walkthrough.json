@@ -1,9 +1,0 @@
-{
-  "name": "Code Walkthrough",
-  "slideType": "body",
-  "blocks": [
-    {"type": "heading", "data": {"text": "", "level": 2}},
-    {"type": "code", "data": {"language": "python", "content": "", "showLineNumbers": true}},
-    {"type": "text", "data": {"markdown": ""}}
-  ]
-}

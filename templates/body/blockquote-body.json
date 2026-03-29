@@ -1,8 +1,0 @@
-{
-  "name": "Blockquote + Body",
-  "slideType": "body",
-  "blocks": [
-    {"type": "quote", "data": {"text": "", "attribution": ""}},
-    {"type": "text", "data": {"markdown": ""}}
-  ]
-}

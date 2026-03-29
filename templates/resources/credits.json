@@ -1,8 +1,0 @@
-{
-  "name": "Credits",
-  "slideType": "resources",
-  "blocks": [
-    {"type": "heading", "data": {"text": "Credits & Acknowledgments", "level": 2}},
-    {"type": "card-grid", "data": {"cards": [{"title": "", "content": ""}, {"title": "", "content": ""}], "columns": 2}}
-  ]
-}

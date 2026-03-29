@@ -1,7 +1,0 @@
-{
-  "name": "Full Bleed Label",
-  "slideType": "section-divider",
-  "blocks": [
-    {"type": "heading", "data": {"text": "", "level": 1}}
-  ]
-}

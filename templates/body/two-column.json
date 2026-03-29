@@ -1,9 +1,0 @@
-{
-  "name": "Two Column",
-  "slideType": "body",
-  "blocks": [
-    {"type": "heading", "data": {"text": "", "level": 2}},
-    {"type": "text", "data": {"markdown": "", "column": "left"}},
-    {"type": "image", "data": {"src": "", "alt": "", "caption": "", "column": "right"}}
-  ]
-}

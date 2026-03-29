@@ -1,9 +1,0 @@
-{
-  "name": "Conference Talk",
-  "slideType": "title",
-  "blocks": [
-    {"type": "heading", "data": {"text": "", "level": 1}},
-    {"type": "heading", "data": {"text": "", "level": 3}},
-    {"type": "text", "data": {"markdown": "**Author Name**\nAffiliation\nDate"}}
-  ]
-}

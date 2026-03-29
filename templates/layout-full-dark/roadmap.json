@@ -1,0 +1,8 @@
+{
+  "name": "Roadmap",
+  "layout": "layout-full-dark",
+  "modules": [
+    { "type": "heading", "zone": "main", "data": { "text": "", "level": 2 } },
+    { "type": "card-grid", "zone": "main", "data": { "columns": 3, "cards": [] } }
+  ]
+}

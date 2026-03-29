@@ -1,8 +1,0 @@
-{
-  "name": "Full Image",
-  "slideType": "body",
-  "blocks": [
-    {"type": "heading", "data": {"text": "", "level": 2}},
-    {"type": "image", "data": {"src": "", "alt": "", "caption": ""}}
-  ]
-}

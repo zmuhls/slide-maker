@@ -1,0 +1,8 @@
+{
+  "name": "Minimal Title",
+  "layout": "title-slide",
+  "modules": [
+    { "type": "heading", "zone": "hero", "data": { "text": "", "level": 1 } },
+    { "type": "text", "zone": "hero", "data": { "markdown": "" } }
+  ]
+}

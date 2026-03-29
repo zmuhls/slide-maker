@@ -1,0 +1,8 @@
+{
+  "name": "Flow Diagram",
+  "layout": "layout-content",
+  "modules": [
+    { "type": "heading", "zone": "main", "data": { "text": "", "level": 2 } },
+    { "type": "flow", "zone": "main", "data": { "steps": [] } }
+  ]
+}

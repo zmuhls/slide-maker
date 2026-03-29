@@ -1,0 +1,9 @@
+{
+  "name": "Code Walkthrough",
+  "layout": "layout-split",
+  "modules": [
+    { "type": "heading", "zone": "content", "data": { "text": "", "level": 2 } },
+    { "type": "text", "zone": "content", "data": { "markdown": "" } },
+    { "type": "prompt-block", "zone": "stage", "data": { "language": "", "code": "" } }
+  ]
+}

@@ -12,19 +12,19 @@ const projectRoot = path.resolve(scriptDir, '..', '..', '..', '..')
 const templatesDir = path.join(projectRoot, 'templates')
 
 async function seedTemplates() {
-  // Check if built-in templates already exist
-  const existing = await db
-    .select()
-    .from(templates)
-    .where(eq(templates.builtIn, true))
-    .all()
+  // Clear existing built-in templates before re-seeding
+  await db.delete(templates).where(eq(templates.builtIn, true))
+  console.log('Cleared existing built-in templates.')
 
-  if (existing.length > 0) {
-    console.log(`Skipping templates — ${existing.length} built-in templates already exist.`)
-    return
-  }
-
-  const subdirs = ['title', 'section-divider', 'body', 'resources']
+  const subdirs = [
+    'title-slide',
+    'layout-split',
+    'layout-content',
+    'layout-grid',
+    'layout-full-dark',
+    'layout-divider',
+    'closing-slide',
+  ]
   let count = 0
 
   for (const subdir of subdirs) {
@@ -41,8 +41,8 @@ async function seedTemplates() {
         .values({
           id: createId(),
           name: tmpl.name,
-          slideType: tmpl.slideType,
-          blocks: tmpl.blocks,
+          layout: tmpl.layout,
+          modules: tmpl.modules,
           builtIn: true,
           createdBy: null,
         })
@@ -78,6 +78,51 @@ async function seedThemes() {
 
   await db.insert(themes).values(defaultTheme).onConflictDoNothing()
   console.log('Seeded default theme: CUNY AI Lab')
+}
+
+async function seedAdminUsers() {
+  const admins = [
+    { email: 'smorello@gc.cuny.edu', password: 'Gremlins2025!', name: 'Stefano Morello' },
+    { email: 'zmuhlbauer@gc.cuny.edu', password: 'Gremlins2025!', name: 'Zach Muhlbauer' },
+  ]
+
+  for (const admin of admins) {
+    const existing = await db
+      .select()
+      .from(users)
+      .where(eq(users.email, admin.email.toLowerCase()))
+      .get()
+
+    if (existing) {
+      await db
+        .update(users)
+        .set({
+          role: 'admin',
+          status: 'approved',
+          emailVerified: true,
+          name: admin.name,
+        })
+        .where(eq(users.email, admin.email.toLowerCase()))
+      console.log(`Updated ${admin.email} to admin.`)
+      continue
+    }
+
+    const passwordHash = await hash(admin.password)
+    const userId = createId()
+
+    await db.insert(users).values({
+      id: userId,
+      email: admin.email.toLowerCase(),
+      name: admin.name,
+      passwordHash,
+      emailVerified: true,
+      status: 'approved',
+      role: 'admin',
+      createdAt: new Date(),
+    })
+
+    console.log(`Admin user created: ${admin.email}`)
+  }
 }
 
 async function seedAdmin(args: string[]) {
@@ -131,11 +176,12 @@ async function main() {
   const args = process.argv.slice(2)
   const hasAdmin = args.includes('--admin')
 
-  // Always seed templates and themes
+  // Always seed templates, themes, and admin users
   await seedTemplates()
   await seedThemes()
+  await seedAdminUsers()
 
-  // Optionally seed admin user
+  // Optionally seed additional admin user via CLI
   if (hasAdmin) {
     await seedAdmin(args)
   }
