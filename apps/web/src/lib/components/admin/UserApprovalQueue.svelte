@@ -219,7 +219,7 @@
 
   {#if loading}
     <p class="loading-text">Loading users...</p>
-  {:else if filteredUsers().length === 0}
+  {:else if filteredUsers.length === 0}
     <div class="empty-state">
       <p>No users match the current filter.</p>
     </div>
@@ -240,7 +240,7 @@
           </tr>
         </thead>
         <tbody>
-          {#each filteredUsers() as u (u.id)}
+          {#each filteredUsers as u (u.id)}
             <tr>
               <td class="name-cell">{u.name}</td>
               <td class="email-cell">{u.email}</td>
