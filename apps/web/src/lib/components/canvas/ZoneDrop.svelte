@@ -97,6 +97,7 @@
     items,
     dropTargetStyle: { outline: '2px dashed rgba(59,130,246,0.4)', borderRadius: '4px' },
     type: 'modules',
+    dragHandleSelector: '.drag-handle',
   }}
   onconsider={handleConsider}
   onfinalize={handleFinalize}

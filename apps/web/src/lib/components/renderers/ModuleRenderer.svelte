@@ -41,7 +41,6 @@
 
   // Delete confirmation
   let confirmDelete = $state(false)
-
   function handleDelete() {
     if (confirmDelete) {
       ondelete?.()
@@ -51,18 +50,43 @@
       setTimeout(() => { confirmDelete = false }, 3000)
     }
   }
+
+  // Corner resize (height only — width is zone-controlled)
+  let customHeight = $state<number | null>(null)
+  let resizing = $state(false)
+
+  function startCornerResize(e: MouseEvent) {
+    e.preventDefault()
+    e.stopPropagation() // Don't trigger dnd
+    resizing = true
+    const startY = e.clientY
+    const wrapper = (e.currentTarget as HTMLElement).parentElement
+    const startH = wrapper?.offsetHeight ?? 80
+
+    function onMove(ev: MouseEvent) {
+      customHeight = Math.max(24, startH + (ev.clientY - startY))
+    }
+    function onUp() {
+      resizing = false
+      window.removeEventListener('mousemove', onMove)
+      window.removeEventListener('mouseup', onUp)
+    }
+    window.addEventListener('mousemove', onMove)
+    window.addEventListener('mouseup', onUp)
+  }
 </script>
 
 <div
   class="module-wrapper"
   class:editable
   class:is-step={module.stepOrder != null}
+  class:resizing
+  style:height={customHeight ? `${customHeight}px` : undefined}
+  style:overflow={customHeight ? 'auto' : undefined}
 >
-  {#if module.stepOrder != null}
-    <span class="step-badge">Step {module.stepOrder + 1}</span>
-  {/if}
-
   {#if editable}
+    <!-- Drag handle for reorder (this is what dnd looks for) -->
+    <span class="drag-handle" title="Drag to reorder">⠿</span>
     <button
       class="delete-btn"
       class:confirming={confirmDelete}
@@ -73,13 +97,20 @@
     </button>
   {/if}
 
+  {#if module.stepOrder != null}
+    <span class="step-badge">Step {module.stepOrder + 1}</span>
+  {/if}
+
   {#if Renderer}
     <Renderer data={module.data} {editable} {onchange} oneditorready={module.type === 'text' ? oneditorready : undefined} />
   {:else}
     <div class="unknown-module">Unknown module type: {module.type}</div>
   {/if}
 
-
+  {#if editable}
+    <!-- svelte-ignore a11y_no_static_element_interactions -->
+    <div class="corner-resize corner-br" onmousedown={startCornerResize}></div>
+  {/if}
 </div>
 
 <style>
@@ -92,6 +123,10 @@
     outline-offset: 2px;
     border-radius: var(--radius-sm);
   }
+  .module-wrapper.resizing {
+    user-select: none;
+    outline: 2px solid var(--color-primary) !important;
+  }
   .is-step {
     opacity: 0.7;
     border-left: 3px solid var(--teal, #2FB8D6);
@@ -100,7 +135,7 @@
   .step-badge {
     position: absolute;
     top: -10px;
-    right: 24px;
+    right: 50px;
     background: var(--teal, #2FB8D6);
     color: white;
     font-size: 10px;
@@ -109,6 +144,30 @@
     font-weight: 600;
     font-family: var(--font-body);
     z-index: 5;
+  }
+
+  /* Drag handle — only this triggers dnd reorder */
+  .drag-handle {
+    position: absolute;
+    top: -6px;
+    left: 2px;
+    font-size: 12px;
+    color: var(--color-text-muted);
+    cursor: grab;
+    z-index: 10;
+    display: none;
+    user-select: none;
+    line-height: 1;
+    padding: 2px;
+    background: rgba(255,255,255,0.9);
+    border-radius: 3px;
+  }
+  .module-wrapper.editable:hover .drag-handle {
+    display: block;
+  }
+  .drag-handle:active {
+    cursor: grabbing;
+    color: var(--color-primary);
   }
 
   /* Delete button */
@@ -148,6 +207,30 @@
     border-color: #dc2626;
     padding: 0 6px;
     font-weight: 600;
+  }
+
+  /* Corner resize handle */
+  .corner-resize {
+    position: absolute;
+    width: 12px;
+    height: 12px;
+    z-index: 10;
+    display: none;
+  }
+  .module-wrapper.editable:hover .corner-resize {
+    display: block;
+  }
+  .corner-br {
+    bottom: -2px;
+    right: -2px;
+    cursor: nwse-resize;
+    border-right: 3px solid var(--color-primary);
+    border-bottom: 3px solid var(--color-primary);
+    border-radius: 0 0 3px 0;
+    opacity: 0.5;
+  }
+  .corner-br:hover {
+    opacity: 1;
   }
 
   .unknown-module {
