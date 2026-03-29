@@ -140,13 +140,13 @@
     align-items: center;
     gap: 4px;
     padding: 6px 8px;
-    font-size: 12px;
+    font-size: 13px;
     font-weight: 500;
     user-select: none;
   }
 
   .drag-handle {
-    font-size: 14px;
+    font-size: 16px;
     color: var(--color-text-muted, #9ca3af);
     flex-shrink: 0;
     cursor: grab;
@@ -159,7 +159,7 @@
   }
 
   .arrow {
-    font-size: 9px;
+    font-size: 10px;
     color: var(--color-text-muted, #6b7280);
     flex-shrink: 0;
     width: 12px;
@@ -174,7 +174,7 @@
   }
 
   .active-badge {
-    font-size: 9px;
+    font-size: 10px;
     font-weight: 600;
     color: var(--color-primary);
     background: none;
@@ -190,7 +190,7 @@
     border: none;
     cursor: pointer;
     color: var(--color-text-muted, #9ca3af);
-    font-size: 11px;
+    font-size: 12px;
     padding: 0 2px;
     line-height: 1;
     flex-shrink: 0;

@@ -155,7 +155,7 @@
     display: flex;
     flex-direction: column;
     padding: 0 8px 0 20px;
-    font-size: 11px;
+    font-size: 13px;
     color: var(--color-text-muted, #6b7280);
     line-height: 1.4;
   }
@@ -180,7 +180,7 @@
   .drag-handle {
     cursor: grab;
     color: var(--color-text-muted, #9ca3af);
-    font-size: 12px;
+    font-size: 14px;
     user-select: none;
     flex-shrink: 0;
   }
@@ -197,11 +197,11 @@
     overflow: hidden;
     text-overflow: ellipsis;
     color: var(--color-text-muted, #9ca3af);
-    font-size: 10px;
+    font-size: 11px;
   }
 
   .expand-arrow {
-    font-size: 8px;
+    font-size: 9px;
     color: var(--color-text-muted, #9ca3af);
     flex-shrink: 0;
   }
@@ -217,7 +217,7 @@
   .field-textarea {
     width: 100%;
     padding: 3px 6px;
-    font-size: 10px;
+    font-size: 12px;
     border: 1px solid var(--color-border, #e5e7eb);
     border-radius: 3px;
     background: white;
@@ -237,7 +237,7 @@
 
   .field-select {
     padding: 2px 4px;
-    font-size: 10px;
+    font-size: 12px;
     border: 1px solid var(--color-border, #e5e7eb);
     border-radius: 3px;
     background: white;
@@ -245,7 +245,7 @@
   }
 
   .edit-hint {
-    font-size: 10px;
+    font-size: 12px;
     color: var(--color-text-muted, #9ca3af);
     font-style: italic;
   }

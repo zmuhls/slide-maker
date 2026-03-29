@@ -87,7 +87,7 @@
   }
 
   .add-btn {
-    font-size: 11px;
+    font-size: 13px;
     padding: 2px 8px;
     background: transparent;
     color: var(--color-primary);
@@ -123,7 +123,7 @@
     width: 100%;
     text-align: left;
     padding: 8px 12px;
-    font-size: 12px;
+    font-size: 13px;
     border: none;
     background: none;
     cursor: pointer;
@@ -144,7 +144,7 @@
     flex-shrink: 0;
     width: 20px;
     text-align: center;
-    font-size: 14px;
+    font-size: 16px;
     line-height: 1.4;
   }
 
@@ -160,7 +160,7 @@
   }
 
   .item-desc {
-    font-size: 10px;
+    font-size: 11px;
     color: var(--color-text-muted, #9ca3af);
     line-height: 1.3;
   }

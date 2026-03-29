@@ -118,7 +118,7 @@
 
   .header-left h1 {
     font-family: var(--font-display);
-    font-size: 1.375rem;
+    font-size: 1.75rem;
     font-weight: 700;
   }
 
@@ -126,7 +126,7 @@
     color: #1a1a2e;
   }
   .brand-wiz {
-    color: #1D3A83;
+    color: #5a8fd4;
   }
 
   .header-right {

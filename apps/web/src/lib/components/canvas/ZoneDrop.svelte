@@ -160,7 +160,7 @@
     justify-content: center;
     padding: 1rem;
     color: rgba(255, 255, 255, 0.4);
-    font-size: 0.8rem;
+    font-size: 0.9375rem;
     font-style: italic;
     border: 1px dashed rgba(255, 255, 255, 0.2);
     border-radius: var(--radius-sm, 4px);
@@ -173,7 +173,7 @@
     padding: 0;
     background: transparent;
     border-radius: var(--radius-sm, 4px);
-    font-size: 0.75rem;
+    font-size: 0.875rem;
     color: inherit;
     word-break: break-all;
     transition: background 0.15s ease;
@@ -199,7 +199,7 @@
   }
 
   .add-module-btn {
-    font-size: 0.7rem;
+    font-size: 0.8125rem;
     padding: 3px 10px;
     background: rgba(59, 130, 246, 0.15);
     color: rgba(59, 130, 246, 0.9);
@@ -217,7 +217,7 @@
 
   .add-module-btn.empty-add {
     padding: 6px 14px;
-    font-size: 0.75rem;
+    font-size: 0.875rem;
   }
 
   .picker-overlay {

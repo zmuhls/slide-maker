@@ -60,7 +60,7 @@
     padding: 8px 10px;
     margin: 4px 8px;
     border-radius: 6px;
-    font-size: 13px;
+    font-size: 14px;
     line-height: 1.5;
     max-width: 92%;
   }
@@ -80,7 +80,7 @@
   }
 
   .message-role {
-    font-size: 10px;
+    font-size: 12px;
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.5px;
@@ -104,7 +104,7 @@
   .message-content :global(.code-block pre) {
     margin: 0;
     padding: 8px 10px;
-    font-size: 12px;
+    font-size: 13px;
     font-family: 'SF Mono', 'Fira Code', monospace;
     line-height: 1.4;
   }
@@ -117,7 +117,7 @@
     position: absolute;
     top: 4px;
     right: 6px;
-    font-size: 10px;
+    font-size: 11px;
     opacity: 0.5;
   }
 
@@ -125,7 +125,7 @@
     background: var(--color-bg-tertiary, #e8e8e8);
     padding: 1px 4px;
     border-radius: 3px;
-    font-size: 12px;
+    font-size: 13px;
     font-family: 'SF Mono', 'Fira Code', monospace;
   }
 

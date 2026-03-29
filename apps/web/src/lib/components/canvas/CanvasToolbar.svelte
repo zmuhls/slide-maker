@@ -176,7 +176,7 @@
     background: none;
     border: none;
     color: var(--color-text-secondary);
-    font-size: 12px;
+    font-size: 13px;
     font-family: var(--font-body);
     cursor: pointer;
     padding: 4px 8px;
@@ -205,7 +205,7 @@
     border: 1px solid var(--color-border);
     border-radius: var(--radius-sm);
     padding: 0.25rem 0.5rem;
-    font-size: 0.85rem;
+    font-size: 0.9375rem;
     cursor: pointer;
     color: var(--color-text);
     transition: background 0.15s, border-color 0.15s;
@@ -219,7 +219,7 @@
     cursor: default;
   }
   .slide-counter {
-    font-size: 0.8rem;
+    font-size: 0.9375rem;
     color: var(--color-text-secondary);
     font-variant-numeric: tabular-nums;
     min-width: 4em;
@@ -240,7 +240,7 @@
     border: 1px solid var(--color-border);
     border-radius: var(--radius-sm);
     padding: 0.4rem 0.85rem;
-    font-size: 0.8rem;
+    font-size: 0.9375rem;
     font-weight: 500;
     cursor: pointer;
     color: var(--color-text-secondary);
@@ -272,13 +272,13 @@
     gap: 2px;
   }
   .branding-field span {
-    font-size: 10px;
+    font-size: 12px;
     color: var(--color-text-muted);
     font-weight: 500;
   }
   .branding-field input,
   .branding-field select {
-    font-size: 11px;
+    font-size: 13px;
     padding: 4px 6px;
     border: 1px solid var(--color-border);
     border-radius: 4px;
@@ -290,7 +290,7 @@
   }
   .branding-save {
     padding: 5px 10px;
-    font-size: 11px;
+    font-size: 13px;
     font-weight: 600;
     background: transparent;
     color: var(--color-primary);
@@ -308,7 +308,7 @@
     border: 1px solid var(--color-border);
     border-radius: var(--radius-sm);
     padding: 0.4rem 0.85rem;
-    font-size: 0.8rem;
+    font-size: 0.9375rem;
     font-weight: 500;
     cursor: pointer;
     transition: color 0.15s, border-color 0.15s, background 0.15s;
@@ -334,7 +334,7 @@
     border: 1px solid transparent;
     border-radius: var(--radius-sm);
     padding: 0.4rem 0.85rem;
-    font-size: 0.8rem;
+    font-size: 0.9375rem;
     font-weight: 500;
     cursor: pointer;
     color: var(--color-text-muted);

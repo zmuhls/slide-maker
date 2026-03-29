@@ -157,7 +157,7 @@
     background: rgba(59, 115, 230, 0.1);
     border: 2px dashed var(--color-primary);
     border-radius: 4px;
-    font-size: 12px;
+    font-size: 13px;
     font-weight: 600;
     color: var(--color-primary);
     z-index: 5;
@@ -168,7 +168,7 @@
     flex: 1;
     resize: none;
     padding: 6px 8px;
-    font-size: 13px;
+    font-size: 14px;
     font-family: inherit;
     border: 1px solid var(--color-border);
     border-radius: 4px;
@@ -188,7 +188,7 @@
 
   button {
     padding: 6px 14px;
-    font-size: 13px;
+    font-size: 14px;
     font-weight: 500;
     border: 1px solid var(--color-primary);
     border-radius: var(--radius-sm);
@@ -247,7 +247,7 @@
 
   .add-menu-item {
     padding: 6px 8px;
-    font-size: 12px;
+    font-size: 13px;
     text-align: left;
     background: transparent;
     border: none;

@@ -215,7 +215,7 @@
 
   .chat-title {
     padding: 8px 10px 4px;
-    font-size: 12px;
+    font-size: 14px;
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.5px;
@@ -225,7 +225,7 @@
     color: #1a1a2e;
   }
   .brand-wiz {
-    color: #1D3A83;
+    color: #5a8fd4;
   }
 
   .messages {
@@ -248,7 +248,7 @@
   }
 
   .empty-state p {
-    font-size: 13px;
+    font-size: 14px;
     color: var(--color-text-muted);
     line-height: 1.5;
   }

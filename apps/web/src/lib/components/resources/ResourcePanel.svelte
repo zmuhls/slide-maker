@@ -69,7 +69,7 @@
   .tab-btn {
     flex: 1;
     padding: 8px 4px;
-    font-size: 11px;
+    font-size: 13px;
     font-weight: 500;
     color: var(--color-text-muted, #6b7280);
     background: none;

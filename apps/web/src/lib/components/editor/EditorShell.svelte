@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { untrack } from 'svelte'
   import ChatPanel from '$lib/components/chat/ChatPanel.svelte'
   import SlideOutline from '$lib/components/outline/SlideOutline.svelte'
   import SlideCanvas from '$lib/components/canvas/SlideCanvas.svelte'
@@ -17,19 +18,24 @@
   // Canvas mode — bound to SlideCanvas
   let canvasMode = $state<'edit' | 'view'>('view')
 
-  // Auto-collapse panels in view mode, restore in edit mode
-  let savedLeft = $state(false)
-  let savedRight = $state(false)
+  // Saved panel state for view/edit toggle
+  let savedLeft = false
+  let savedRight = false
+
+  // Only react to canvasMode changes, not panel state
   $effect(() => {
-    if (canvasMode === 'view') {
-      savedLeft = leftCollapsed
-      savedRight = rightCollapsed
-      leftCollapsed = true
-      rightCollapsed = true
-    } else {
-      leftCollapsed = savedLeft
-      rightCollapsed = savedRight
-    }
+    const mode = canvasMode
+    untrack(() => {
+      if (mode === 'view') {
+        savedLeft = leftCollapsed
+        savedRight = rightCollapsed
+        leftCollapsed = true
+        rightCollapsed = true
+      } else {
+        leftCollapsed = savedLeft
+        rightCollapsed = savedRight
+      }
+    })
   })
 
   const MIN_PANEL = 200
@@ -219,7 +225,7 @@
     background: var(--color-bg-tertiary);
     border: 1px solid var(--color-border);
     color: var(--color-text-secondary);
-    font-size: 10px;
+    font-size: 12px;
     cursor: pointer;
     display: flex;
     align-items: center;
@@ -289,7 +295,7 @@
   }
 
   .footer-link {
-    font-size: 12px;
+    font-size: 13px;
     color: var(--color-text-muted, #9ca3af);
     text-decoration: none;
     transition: color 0.15s;
@@ -300,7 +306,7 @@
   }
 
   .footer-link-main {
-    font-size: 13px;
+    font-size: 14px;
     font-weight: 600;
     color: var(--color-text-muted, #6b7280);
     text-decoration: none;

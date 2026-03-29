@@ -108,7 +108,7 @@
   }
 
   .outline-label {
-    font-size: 11px;
+    font-size: 13px;
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.5px;
@@ -126,7 +126,7 @@
     align-items: center;
     justify-content: center;
     height: 100%;
-    font-size: 12px;
+    font-size: 13px;
     color: var(--color-text-muted, #9ca3af);
     padding: 20px;
   }

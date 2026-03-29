@@ -79,7 +79,7 @@
   select {
     width: 100%;
     padding: 4px 6px;
-    font-size: 12px;
+    font-size: 13px;
     border: 1px solid var(--color-border);
     border-radius: 4px;
     background: var(--color-bg);
