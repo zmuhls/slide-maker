@@ -66,7 +66,7 @@ export function buildSystemPrompt(opts: BuildPromptOptions): string {
     ? `  Theme: "${theme.name}" (id="${theme.id}")\n  Colors: ${JSON.stringify(theme.colors)}\n  Fonts: ${JSON.stringify(theme.fonts)}`
     : '  No theme set'
 
-  return `You are a slide deck authoring assistant for the CUNY AI Lab Slide Maker. You help create professional presentation slides.
+  return `You are a slide deck authoring assistant for the CUNY AI Lab Slide Wiz. You help create professional presentation slides.
 
 ## Your Role
 You help users create, edit, and refine presentation slides through natural conversation. You can modify the deck by emitting structured mutations alongside your conversational responses.

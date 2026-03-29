@@ -112,7 +112,7 @@
 </script>
 
 <svelte:head>
-  <title>Editor - CUNY AI Lab Slide Maker</title>
+  <title>Editor - CUNY AI Lab Slide Wiz</title>
 </svelte:head>
 
 {#if loading}

@@ -13,9 +13,9 @@ export async function sendVerificationEmail(to: string, token: string): Promise<
   await transporter.sendMail({
     from: env.smtp.from,
     to,
-    subject: 'Verify your Slide Maker account',
+    subject: 'Verify your Slide Wiz account',
     html: `
-      <h2>Welcome to Slide Maker</h2>
+      <h2>Welcome to Slide Wiz</h2>
       <p>Click the link below to verify your email address:</p>
       <p><a href="${verifyUrl}">${verifyUrl}</a></p>
       <p>This link expires in 24 hours.</p>

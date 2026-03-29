@@ -3,7 +3,7 @@
 </script>
 
 <svelte:head>
-  <title>Sign In - CUNY AI Lab Slide Maker</title>
+  <title>Sign In - CUNY AI Lab Slide Wiz</title>
 </svelte:head>
 
 <div class="auth-page">

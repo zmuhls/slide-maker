@@ -29,7 +29,7 @@
 <form onsubmit={handleSubmit} class="auth-form">
   <div class="form-header">
     <h1>CUNY AI Lab</h1>
-    <p>Sign in to Slide Maker</p>
+    <p>Sign in to Slide Wiz</p>
   </div>
 
   <div class="form-body">

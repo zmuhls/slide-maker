@@ -76,6 +76,20 @@ async function seedThemes() {
 
   const themeList = [
     {
+      id: 'studio-dark',
+      name: 'Studio Dark',
+      // High-contrast, accessible palette
+      colors: { primary: '#1D3A83', secondary: '#64b5f6', accent: '#2FB8D6', bg: '#0c1220' },
+      fonts: { heading: 'Outfit', body: 'Inter' },
+    },
+    {
+      id: 'studio-light',
+      name: 'Studio Light',
+      // Light mode with strong title background for white text
+      colors: { primary: '#1D3A83', secondary: '#3B73E6', accent: '#2FB8D6', bg: '#ffffff' },
+      fonts: { heading: 'Outfit', body: 'Inter' },
+    },
+    {
       id: 'cuny-ai-lab-default',
       name: 'CUNY AI Lab',
       colors: { primary: '#1D3A83', secondary: '#3B73E6', accent: '#2FB8D6', bg: '#ffffff' },

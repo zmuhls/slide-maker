@@ -57,7 +57,7 @@
 </script>
 
 <svelte:head>
-  <title>My Decks - CUNY AI Lab Slide Maker</title>
+  <title>My Decks - CUNY AI Lab Slide Wiz</title>
 </svelte:head>
 
 <div class="gallery-page">

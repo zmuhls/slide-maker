@@ -27,7 +27,7 @@
 </script>
 
 <svelte:head>
-  <title>Verify Email - CUNY AI Lab Slide Maker</title>
+  <title>Verify Email - CUNY AI Lab Slide Wiz</title>
 </svelte:head>
 
 <div class="verify-page">
