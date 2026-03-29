@@ -1,0 +1,13 @@
+{
+  "id": "artifact-mandelbrot",
+  "name": "Mandelbrot Visualization",
+  "type": "artifact",
+  "source": "https://creative-clawing.com/gallery/mandelbrot.html",
+  "description": "Interactive mandelbrot visualization from Creative Clawing gallery",
+  "category": "interactive-js",
+  "config": {
+    "width": "100%",
+    "height": "400px",
+    "sandbox": "allow-scripts"
+  }
+}

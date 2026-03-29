@@ -1,0 +1,13 @@
+{
+  "id": "artifact-boids",
+  "name": "Boids Visualization",
+  "type": "artifact",
+  "source": "https://creative-clawing.com/gallery/boids.html",
+  "description": "Interactive boids visualization from Creative Clawing gallery",
+  "category": "interactive-js",
+  "config": {
+    "width": "100%",
+    "height": "400px",
+    "sandbox": "allow-scripts"
+  }
+}
