@@ -130,6 +130,10 @@ export const NAVIGATION_JS = `
         e.preventDefault(); next(); break;
       case 'ArrowLeft': case 'ArrowUp':
         e.preventDefault(); prev(); break;
+      case 'Home':
+        e.preventDefault(); showSlide(0); break;
+      case 'End':
+        e.preventDefault(); showSlide(slides.length - 1, { revealAll: true }); break;
       case 'Escape':
         e.preventDefault(); toggleOverview(); break;
     }
