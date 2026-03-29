@@ -120,10 +120,10 @@
     <div class="module-controls">
       <div class="ctrl-group">
         {#if !isFirst}
-          <button class="ctrl-btn" onclick={() => onmoveup?.()} title="Move up">▲</button>
+          <button class="ctrl-btn" onclick={() => onmoveup?.()} title="Move up" aria-label="Move module up">▲</button>
         {/if}
         {#if !isLast}
-          <button class="ctrl-btn" onclick={() => onmovedown?.()} title="Move down">▼</button>
+          <button class="ctrl-btn" onclick={() => onmovedown?.()} title="Move down" aria-label="Move module down">▼</button>
         {/if}
       </div>
       <select
@@ -144,6 +144,7 @@
         class:confirming={confirmDelete}
         onclick={handleDelete}
         title={confirmDelete ? 'Click again to confirm' : 'Delete module'}
+        aria-label="Delete module"
       >
         {confirmDelete ? 'Delete?' : '✕'}
       </button>

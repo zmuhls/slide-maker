@@ -384,7 +384,7 @@ markers.forEach(m=>{
             { lat: 40.7128, lng: -74.006, label: 'New York', value: 'Pop: 8.3M' },
             { lat: 34.0522, lng: -118.2437, label: 'Los Angeles', value: 'Pop: 3.9M' },
             { lat: 41.8781, lng: -87.6298, label: 'Chicago', value: 'Pop: 2.7M' },
-          },
+          ],
         },
         center: {
           type: 'array',

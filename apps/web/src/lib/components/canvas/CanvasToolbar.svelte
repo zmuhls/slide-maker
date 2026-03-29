@@ -113,6 +113,7 @@
       <button
         class="mode-btn"
         class:active={canvasMode === 'edit'}
+        aria-pressed={canvasMode === 'edit'}
         onclick={() => onSetMode?.('edit')}
         title="Edit slide content"
       >
@@ -121,6 +122,7 @@
       <button
         class="mode-btn"
         class:active={canvasMode === 'view'}
+        aria-pressed={canvasMode === 'view'}
         onclick={() => onSetMode?.('view')}
         title="View slide"
       >

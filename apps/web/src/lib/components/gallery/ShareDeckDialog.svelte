@@ -96,11 +96,11 @@
 </script>
 
 <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
-<div class="backdrop" onclick={handleBackdropClick}>
+<div class="backdrop" onclick={handleBackdropClick} onkeydown={(e) => e.key === 'Escape' && onclose()} role="dialog" aria-modal="true" aria-labelledby="share-dialog-title">
   <div class="dialog">
     <div class="dialog-header">
-      <h2>Share Deck</h2>
-      <button class="close-btn" onclick={onclose} type="button">&times;</button>
+      <h2 id="share-dialog-title">Share Deck</h2>
+      <button class="close-btn" onclick={onclose} type="button" aria-label="Close dialog">&times;</button>
     </div>
 
     <div class="share-form">
@@ -135,7 +135,7 @@
     </div>
 
     {#if shareError}
-      <p class="msg error">{shareError}</p>
+      <p class="msg error" role="alert">{shareError}</p>
     {/if}
     {#if shareSuccess}
       <p class="msg success">{shareSuccess}</p>

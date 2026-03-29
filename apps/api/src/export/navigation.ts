@@ -55,7 +55,10 @@ export const NAVIGATION_JS = `
 
   function updateUI() {
     if (counter) counter.textContent = (currentSlide + 1) + ' / ' + slides.length;
-    if (scrubber) scrubber.value = currentSlide;
+    if (scrubber) {
+      scrubber.value = currentSlide;
+      scrubber.setAttribute('aria-valuetext', 'Slide ' + (currentSlide + 1) + ' of ' + slides.length);
+    }
   }
 
   function syncCarousels() {
@@ -78,7 +81,8 @@ export const NAVIGATION_JS = `
       el.classList.add('step-visible');
       currentStep++;
       syncCarousels();
-      announce('Step ' + currentStep + ' revealed');
+      var stepText = el.textContent ? el.textContent.trim().slice(0, 120) : '';
+      announce(stepText || ('Step ' + currentStep + ' revealed'));
       return;
     }
 
@@ -124,9 +128,19 @@ export const NAVIGATION_JS = `
         s.setAttribute('aria-hidden', 'false');
         var wrapper = document.createElement('div');
         wrapper.className = 'slide-wrapper';
+        wrapper.setAttribute('tabindex', '0');
+        wrapper.setAttribute('role', 'button');
+        wrapper.setAttribute('aria-label', 'Go to slide ' + (i + 1));
         wrapper.addEventListener('click', function() {
           currentSlide = i;
           toggleOverview();
+        });
+        wrapper.addEventListener('keydown', function(ev) {
+          if (ev.key === 'Enter' || ev.key === ' ') {
+            ev.preventDefault();
+            currentSlide = i;
+            toggleOverview();
+          }
         });
         s.parentNode.insertBefore(wrapper, s);
         wrapper.appendChild(s);
@@ -144,6 +158,8 @@ export const NAVIGATION_JS = `
 
   // ── Keyboard ──
   document.addEventListener('keydown', function(e) {
+    var tag = document.activeElement ? document.activeElement.tagName : '';
+    if (tag === 'BUTTON' || tag === 'INPUT' || tag === 'A' || tag === 'SELECT' || tag === 'TEXTAREA') return;
     if (overviewMode && e.key !== 'Escape') {
       if (e.key === 'Enter' || e.key === ' ') {
         var idx = slides.findIndex(function(s) { return s.matches(':hover'); });

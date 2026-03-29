@@ -22,13 +22,21 @@ export const CAROUSEL_JS = `
       current = idx;
       if (track) track.style.transform = 'translateX(-' + (current * 100) + '%)';
       dots.forEach(function(d, i) { d.classList.toggle('active', i === current); });
+      items.forEach(function(item, i) { item.setAttribute('aria-hidden', i !== current ? 'true' : 'false'); });
+      var announcer = document.getElementById('announcer');
+      if (announcer) {
+        var img = items[current] ? items[current].querySelector('img') : null;
+        var alt = img ? (img.getAttribute('alt') || '') : '';
+        announcer.textContent = alt || ('Image ' + (current + 1) + ' of ' + count);
+      }
     }
 
     // Expose goTo for deck engine sync
     carousel._goTo = goTo;
 
     function startAuto() {
-      if (interval > 0 && !synced) {
+      var prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      if (interval > 0 && !synced && !prefersReduced) {
         timer = setInterval(function() { goTo(current + 1); }, interval);
       }
     }

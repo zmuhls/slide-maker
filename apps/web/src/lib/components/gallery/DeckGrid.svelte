@@ -6,7 +6,7 @@
 
 {#if decks.length === 0}
   <div class="empty-state">
-    <p class="empty-icon">&#128196;</p>
+    <p class="empty-icon" aria-hidden="true">&#128196;</p>
     <p class="empty-text">No decks yet. Create your first deck!</p>
   </div>
 {:else}

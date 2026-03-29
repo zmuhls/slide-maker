@@ -205,7 +205,7 @@
   </div>
 
   {#if error}
-    <div class="error-message">{error}</div>
+    <div class="error-message" role="alert">{error}</div>
   {/if}
 
   <!-- Filter Bar -->
@@ -228,14 +228,14 @@
       <table>
         <thead>
           <tr>
-            <th class="sortable" onclick={() => toggleSort('name')}>Name{sortIndicator('name')}</th>
-            <th class="sortable" onclick={() => toggleSort('email')}>Email{sortIndicator('email')}</th>
-            <th class="sortable" onclick={() => toggleSort('role')}>Role{sortIndicator('role')}</th>
-            <th class="sortable" onclick={() => toggleSort('status')}>Status{sortIndicator('status')}</th>
-            <th class="sortable" onclick={() => toggleSort('deckCount')}>Decks{sortIndicator('deckCount')}</th>
-            <th class="sortable" onclick={() => toggleSort('tokensUsed')}>Tokens{sortIndicator('tokensUsed')}</th>
+            <th class="sortable" onclick={() => toggleSort('name')} role="button" tabindex="0" onkeydown={(e) => (e.key === 'Enter' || e.key === ' ') && toggleSort('name')}>Name{sortIndicator('name')}</th>
+            <th class="sortable" onclick={() => toggleSort('email')} role="button" tabindex="0" onkeydown={(e) => (e.key === 'Enter' || e.key === ' ') && toggleSort('email')}>Email{sortIndicator('email')}</th>
+            <th class="sortable" onclick={() => toggleSort('role')} role="button" tabindex="0" onkeydown={(e) => (e.key === 'Enter' || e.key === ' ') && toggleSort('role')}>Role{sortIndicator('role')}</th>
+            <th class="sortable" onclick={() => toggleSort('status')} role="button" tabindex="0" onkeydown={(e) => (e.key === 'Enter' || e.key === ' ') && toggleSort('status')}>Status{sortIndicator('status')}</th>
+            <th class="sortable" onclick={() => toggleSort('deckCount')} role="button" tabindex="0" onkeydown={(e) => (e.key === 'Enter' || e.key === ' ') && toggleSort('deckCount')}>Decks{sortIndicator('deckCount')}</th>
+            <th class="sortable" onclick={() => toggleSort('tokensUsed')} role="button" tabindex="0" onkeydown={(e) => (e.key === 'Enter' || e.key === ' ') && toggleSort('tokensUsed')}>Tokens{sortIndicator('tokensUsed')}</th>
             <th>Cap</th>
-            <th class="sortable" onclick={() => toggleSort('lastActive')}>Last Active{sortIndicator('lastActive')}</th>
+            <th class="sortable" onclick={() => toggleSort('lastActive')} role="button" tabindex="0" onkeydown={(e) => (e.key === 'Enter' || e.key === ' ') && toggleSort('lastActive')}>Last Active{sortIndicator('lastActive')}</th>
             <th>Actions</th>
           </tr>
         </thead>
@@ -306,11 +306,11 @@
 
 <!-- Usage Modal -->
 {#if usageModalUser}
-  <div class="modal-overlay" onclick={closeUsageModal} role="dialog" aria-modal="true">
+  <div class="modal-overlay" onclick={closeUsageModal} onkeydown={(e) => e.key === 'Escape' && closeUsageModal()} role="dialog" aria-modal="true">
     <div class="modal-content" onclick={(e) => e.stopPropagation()}>
       <div class="modal-header">
         <h2>Token Usage: {usageModalUser.name}</h2>
-        <button class="modal-close" onclick={closeUsageModal}>&times;</button>
+        <button class="modal-close" onclick={closeUsageModal} aria-label="Close">&times;</button>
       </div>
 
       {#if usageLoading}

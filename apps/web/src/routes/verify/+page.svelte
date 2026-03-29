@@ -43,7 +43,7 @@
         <div class="success-message">{message}</div>
         <a href="{base}/login" class="link">Go to Sign In</a>
       {:else}
-        <div class="error-message">{message}</div>
+        <div class="error-message" role="alert">{message}</div>
         <a href="{base}/register" class="link">Back to Register</a>
       {/if}
     </div>

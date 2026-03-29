@@ -170,12 +170,12 @@ function renderModule(mod: Module, files?: ExportFile[]): string {
 
     case 'prompt-block': {
       const quality = d.quality ? ` prompt-${esc(String(d.quality))}` : ''
-      return `<div class="prompt-block${quality}"${step}><pre>${esc(String(d.content || d.text || ''))}</pre></div>`
+      return `<div class="prompt-block${quality}"${step} role="region" aria-label="Code example"><pre>${esc(String(d.content || d.text || ''))}</pre></div>`
     }
 
     case 'image': {
       const src = rewriteSrc(String(d.src || d.url || ''), files)
-      const alt = esc(String(d.alt || ''))
+      const alt = esc(String(d.alt || d.caption || 'Slide image'))
       const caption = String(d.caption || '')
       let html = `<figure${step}><img src="${esc(src)}" alt="${alt}" loading="lazy">`
       if (caption) html += `<figcaption>${esc(caption)}</figcaption>`
@@ -190,11 +190,12 @@ function renderModule(mod: Module, files?: ExportFile[]): string {
       let html = `<div class="carousel"${syncAttr}${intervalAttr}${step}>`
       html += `<button class="carousel-prev" aria-label="Previous">&lsaquo;</button>`
       html += `<div class="carousel-track">`
-      for (const item of items) {
-        const src = rewriteSrc(String((item as Record<string, unknown>).src || ''), files)
-        const alt = esc(String((item as Record<string, unknown>).alt || ''))
+      items.forEach((item: unknown, idx: number) => {
+        const it = item as Record<string, unknown>
+        const src = rewriteSrc(String(it.src || ''), files)
+        const alt = esc(String(it.alt || it.caption || ('Image ' + (idx + 1))))
         html += `<div class="carousel-item"><img src="${esc(src)}" alt="${alt}"></div>`
-      }
+      })
       html += `</div>`
       html += `<button class="carousel-next" aria-label="Next">&rsaquo;</button>`
       html += `<div class="carousel-dots">`
@@ -237,7 +238,7 @@ function renderModule(mod: Module, files?: ExportFile[]): string {
       const nodes = Array.isArray(d.nodes) ? d.nodes : []
       let html = `<div class="flow"${step}>`
       nodes.forEach((node: unknown, i: number) => {
-        if (i > 0) html += `<div class="flow-arrow">→</div>`
+        if (i > 0) html += `<div class="flow-arrow" aria-hidden="true">\u2192</div>`
         html += `<div class="flow-node">${esc(String((node as Record<string, unknown>).label || node))}</div>`
       })
       html += `</div>`
@@ -260,10 +261,10 @@ function renderModule(mod: Module, files?: ExportFile[]): string {
       const isUrl = /^https?:\/\//i.test(rawSrc)
       const alt = esc(String(d.alt || 'Interactive visualization'))
       if (isUrl) {
-        return `<div class="artifact-wrapper"${step}><iframe src="${esc(rawSrc)}" sandbox="allow-scripts" loading="lazy" title="${alt}"></iframe></div>`
+        return `<div class="artifact-wrapper"${step}><iframe src="${esc(rawSrc)}" sandbox="allow-scripts" loading="lazy" title="${alt}">${alt} (interactive content)</iframe></div>`
       }
       if (rawSource) {
-        return `<div class="artifact-wrapper"${step}><iframe srcdoc="${esc(rawSource)}" sandbox="allow-scripts" loading="lazy" title="${alt}"></iframe></div>`
+        return `<div class="artifact-wrapper"${step}><iframe srcdoc="${esc(rawSource)}" sandbox="allow-scripts" loading="lazy" title="${alt}">${alt} (interactive content)</iframe></div>`
       }
       return `<div class="artifact-wrapper"${step} style="aspect-ratio:1;display:flex;align-items:center;justify-content:center;color:#94a3b8;font-size:13px;">${alt}</div>`
     }
@@ -271,7 +272,7 @@ function renderModule(mod: Module, files?: ExportFile[]): string {
     case 'code': {
       const code = String(d.code || d.content || '')
       const lang = String(d.language || '')
-      return `<div class="code-wrapper"${step}><pre><code class="language-${esc(lang)}">${esc(code)}</code></pre></div>`
+      return `<div class="code-wrapper"${step} role="region" aria-label="${lang ? esc(lang) + ' code' : 'Code block'}"><pre><code class="language-${esc(lang)}">${esc(code)}</code></pre></div>`
     }
 
     case 'quote': {
@@ -365,7 +366,7 @@ export function renderDeckHtml(
   const isDarkBg = lum(bg) < 128
   const isDarkPrimary = lum(primary) < 128
   const text = isDarkBg ? '#f0f0f0' : '#1a1a2e'
-  const textMuted = isDarkBg ? 'rgba(240,240,240,0.65)' : 'rgba(26,26,46,0.65)'
+  const textMuted = isDarkBg ? 'rgba(240,240,240,0.80)' : 'rgba(26,26,46,0.75)'
   const primaryText = isDarkPrimary ? '#ffffff' : '#1a1a2e'
   const cardBg = isDarkBg ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)'
   const border = isDarkBg ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.08)'
@@ -428,13 +429,13 @@ export function renderDeckHtml(
   <a href="#deck" class="skip-link">Skip to slides</a>
   <div aria-live="polite" class="sr-only" id="announcer"></div>
 
-  <div id="deck">
+  <div id="deck" tabindex="-1" role="region" aria-label="${title}">
 ${slidesHtml}
   </div>
 
   <nav id="nav-bar">
     <button id="prev-btn" aria-label="Previous">&larr;</button>
-    <input type="range" id="scrubber" min="0" max="${slideCount - 1}" value="0" aria-label="Slide progress">
+    <input type="range" id="scrubber" min="0" max="${slideCount - 1}" value="0" aria-label="Slide position" aria-valuetext="Slide 1 of ${slideCount}">
     <span id="slide-counter">1 / ${slideCount}</span>
     <button id="next-btn" aria-label="Next">&rarr;</button>
   </nav>

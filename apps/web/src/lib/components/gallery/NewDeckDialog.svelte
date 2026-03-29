@@ -54,7 +54,7 @@
 
       <form onsubmit={handleSubmit}>
         {#if error}
-          <div class="error-message">{error}</div>
+          <div class="error-message" role="alert">{error}</div>
         {/if}
 
         <label class="field">

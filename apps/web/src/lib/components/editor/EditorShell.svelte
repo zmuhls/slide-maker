@@ -83,7 +83,7 @@
 <div class="editor-wrapper">
 <div class="editor-shell" class:resizing={draggingLeft || draggingRight}>
   {#if !leftCollapsed}
-    <div class="left-panel" style:width="{leftWidth}px" style:min-width="{leftWidth}px">
+    <div class="left-panel" style:width="{leftWidth}px" style:min-width="{leftWidth}px" role="complementary" aria-label="Chat and outline">
       <div class="chat-section">
         <ChatPanel />
       </div>
@@ -100,7 +100,7 @@
     {leftCollapsed ? '▶' : '◀'}
   </button>
 
-  <div class="center-panel">
+  <div class="center-panel" role="main" aria-label="Slide editor">
     <SlideCanvas {editable} bind:canvasMode />
   </div>
 
@@ -112,7 +112,7 @@
     <div class="resize-handle right-handle" onmousedown={startRightResize}>
       <div class="handle-line"></div>
     </div>
-    <div class="right-panel" style:width="{rightWidth}px" style:min-width="{rightWidth}px">
+    <div class="right-panel" style:width="{rightWidth}px" style:min-width="{rightWidth}px" role="complementary" aria-label="Resources">
       <ResourcePanel />
     </div>
   {/if}

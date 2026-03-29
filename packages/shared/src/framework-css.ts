@@ -228,8 +228,8 @@ export const FRAMEWORK_CSS_EXPORT = FRAMEWORK_CSS_BASE + `
 .slide.active { display: flex; }
 
 /* ── Step Reveal ─────────────────────────────────────────────────── */
-.step-hidden { opacity: 0; transform: translateY(4px); }
-.step-visible { opacity: 1; transform: translateY(0); transition: opacity 0.3s ease, transform 0.3s ease; }
+.step-hidden { opacity: 0; visibility: hidden; transform: translateY(4px); }
+.step-visible { opacity: 1; visibility: visible; transform: translateY(0); transition: opacity 0.3s ease, transform 0.3s ease, visibility 0.3s ease; }
 
 /* ── Nav Bar ─────────────────────────────────────────────────────── */
 #nav-bar {
@@ -242,7 +242,7 @@ export const FRAMEWORK_CSS_EXPORT = FRAMEWORK_CSS_BASE + `
   font-size: 13px; user-select: none;
   transition: opacity 0.3s;
 }
-#nav-bar:not(:hover) { opacity: 0.5; }
+#nav-bar:not(:hover) { opacity: 0.75; }
 #nav-bar:hover { opacity: 1; }
 #nav-bar button {
   background: none; border: none; color: rgba(240,240,240,0.7); font-size: 16px;

@@ -183,7 +183,7 @@
     <ModelSelector />
   </div>
 
-  <div class="messages" bind:this={messagesContainer}>
+  <div class="messages" bind:this={messagesContainer} aria-live="polite">
     {#if messages.length === 0}
       <div class="empty-state">
         <p>Ask the AI to create slides, edit content, or change the theme.</p>

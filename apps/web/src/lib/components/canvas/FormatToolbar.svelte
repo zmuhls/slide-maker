@@ -40,7 +40,7 @@
       const val = (e.target as HTMLSelectElement).value
       if (val === 'p') { editor?.chain().focus().setParagraph().run() }
       else { editor?.chain().focus().toggleHeading({ level: Number(val) as 1|2|3|4 }).run() }
-    }} title="Text Style">
+    }} title="Text Style" aria-label="Text style">
       <option value="p">Normal</option>
       <option value="1">H1</option>
       <option value="2">H2</option>
@@ -58,7 +58,7 @@
         const el = editor?.view.dom
         if (el) el.style.fontSize = size
       }
-    }} title="Font Size">
+    }} title="Font Size" aria-label="Font size">
       <option value="default">Size</option>
       <option value="12px">12</option>
       <option value="14px">14</option>
@@ -70,30 +70,30 @@
       <option value="32px">32</option>
     </select>
     <div class="sep"></div>
-    <button class="fmt-btn" class:active={isBold} onmousedown={cmd(() => editor?.chain().focus().toggleBold().run())} title="Bold (Ctrl+B)"><strong>B</strong></button>
-    <button class="fmt-btn" class:active={isItalic} onmousedown={cmd(() => editor?.chain().focus().toggleItalic().run())} title="Italic (Ctrl+I)"><em>I</em></button>
+    <button class="fmt-btn" class:active={isBold} aria-pressed={isBold} onmousedown={cmd(() => editor?.chain().focus().toggleBold().run())} title="Bold (Ctrl+B)"><strong>B</strong></button>
+    <button class="fmt-btn" class:active={isItalic} aria-pressed={isItalic} onmousedown={cmd(() => editor?.chain().focus().toggleItalic().run())} title="Italic (Ctrl+I)"><em>I</em></button>
     <div class="sep"></div>
-    <button class="fmt-btn" class:active={isLink} onmousedown={cmd(() => {
+    <button class="fmt-btn" class:active={isLink} aria-pressed={isLink} aria-label="Insert link" onmousedown={cmd(() => {
       if (editor?.isActive('link')) { editor?.chain().focus().unsetLink().run() }
       else { const url = prompt('URL:'); if (url && /^https?:\/\//i.test(url)) editor?.chain().focus().setLink({ href: url }).run() }
     })} title="Link">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
     </button>
     <div class="sep"></div>
-    <button class="fmt-btn" class:active={isBulletList} onmousedown={cmd(() => editor?.chain().focus().toggleBulletList().run())} title="Bullet List">
+    <button class="fmt-btn" class:active={isBulletList} aria-pressed={isBulletList} aria-label="Bullet list" onmousedown={cmd(() => editor?.chain().focus().toggleBulletList().run())} title="Bullet List">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="4" cy="6" r="2"/><circle cx="4" cy="12" r="2"/><circle cx="4" cy="18" r="2"/><rect x="9" y="5" width="12" height="2" rx="1"/><rect x="9" y="11" width="12" height="2" rx="1"/><rect x="9" y="17" width="12" height="2" rx="1"/></svg>
     </button>
-    <button class="fmt-btn" class:active={isOrderedList} onmousedown={cmd(() => editor?.chain().focus().toggleOrderedList().run())} title="Numbered List">
+    <button class="fmt-btn" class:active={isOrderedList} aria-pressed={isOrderedList} aria-label="Numbered list" onmousedown={cmd(() => editor?.chain().focus().toggleOrderedList().run())} title="Numbered List">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><text x="1" y="8" font-size="7" font-weight="bold" font-family="sans-serif">1</text><text x="1" y="15" font-size="7" font-weight="bold" font-family="sans-serif">2</text><text x="1" y="21" font-size="7" font-weight="bold" font-family="sans-serif">3</text><rect x="9" y="5" width="12" height="2" rx="1"/><rect x="9" y="11" width="12" height="2" rx="1"/><rect x="9" y="17" width="12" height="2" rx="1"/></svg>
     </button>
     <div class="sep"></div>
-    <button class="fmt-btn" onmousedown={cmd(() => { const el = editor?.view.dom; if (el) el.style.textAlign = 'left' })} title="Align Left">
+    <button class="fmt-btn" aria-label="Align left" onmousedown={cmd(() => { const el = editor?.view.dom; if (el) el.style.textAlign = 'left' })} title="Align Left">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><rect x="3" y="4" width="18" height="2" rx="1"/><rect x="3" y="9" width="12" height="2" rx="1"/><rect x="3" y="14" width="16" height="2" rx="1"/><rect x="3" y="19" width="10" height="2" rx="1"/></svg>
     </button>
-    <button class="fmt-btn" onmousedown={cmd(() => { const el = editor?.view.dom; if (el) el.style.textAlign = 'center' })} title="Align Center">
+    <button class="fmt-btn" aria-label="Align center" onmousedown={cmd(() => { const el = editor?.view.dom; if (el) el.style.textAlign = 'center' })} title="Align Center">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><rect x="3" y="4" width="18" height="2" rx="1"/><rect x="6" y="9" width="12" height="2" rx="1"/><rect x="4" y="14" width="16" height="2" rx="1"/><rect x="7" y="19" width="10" height="2" rx="1"/></svg>
     </button>
-    <button class="fmt-btn" onmousedown={cmd(() => { const el = editor?.view.dom; if (el) el.style.textAlign = 'right' })} title="Align Right">
+    <button class="fmt-btn" aria-label="Align right" onmousedown={cmd(() => { const el = editor?.view.dom; if (el) el.style.textAlign = 'right' })} title="Align Right">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><rect x="3" y="4" width="18" height="2" rx="1"/><rect x="9" y="9" width="12" height="2" rx="1"/><rect x="5" y="14" width="16" height="2" rx="1"/><rect x="11" y="19" width="10" height="2" rx="1"/></svg>
     </button>
   </div>
@@ -167,12 +167,17 @@
     font-size: 11px;
     font-family: var(--font-body);
     cursor: pointer;
-    outline: none;
     font-weight: 600;
   }
 
   .heading-select:hover {
     border-color: var(--color-primary);
+  }
+
+  .heading-select:focus-visible {
+    border-color: var(--color-primary);
+    outline: 2px solid var(--color-primary);
+    outline-offset: 1px;
   }
 
   .font-size-select {
@@ -185,10 +190,15 @@
     font-size: 11px;
     font-family: var(--font-body);
     cursor: pointer;
-    outline: none;
   }
 
   .font-size-select:hover {
     border-color: var(--color-primary);
+  }
+
+  .font-size-select:focus-visible {
+    border-color: var(--color-primary);
+    outline: 2px solid var(--color-primary);
+    outline-offset: 1px;
   }
 </style>

@@ -27,19 +27,21 @@
 </script>
 
 <div class="resource-panel">
-  <div class="tab-bar">
+  <div class="tab-bar" role="tablist">
     {#each tabs as tab}
       <button
         class="tab-btn"
         class:active={activeTab === tab.key}
         onclick={() => setTab(tab.key)}
+        role="tab"
+        aria-selected={activeTab === tab.key}
       >
         {tab.label}
       </button>
     {/each}
   </div>
 
-  <div class="tab-content">
+  <div class="tab-content" role="tabpanel">
     {#if activeTab === 'files'}
       <FilesTab {deckId} />
     {:else if activeTab === 'templates'}

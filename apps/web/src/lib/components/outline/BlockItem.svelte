@@ -97,6 +97,7 @@
           class="field-select"
           value={String(block.data.level ?? '2')}
           onchange={(e) => handleSelectInput('level', e)}
+          aria-label="Heading level"
         >
           <option value="1">H1</option>
           <option value="2">H2</option>
@@ -115,6 +116,7 @@
           class="field-select"
           value={String(block.data.color ?? 'cyan')}
           onchange={(e) => handleSelectInput('color', e)}
+          aria-label="Label color"
         >
           {#each LABEL_COLORS as color}
             <option value={color}>{color}</option>

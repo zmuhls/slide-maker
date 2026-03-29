@@ -123,8 +123,9 @@
     onkeydown={handleKeydown}
     disabled={$chatStreaming || uploading}
     rows={2}
+    aria-label="Message to AI assistant"
   ></textarea>
-  <button onclick={handleSubmit} disabled={$chatStreaming || uploading || !text.trim()}>
+  <button onclick={handleSubmit} disabled={$chatStreaming || uploading || !text.trim()} aria-label="Send message">
     {#if $chatStreaming || uploading}
       <span class="spinner"></span>
     {:else}

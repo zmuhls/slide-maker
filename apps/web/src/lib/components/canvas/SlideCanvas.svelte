@@ -169,7 +169,7 @@
 </script>
 
 <!-- svelte-ignore a11y_no_static_element_interactions -->
-<div class="slide-canvas" onkeydown={handleCanvasKeydown}>
+<div class="slide-canvas" onkeydown={handleCanvasKeydown} role="region" aria-label="Slide editor">
   <CanvasToolbar {canvasMode} onSetMode={setMode} onPreview={openPreview} />
   <PresenceBar {otherUsers} />
   {#if editable && canvasMode === 'edit'}
@@ -193,7 +193,7 @@
           {/key}
           {#if editable}
             <!-- svelte-ignore a11y_no_static_element_interactions -->
-            <div class="click-overlay" onclick={() => setMode('edit')}></div>
+            <div class="click-overlay" onclick={() => setMode('edit')} tabindex="0" role="button" aria-label="Edit slide" onkeydown={(e) => (e.key === 'Enter' || e.key === ' ') && setMode('edit')}></div>
             <div class="edit-hint">Click to edit</div>
           {/if}
         </div>
