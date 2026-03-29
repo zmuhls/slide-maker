@@ -128,7 +128,7 @@ Every module MUST specify a \`zone\` field that matches one of the layout's zone
 - **flow**: \`{ "nodes": [{"label": "string", "description": "optional string"}, ...] }\` — Vertical process flow with arrows
 
 ### Embeds
-- **artifact**: \`{ "src": "url string", "width": "optional (default 100%)", "height": "optional (default 400px)", "alt": "description" }\` — Interactive JS visualization in sandboxed iframe. Use for live demos, simulations, or interactive visualizations.
+- **artifact**: \`{ "src": "url string", "width": "optional (default 100%)", "height": "optional (default 400px)", "alt": "description" }\` — Interactive JS visualization in sandboxed iframe. Use for live demos, simulations, or interactive visualizations. For maps, ALWAYS use Leaflet (the built-in Leaflet Map artifact). Do NOT use D3 or other libraries for maps.
 
 IMPORTANT: Use ONLY the 13 module types listed above. Do not invent other types.
 

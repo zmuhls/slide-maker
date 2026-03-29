@@ -256,61 +256,46 @@ events.forEach((ev,i)=>{
 });
 <\/script></body></html>`
 
-  // ── Choropleth Map (US states) — self-contained cartogram ────────
-  const choroplethSource = `<!DOCTYPE html><html><head><style>
-body{margin:0;font-family:Inter,system-ui,sans-serif;background:#0d1117;color:#e2e8f0;display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;overflow:hidden}
-.grid{display:inline-grid;grid-template-columns:repeat(12,1fr);gap:3px;padding:16px}
-.cell{width:48px;height:48px;border-radius:6px;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;transition:transform .15s,opacity .15s;position:relative;font-size:11px;font-weight:600;line-height:1.1}
-.cell:hover{transform:scale(1.12);z-index:2}
-.cell .val{font-size:9px;font-weight:400;opacity:.8;margin-top:1px}
-.empty{pointer-events:none}
-.tooltip{position:fixed;background:#1e293b;color:#e2e8f0;padding:6px 12px;border-radius:6px;font-size:12px;pointer-events:none;opacity:0;transition:opacity .15s;white-space:nowrap;z-index:10;box-shadow:0 2px 8px rgba(0,0,0,.3)}
-.legend{display:flex;align-items:center;gap:8px;margin-top:8px}
-.legend-bar{width:200px;height:10px;border-radius:5px}
-.legend-label{font-size:11px;color:#94a3b8}
+  // ── Leaflet Map — interactive, pannable, zoomable ────────
+  const choroplethSource = `<!DOCTYPE html><html><head>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"><\/script>
+<style>
+body{margin:0;height:100vh;overflow:hidden}
+#map{width:100%;height:100%}
+.info{padding:6px 10px;background:rgba(30,41,59,0.9);color:#e2e8f0;border-radius:6px;font:13px Inter,system-ui,sans-serif;box-shadow:0 2px 8px rgba(0,0,0,.3)}
+.info b{display:block;font-size:14px;margin-bottom:2px}
+.leaflet-control-attribution{font-size:10px!important}
 </style></head><body>
-<div class="grid" id="grid"></div>
-<div id="tip" class="tooltip"></div>
-<div class="legend"><span class="legend-label">Low</span><div class="legend-bar" id="lb"></div><span class="legend-label">High</span></div>
+<div id="map"></div>
 <script>
 const cfg=JSON.parse(document.body.dataset.config||'{}');
-const states=cfg.states||{CA:80,NY:65,TX:45,FL:60,IL:50,PA:55,OH:40,GA:58,NC:52,MI:38};
-const cs=cfg.colorScale||'blues';
-const names={AL:"Alabama",AK:"Alaska",AZ:"Arizona",AR:"Arkansas",CA:"California",CO:"Colorado",CT:"Connecticut",DE:"Delaware",DC:"District of Columbia",FL:"Florida",GA:"Georgia",HI:"Hawaii",ID:"Idaho",IL:"Illinois",IN:"Indiana",IA:"Iowa",KS:"Kansas",KY:"Kentucky",LA:"Louisiana",ME:"Maine",MD:"Maryland",MA:"Massachusetts",MI:"Michigan",MN:"Minnesota",MS:"Mississippi",MO:"Missouri",MT:"Montana",NE:"Nebraska",NV:"Nevada",NH:"New Hampshire",NJ:"New Jersey",NM:"New Mexico",NY:"New York",NC:"North Carolina",ND:"North Dakota",OH:"Ohio",OK:"Oklahoma",OR:"Oregon",PA:"Pennsylvania",RI:"Rhode Island",SC:"South Carolina",SD:"South Dakota",TN:"Tennessee",TX:"Texas",UT:"Utah",VT:"Vermont",VA:"Virginia",WA:"Washington",WV:"West Virginia",WI:"Wisconsin",WY:"Wyoming"};
-const layout=[
-[0,0,0,0,0,0,0,0,0,0,0,"ME"],
-[0,0,0,0,0,0,0,0,0,0,"VT","NH"],
-[0,"WA","MT","ND","MN","WI",0,"MI","NY","MA","RI",0],
-[0,"OR","ID","SD",0,"IA","IL","IN","OH","PA","CT","NJ"],
-[0,"NV","WY","NE","MO","KY","WV","VA","MD","DE",0,0],
-["CA","UT","CO","KS",0,"TN","NC","SC","DC",0,0,0],
-[0,"AZ","NM","OK","AR",0,"MS","AL","GA",0,0,0],
-[0,0,0,"TX","LA",0,0,0,"FL",0,0,0],
-["HI",0,0,0,"AK",0,0,0,0,0,0,0]
+const markers=cfg.markers||[
+  {lat:40.7128,lng:-74.006,label:'New York',value:'Pop: 8.3M'},
+  {lat:34.0522,lng:-118.2437,label:'Los Angeles',value:'Pop: 3.9M'},
+  {lat:41.8781,lng:-87.6298,label:'Chicago',value:'Pop: 2.7M'},
+  {lat:29.7604,lng:-95.3698,label:'Houston',value:'Pop: 2.3M'},
+  {lat:33.749,lng:-84.388,label:'Atlanta',value:'Pop: 498K'}
 ];
-const scales={blues:['#eff6ff','#3b82f6','#1e3a8a'],greens:['#f0fdf4','#22c55e','#14532d'],reds:['#fef2f2','#ef4444','#7f1d1d'],purples:['#faf5ff','#a855f7','#581c87']};
-const pal=scales[cs]||scales.blues;
-const vals=Object.values(states);
-const mn=vals.length?Math.min(...vals):0,mx=vals.length?Math.max(...vals):100;
-function lerp(a,b,t){return Math.round(a+(b-a)*t)}
-function colorAt(t){const p=s=>parseInt(s.slice(1),16);const c0=p(pal[0]),c1=p(pal[1]),c2=p(pal[2]);
-const lo=t<.5?0:1,hi=t<.5?1:2,lt=t<.5?t*2:(t-.5)*2;
-const a=t<.5?c0:c1,b2=t<.5?c1:c2;
-const r=lerp((a>>16)&255,(b2>>16)&255,lt),g=lerp((a>>8)&255,(b2>>8)&255,lt),bl=lerp(a&255,b2&255,lt);
-return 'rgb('+r+','+g+','+bl+')';}
-document.getElementById('lb').style.background='linear-gradient(to right,'+pal.join(',')+')';
-const grid=document.getElementById('grid'),tip=document.getElementById('tip');
-layout.forEach(row=>{row.forEach(c=>{
-const d=document.createElement('div');
-if(!c||c===0){d.className='cell empty';grid.appendChild(d);return;}
-const v=states[c];const t=mx>mn?(v!=null?(v-mn)/(mx-mn):null):0.5;
-d.className='cell';d.style.background=t!=null?colorAt(t):'#1e293b';
-d.style.color=t!=null&&t>0.45?'#fff':'#e2e8f0';
-d.innerHTML=c+(v!=null?'<span class="val">'+v+'</span>':'');
-d.addEventListener('mouseenter',e=>{tip.textContent=(names[c]||c)+': '+(v!=null?v:'N/A');tip.style.opacity='1';});
-d.addEventListener('mousemove',e=>{tip.style.left=(e.clientX+12)+'px';tip.style.top=(e.clientY-32)+'px';});
-d.addEventListener('mouseleave',()=>{tip.style.opacity='0';});
-grid.appendChild(d);});});
+const center=cfg.center||[39.8,-98.6];
+const zoom=cfg.zoom||4;
+const style=cfg.style||'default';
+const tiles={
+  default:'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+  dark:'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+  light:'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
+  satellite:'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'
+};
+const map=L.map('map',{zoomControl:true}).setView(center,zoom);
+L.tileLayer(tiles[style]||tiles.default,{
+  maxZoom:18,
+  attribution:'&copy; <a href="https://openstreetmap.org">OSM</a>'
+}).addTo(map);
+markers.forEach(m=>{
+  const mk=L.circleMarker([m.lat,m.lng],{radius:8,fillColor:'#3b82f6',color:'#1e3a8a',weight:2,fillOpacity:0.85});
+  mk.bindPopup('<div class="info"><b>'+m.label+'</b>'+(m.value?m.value:'')+'</div>');
+  mk.addTo(map);
+});
 <\/script></body></html>`
 
   const starterArtifacts = [
@@ -386,24 +371,36 @@ grid.appendChild(d);});});
     },
     {
       id: 'artifact-choropleth-map',
-      name: 'US Choropleth Map',
-      description: 'A US states map colored by value. Configure state-value pairs via config.',
+      name: 'Leaflet Map',
+      description: 'An interactive Leaflet map with markers, multiple tile styles (default, dark, light, satellite), zoom and pan. Configure markers, center, zoom, and tile style.',
       type: 'map' as const,
       source: choroplethSource,
       config: {
-        states: {
-          type: 'object',
-          label: 'State Values (2-letter abbreviations)',
-          default: {
-            CA: 80, TX: 72, NY: 90, FL: 68, IL: 55,
-            PA: 60, OH: 45, GA: 62, NC: 58, MI: 40,
+        markers: {
+          type: 'array',
+          label: 'Map Markers',
+          itemShape: { lat: 'number', lng: 'number', label: 'string', value: 'string' },
+          default: [
+            { lat: 40.7128, lng: -74.006, label: 'New York', value: 'Pop: 8.3M' },
+            { lat: 34.0522, lng: -118.2437, label: 'Los Angeles', value: 'Pop: 3.9M' },
+            { lat: 41.8781, lng: -87.6298, label: 'Chicago', value: 'Pop: 2.7M' },
           },
         },
-        colorScale: {
+        center: {
+          type: 'array',
+          label: 'Map Center [lat, lng]',
+          default: [39.8, -98.6],
+        },
+        zoom: {
+          type: 'number',
+          label: 'Zoom Level (1-18)',
+          default: 4,
+        },
+        style: {
           type: 'string',
-          label: 'Color Scale',
-          default: 'blues',
-          enum: ['blues', 'greens', 'reds', 'purples'],
+          label: 'Map Style',
+          default: 'dark',
+          enum: ['default', 'dark', 'light', 'satellite'],
         },
       },
       builtIn: true,
