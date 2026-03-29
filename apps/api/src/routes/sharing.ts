@@ -270,7 +270,7 @@ sharing.delete('/:id/lock', async (c) => {
 // POST /:id/lock/heartbeat — Refresh lock TTL
 sharing.post('/:id/lock/heartbeat', heartbeatRateLimit, async (c) => {
   const user = c.get('user')
-  const deckId = c.req.param('id')
+  const deckId = c.req.param('id')!
 
   const lock = await db
     .select()
@@ -300,7 +300,7 @@ const PRESENCE_TTL_MS = 2 * 60 * 1000 // 2 minutes
 // POST /:id/presence — Heartbeat: upsert my presence
 sharing.post('/:id/presence', heartbeatRateLimit, async (c) => {
   const user = c.get('user')
-  const deckId = c.req.param('id')
+  const deckId = c.req.param('id')!
 
   // Must have access
   const access = await db
