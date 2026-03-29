@@ -45,6 +45,21 @@
 
   let layoutType = $derived(slide.layout ?? 'layout-content')
 
+  // Modules whose zone doesn't match any rendered zone for this layout
+  let orphanModules = $derived.by(() => {
+    const layout = layoutType
+    const renderedZones = new Set<string>()
+    if (layout === 'title-slide' || layout === 'layout-divider' || layout === 'closing-slide') {
+      renderedZones.add('hero')
+    } else if (layout === 'layout-split') {
+      renderedZones.add('content')
+      renderedZones.add('stage')
+    } else {
+      renderedZones.add('main')
+    }
+    return sorted.filter((m) => !renderedZones.has(m.zone))
+  })
+
   // Branding from deck metadata
   let branding = $derived.by(() => {
     const deck = get(currentDeck)
@@ -202,6 +217,23 @@
       />
     </div>
   {/if}
+  {#if editable && orphanModules.length > 0}
+    <div class="orphan-zone">
+      <div class="orphan-label">Wrong zone for this layout — move or delete:</div>
+      <ZoneDrop
+        modules={orphanModules}
+        zone={orphanModules[0]?.zone ?? 'main'}
+        {editable}
+        deckId={slide.deckId}
+        slideId={slide.id}
+        onReorder={handleReorder}
+        onModuleDataChange={handleModuleDataChange}
+        onModuleDelete={handleModuleDelete}
+        onModuleStepChange={handleModuleStepChange}
+        {onEditorReady}
+      />
+    </div>
+  {/if}
 </div>
 
 <style>
@@ -276,6 +308,22 @@
     justify-content: flex-start;
     gap: clamp(1rem, 2vw, 24px);
     padding-top: clamp(0.5rem, 2vw, 2rem);
+  }
+
+  /* ── Orphan modules (wrong zone) ── */
+  .orphan-zone {
+    border-top: 2px dashed rgba(248, 113, 113, 0.4);
+    padding: clamp(0.5rem, 1.5vw, 1rem) clamp(1rem, 3vw, 2rem);
+    background: rgba(248, 113, 113, 0.05);
+  }
+  .orphan-label {
+    font-size: 0.7rem;
+    color: #f87171;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-bottom: 8px;
+    text-align: center;
   }
 
   /* ── Branding logo ── */
