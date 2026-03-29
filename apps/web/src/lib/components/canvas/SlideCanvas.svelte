@@ -263,13 +263,11 @@
   }
   .slide-frame {
     width: 100%;
-    height: 100%;
-    max-height: 100%;
-    aspect-ratio: 16 / 9;
+    min-height: 100%;
     background: white;
     border-radius: var(--radius-md);
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-    overflow: hidden;
+    overflow: visible;
   }
   .no-slide {
     color: var(--color-text-muted);

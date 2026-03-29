@@ -231,13 +231,13 @@ export const FRAMEWORK_CSS_EXPORT = FRAMEWORK_CSS_BASE + `
 /* ── Slide Base (multi-slide deck) ──────────────────────────────── */
 .slide {
   display: none; position: absolute; top: 0; left: 0; width: 100vw; height: 100vh;
-  padding: 60px 80px; overflow: hidden; flex-direction: column; justify-content: center;
+  padding: 60px 80px; overflow: auto; flex-direction: column; justify-content: flex-start;
 }
 .slide.active { display: flex; }
 
-/* ── Auto-shrink: keep slide content within viewport ────────────── */
+/* ── Zone overflow: allow scrolling if content exceeds viewport ── */
 .slide > .content, .slide > .stage, .slide > .main, .slide > .hero {
-  overflow: hidden; min-height: 0;
+  overflow: visible; min-height: 0; flex-shrink: 0;
 }
 
 /* ── Step Reveal ─────────────────────────────────────────────────── */
@@ -321,13 +321,13 @@ export const FRAMEWORK_CSS_EXPORT = FRAMEWORK_CSS_BASE + `
 export const FRAMEWORK_CSS_PREVIEW = FRAMEWORK_CSS_BASE + `
 /* ── Slide Base (single-slide preview) ──────────────────────────── */
 .slide {
-  display: flex; position: relative; width: 100%; height: 100vh;
-  padding: 60px 80px; overflow: hidden; flex-direction: column; justify-content: center;
+  display: flex; position: relative; width: 100%; min-height: 100vh;
+  padding: 60px 80px; overflow: visible; flex-direction: column; justify-content: flex-start;
 }
 
-/* ── Auto-shrink: keep slide content within viewport ────────────── */
+/* ── Zone overflow ────────────────────────────────────────────────── */
 .slide > .content, .slide > .stage, .slide > .main, .slide > .hero {
-  overflow: hidden; min-height: 0;
+  overflow: visible; min-height: 0; flex-shrink: 0;
 }
 
 /* ── Step Reveal (all visible in preview, with step indicator) ──── */
