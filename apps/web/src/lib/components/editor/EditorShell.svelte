@@ -177,35 +177,63 @@
     position: absolute;
     top: 50%;
     transform: translateY(-50%);
-    width: 20px;
-    height: 48px;
-    background: var(--color-bg);
+    width: 22px;
+    height: 52px;
+    background: var(--color-bg-tertiary);
     border: 1px solid var(--color-border);
-    color: var(--color-text-muted);
+    color: var(--color-text-secondary);
     font-size: 10px;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
     z-index: 20;
-    transition: background 0.15s, color 0.15s;
+    transition: background 0.15s, color 0.15s, box-shadow 0.15s;
     padding: 0;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
   }
 
   .collapse-btn:hover {
-    background: var(--color-bg-secondary);
-    color: var(--color-primary);
+    background: var(--color-primary-dark, #1D3A83);
+    color: white;
+    border-color: var(--color-primary-dark, #1D3A83);
+    box-shadow: 0 2px 8px rgba(29, 58, 131, 0.25);
+  }
+
+  .collapse-btn:active {
+    background: var(--color-primary, #3B73E6);
+    border-color: var(--color-primary, #3B73E6);
+    box-shadow: none;
   }
 
   .left-collapse {
     left: 0;
-    border-radius: 0 4px 4px 0;
+    border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
     border-left: none;
   }
 
   .right-collapse {
     right: 0;
-    border-radius: 4px 0 0 4px;
+    border-radius: var(--radius-sm) 0 0 var(--radius-sm);
     border-right: none;
+  }
+
+  /* Responsive: auto-collapse panels on narrow viewports */
+  @media (max-width: 1024px) {
+    .left-panel {
+      max-width: 240px;
+    }
+    .right-panel {
+      max-width: 220px;
+    }
+  }
+
+  @media (max-width: 860px) {
+    .left-panel {
+      max-width: 200px;
+    }
+    .right-panel {
+      max-width: 180px;
+    }
   }
 </style>
