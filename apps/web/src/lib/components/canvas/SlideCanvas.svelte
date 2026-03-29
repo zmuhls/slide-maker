@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { untrack } from 'svelte'
   import '$lib/framework-preview.css'
   import { API_URL } from '$lib/api'
   import { currentDeck } from '$lib/stores/deck'
@@ -16,8 +17,7 @@
     $currentDeck?.slides.find((s) => s.id === $activeSlideId) ?? null
   )
 
-  // Three-stage canvas mode: edit → view → preview
-  type CanvasMode = 'edit' | 'view' | 'preview'
+  type CanvasMode = 'edit' | 'view'
   let canvasMode: CanvasMode = $state('view')
 
   // Track the active TipTap editor for the format toolbar
@@ -46,19 +46,21 @@
     return renderSlideHtml(activeSlide, theme)
   })
 
-  // Preview URL for full deck preview
-  let previewUrl = $derived(
-    $currentDeck ? `${API_URL}/api/decks/${$currentDeck.id}/preview` : ''
-  )
+  function openPreview() {
+    if (!$currentDeck) return
+    window.open(`${API_URL}/api/decks/${$currentDeck.id}/preview`, '_blank')
+  }
 
-  // Switch back to view when changing slides (unless in preview mode)
+  // Switch back to view when changing slides (only track activeSlideId, not canvasMode)
   $effect(() => {
     // eslint-disable-next-line @typescript-eslint/no-unused-expressions
     $activeSlideId
-    if (canvasMode === 'edit') {
-      canvasMode = 'view'
-      activeEditor = null
-    }
+    untrack(() => {
+      if (canvasMode === 'edit') {
+        canvasMode = 'view'
+        activeEditor = null
+      }
+    })
   })
 
   function setMode(mode: CanvasMode) {
@@ -68,9 +70,8 @@
   }
 
   function handleCanvasKeydown(e: KeyboardEvent) {
-    if (e.key === 'Escape') {
-      if (canvasMode === 'edit') setMode('view')
-      else if (canvasMode === 'preview') setMode('view')
+    if (e.key === 'Escape' && canvasMode === 'edit') {
+      setMode('view')
     }
   }
 
@@ -91,6 +92,9 @@
     const cardBg = dark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)'
     const border = dark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.08)'
 
+    const splitBg = dark ? '#172a45' : '#e8eef6'
+    const gridBg = dark ? '#0f3444' : '#e9f5f7'
+
     return [
       `--theme-bg: ${bg}`,
       `--theme-text: ${text}`,
@@ -104,29 +108,20 @@
       `--theme-body-font: ${bodyFont}`,
       `--theme-card-bg: ${cardBg}`,
       `--theme-border: ${border}`,
+      `--layout-split-bg: ${splitBg}`,
+      `--layout-grid-bg: ${gridBg}`,
     ].join('; ')
   })
 </script>
 
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 <div class="slide-canvas" onkeydown={handleCanvasKeydown}>
-  <CanvasToolbar {canvasMode} onSetMode={setMode} />
+  <CanvasToolbar {canvasMode} onSetMode={setMode} onPreview={openPreview} />
   {#if editable && canvasMode === 'edit'}
     <FormatToolbar editor={activeEditor} />
   {/if}
   <div class="canvas-area">
-    {#if canvasMode === 'preview'}
-      <div class="preview-container fullscreen-preview">
-        {#key previewUrl}
-        <iframe
-          class="slide-preview-frame"
-          src={previewUrl}
-          sandbox="allow-same-origin allow-scripts"
-          title="Deck preview"
-        ></iframe>
-        {/key}
-      </div>
-    {:else if activeSlide}
+    {#if activeSlide}
       {#if canvasMode === 'edit'}
         <div class="slide-frame" style={themeStyle}>
           <SlideRenderer slide={activeSlide} {editable} onEditorReady={handleEditorReady} />
@@ -137,7 +132,7 @@
           <iframe
             class="slide-preview-frame"
             srcdoc={slideHtml}
-            sandbox="allow-same-origin"
+            sandbox="allow-same-origin allow-scripts"
             title="Slide preview"
           ></iframe>
           {/key}
@@ -220,13 +215,6 @@
     border-radius: var(--radius-md);
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
     overflow: hidden;
-  }
-  .fullscreen-preview {
-    width: 100%;
-    height: 100%;
-    max-height: 100%;
-    aspect-ratio: auto;
-    cursor: default;
   }
   .no-slide {
     color: var(--color-text-muted);
