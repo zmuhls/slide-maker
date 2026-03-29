@@ -258,7 +258,12 @@ ${templatesList}
 ## Uploaded Files
 ${files?.length ? files.map((f) => `- "${f.filename}" (${f.mimeType}) → use src: "${f.url}" in image modules`).join('\n') : '(no files uploaded)'}
 
-IMPORTANT: When the user asks to add an uploaded file to a slide, use the EXACT url from the list above as the image src. Do NOT make up URLs or use external image services.
+CRITICAL IMAGE RULES:
+- For uploaded files: use the EXACT url from the list above as the image src.
+- You CANNOT browse the web. You do NOT have internet access. NEVER make up or guess image URLs.
+- NEVER use URLs from wikimedia, unsplash, pexels, or any external source unless the user provides the exact URL.
+- If the user asks for an image you don't have, tell them to upload it via the Files tab or provide the exact URL.
+- If no image is available, use an empty src with a descriptive alt text as placeholder.
 
 ## Guidelines
 - ALWAYS include conversational text alongside mutations. Never respond with only mutation blocks.
