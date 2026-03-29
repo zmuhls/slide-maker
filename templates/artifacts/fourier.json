@@ -1,0 +1,13 @@
+{
+  "id": "artifact-fourier",
+  "name": "Fourier Visualization",
+  "type": "artifact",
+  "source": "https://creative-clawing.com/gallery/fourier.html",
+  "description": "Interactive fourier visualization from Creative Clawing gallery",
+  "category": "interactive-js",
+  "config": {
+    "width": "100%",
+    "height": "400px",
+    "sandbox": "allow-scripts"
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "id": "artifact-life",
+  "name": "Life Visualization",
+  "type": "artifact",
+  "source": "https://creative-clawing.com/gallery/life.html",
+  "description": "Interactive life visualization from Creative Clawing gallery",
+  "category": "interactive-js",
+  "config": {
+    "width": "100%",
+    "height": "400px",
+    "sandbox": "allow-scripts"
+  }
+}
