@@ -35,25 +35,25 @@
 
   let items = $state<Module[]>([])
   let showPicker = $state(false)
-  let prevModuleIds = $state<Set<string>>(new Set())
   let highlightedIds = $state<Set<string>>(new Set())
+  let knownIds: Set<string> = new Set()
 
   $effect(() => {
     items = modules.map((m) => ({ ...m }))
-  })
 
-  $effect(() => {
+    // Detect newly added modules (non-reactive comparison)
     const currentIds = new Set(modules.map((m) => m.id))
-    for (const id of currentIds) {
-      if (!prevModuleIds.has(id)) {
-        highlightedIds.add(id)
-        setTimeout(() => {
-          highlightedIds.delete(id)
-          highlightedIds = new Set(highlightedIds)
-        }, 1500)
+    if (knownIds.size > 0) {
+      for (const id of currentIds) {
+        if (!knownIds.has(id)) {
+          highlightedIds = new Set([...highlightedIds, id])
+          setTimeout(() => {
+            highlightedIds = new Set([...highlightedIds].filter(h => h !== id))
+          }, 1500)
+        }
       }
     }
-    prevModuleIds = currentIds
+    knownIds = currentIds
   })
 
   function handleConsider(e: CustomEvent<{ items: Module[] }>) {

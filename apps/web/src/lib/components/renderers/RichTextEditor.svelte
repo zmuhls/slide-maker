@@ -53,7 +53,7 @@
     editor = new Editor({
       element: editorEl,
       extensions: [
-        StarterKit,
+        StarterKit.configure({ link: false }),
         Link.configure({ openOnClick: false }),
         Placeholder.configure({ placeholder }),
       ],
