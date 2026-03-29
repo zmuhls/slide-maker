@@ -59,13 +59,15 @@
     }
   }
 
+  import { updateSlideInDeck } from '$lib/stores/deck'
+  import { api } from '$lib/api'
+
   async function addModule(type: string) {
     if (adding) return
     adding = true
 
-    const API_URL = import.meta.env.PUBLIC_API_URL ?? 'http://localhost:3001'
-
     try {
+      const API_URL = import.meta.env.PUBLIC_API_URL ?? 'http://localhost:3001'
       const res = await fetch(`${API_URL}/api/decks/${deckId}/slides/${slideId}/blocks`, {
         method: 'POST',
         credentials: 'include',
@@ -74,6 +76,14 @@
       })
 
       if (res.ok) {
+        const result = await res.json()
+        const block = result.block ?? result
+        if (block?.id) {
+          updateSlideInDeck(slideId, (s) => ({
+            ...s,
+            blocks: [...s.blocks, block],
+          }))
+        }
         onAdd()
       }
     } catch (err) {
