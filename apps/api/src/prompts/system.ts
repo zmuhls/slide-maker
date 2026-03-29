@@ -1,37 +1,47 @@
-interface SlideBlock {
+interface SlideModule {
   id: string
   slideId: string
   type: string
+  zone: string
   data: Record<string, unknown>
-  layout: { x: number; y: number; width: number; height: number } | null
   order: number
+  stepOrder?: number | null
 }
 
-interface SlideWithBlocks {
+interface SlideWithModules {
   id: string
   deckId: string
-  type: string
+  layout: string
   order: number
+  splitRatio?: string
   notes: string | null
-  blocks: SlideBlock[]
+  blocks: SlideModule[]
 }
 
 interface DeckState {
   id: string
   name: string
   themeId: string | null
-  slides: SlideWithBlocks[]
+  slides: SlideWithModules[]
+}
+
+interface UploadedFile {
+  id: string
+  filename: string
+  mimeType: string
+  url: string
 }
 
 interface BuildPromptOptions {
   deck: DeckState
   activeSlideId: string | null
-  templates?: { id: string; name: string; slideType: string; blocks: unknown[] }[]
+  templates?: { id: string; name: string; layout: string; modules: unknown[] }[]
   theme?: { id: string; name: string; colors: unknown; fonts: unknown } | null
+  files?: UploadedFile[]
 }
 
 export function buildSystemPrompt(opts: BuildPromptOptions): string {
-  const { deck, activeSlideId, templates, theme } = opts
+  const { deck, activeSlideId, templates, theme, files } = opts
 
   const slidesSummary = deck.slides
     .map((s) => {
@@ -228,6 +238,11 @@ ${slidesSummary || '  (empty deck)'}
 
 ## Available Templates
 ${templatesList}
+
+## Uploaded Files
+${files?.length ? files.map((f) => `- "${f.filename}" (${f.mimeType}) → use src: "${f.url}" in image modules`).join('\n') : '(no files uploaded)'}
+
+IMPORTANT: When the user asks to add an uploaded file to a slide, use the EXACT url from the list above as the image src. Do NOT make up URLs or use external image services.
 
 ## Guidelines
 - ALWAYS include conversational text alongside mutations. Never respond with only mutation blocks.

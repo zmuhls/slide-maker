@@ -4,7 +4,7 @@ import { eq, and, inArray } from 'drizzle-orm'
 import { createId } from '@paralleldrive/cuid2'
 import type { Session, User } from 'lucia'
 import { db } from '../db/index.js'
-import { decks, deckAccess, slides, contentBlocks, chatMessages, templates, themes } from '../db/schema.js'
+import { decks, deckAccess, slides, contentBlocks, chatMessages, templates, themes, uploadedFiles } from '../db/schema.js'
 import { authMiddleware } from '../middleware/auth.js'
 import { getModelStream } from '../providers/index.js'
 import { buildSystemPrompt } from '../prompts/system.js'
@@ -76,10 +76,20 @@ chat.post('/', async (c) => {
       id: b.id,
       slideId: b.slideId,
       type: b.type,
+      zone: b.zone ?? 'content',
       data: (b.data ?? {}) as Record<string, unknown>,
-      layout: b.layout as { x: number; y: number; width: number; height: number } | null,
       order: b.order,
+      stepOrder: b.stepOrder ?? null,
     })),
+  }))
+
+  // Load uploaded files for context
+  const deckFiles = await db.select().from(uploadedFiles).where(eq(uploadedFiles.deckId, deckId))
+  const filesList = deckFiles.map((f) => ({
+    id: f.id,
+    filename: f.filename,
+    mimeType: f.mimeType,
+    url: `/api/decks/${deckId}/files/${f.id}`,
   }))
 
   // Load templates
@@ -87,8 +97,8 @@ chat.post('/', async (c) => {
   const templatesList = allTemplates.map((t) => ({
     id: t.id,
     name: t.name,
-    slideType: t.slideType,
-    blocks: (t.blocks ?? []) as unknown[],
+    layout: t.layout,
+    modules: (t.modules ?? []) as unknown[],
   }))
 
   // Load active theme
@@ -116,6 +126,7 @@ chat.post('/', async (c) => {
     activeSlideId: activeSlideId || null,
     templates: templatesList,
     theme: activeTheme,
+    files: filesList,
   })
 
   // Prepare messages for the LLM
