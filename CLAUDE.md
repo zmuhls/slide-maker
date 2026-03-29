@@ -77,8 +77,10 @@ Do NOT invent new ones. Each module MUST specify a `zone` matching the layout.
 | `card-grid` | `{ cards: [{title, content, color?}], columns?: 2-4 }` | Multi-card grid |
 | `flow` | `{ nodes: [{label, description?}] }` | Process flow with arrows |
 | `stream-list` | `{ items: string[] }` | Styled bullet list |
+| `artifact` | `{ src?, rawSource?, alt?, width?, height? }` | Embedded HTML/JS viz (iframe, sandboxed) |
 
 Renderers: `apps/web/src/lib/components/renderers/`. Dispatched by `ModuleRenderer.svelte`.
+Artifact config utilities: `apps/web/src/lib/utils/artifact-config.ts` (resolves defaults, builds `@artifact:` chat refs).
 
 ### Zone Model
 Modules flow vertically within zones. No absolute x/y positioning.
@@ -87,12 +89,11 @@ Modules flow vertically within zones. No absolute x/y positioning.
 - Modules reorder via ▲/▼ buttons on hover
 - Modules resize via corner drag (bottom-right) — content scales down via CSS `transform: scale()`
 
-### Canvas Rendering (Dual Mode)
-The canvas has two modes:
-- **Preview mode** (default) — iframe with `srcdoc` renders the slide using the exact same HTML/CSS as the export. Guaranteed WYSIWYG. Theme-driven via CSS variables. Client-side HTML renderer at `apps/web/src/lib/utils/slide-html.ts` mirrors the API export renderer.
-- **Edit mode** — double-click or click "Edit" button to switch. Uses SlideRenderer with Svelte components (TipTap, module picker, ▲/▼ controls). Press Escape or "Preview" to switch back.
-
-The iframe srcdoc rebuilds reactively when slide data or theme changes (uses `{#key slideHtml}` for re-render).
+### Canvas Rendering (Two Modes)
+The canvas has two modes (`CanvasMode = 'edit' | 'view'`):
+- **View mode** (default) — iframe with `srcdoc` renders the slide using the exact same HTML/CSS as the export. Guaranteed WYSIWYG. Theme-driven via CSS variables. Client-side HTML renderer at `apps/web/src/lib/utils/slide-html.ts` mirrors the API export renderer. The iframe srcdoc rebuilds reactively when slide data or theme changes (uses `{#key slideHtml}` for re-render).
+- **Edit mode** — double-click or click "Edit" button to switch. Uses SlideRenderer with Svelte components (TipTap, module picker, ▲/▼ controls). Press Escape to switch back.
+- **Preview** — toolbar button opens `{API_URL}/api/decks/{id}/preview` in a new browser tab (full deck preview, not inline). Not a canvas mode — just a `window.open()` call.
 
 ### Canvas Editing (Edit Mode)
 - **Format toolbar** (fixed above slide): heading levels (Normal/H1-H4), font size, bold, italic, link, bullet list, ordered list, align left/center/right
@@ -243,6 +244,15 @@ Full admin panel at `/admin` with:
 - Security audit: `docs/security-audit-2026-03-28.md`
 
 **Do not revert security changes in:** `decks.ts`, `files.ts`, `chat.ts`, `auth.ts`, `index.ts`, `export/index.ts`, `export/html-renderer.ts`, `lucia.ts`
+
+### UI Design System
+Editor chrome uses CSS custom properties defined in `apps/web/src/app.css`. Key tokens:
+- Brand: `--navy`, `--blue`, `--teal`, `--stone` (CUNY palette)
+- Ghost buttons: `--color-ghost-bg` (8% blue tint), `--color-ghost-bg-hover` (12%) — all interactive buttons use ghost/outlined style, no filled backgrounds
+- Radius: `--radius-sm: 6px` — default for all interactive elements
+- No CSS framework (pure CSS + custom properties). No Tailwind.
+
+Buttons across the app follow a ghost pattern: transparent background, 1px border in `var(--color-primary)`, text in `var(--color-primary)`, with `var(--color-ghost-bg)` hover tint. Do not introduce filled-background buttons.
 
 ## Known Issues / Tech Debt
 
