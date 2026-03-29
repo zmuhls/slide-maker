@@ -8,6 +8,7 @@ import { db } from '../db/index.js'
 import { users, emailVerifications } from '../db/schema.js'
 import { lucia } from '../auth/lucia.js'
 import { authMiddleware } from '../middleware/auth.js'
+import { loginRateLimit, registerRateLimit } from '../middleware/rate-limit.js'
 import { sendVerificationEmail } from '../email/index.js'
 
 type AuthEnv = {
@@ -20,7 +21,7 @@ type AuthEnv = {
 const auth = new Hono<AuthEnv>()
 
 // POST /register
-auth.post('/register', async (c) => {
+auth.post('/register', registerRateLimit, async (c) => {
   const body = await c.req.json()
   const { email, password, name } = body
 
@@ -99,7 +100,7 @@ auth.get('/verify', async (c) => {
 })
 
 // POST /login
-auth.post('/login', async (c) => {
+auth.post('/login', loginRateLimit, async (c) => {
   const body = await c.req.json()
   const { email, password } = body
 

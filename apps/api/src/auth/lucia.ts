@@ -10,7 +10,6 @@ export const lucia = new Lucia(adapter, {
     attributes: {
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax' as const,
-      httpOnly: true,
     },
   },
   getUserAttributes: (attributes) => ({

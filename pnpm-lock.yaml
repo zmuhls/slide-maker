@@ -59,6 +59,9 @@ importers:
       openai:
         specifier: ^4.80.0
         version: 4.104.0
+      rate-limiter-flexible:
+        specifier: ^10.0.1
+        version: 10.0.1
       sanitize-html:
         specifier: ^2.17.2
         version: 2.17.2
@@ -2388,6 +2391,9 @@ packages:
     resolution: {integrity: sha512-uxFIHU0YlHYhDQtV4R9J6a52SLx28BCjT+4ieh7IGbgwVJWO+km431c4yRlREUAsAmt/uMjQUyQHNEPf0M39CA==}
     engines: {node: '>=6'}
 
+  rate-limiter-flexible@10.0.1:
+    resolution: {integrity: sha512-3G6GMFz5Oz5nVnDv9gQ1LLMdExR4B1lOjogPIjehtgyxPMIkY09BGyk2eCYt36/OkV/0t12GEt6J6HpTl6RzZg==}
+
   rc@1.2.8:
     resolution: {integrity: sha512-y3bGgqKj3QBdxLbLkomlohkvsA8gdAiUQlSBJnBhfn+BPxg4bc62d8TcBW15wavDfgexCgccckhcZvywyQYPOw==}
     hasBin: true
@@ -4680,6 +4686,8 @@ snapshots:
       once: 1.4.0
 
   punycode.js@2.3.1: {}
+
+  rate-limiter-flexible@10.0.1: {}
 
   rc@1.2.8:
     dependencies:

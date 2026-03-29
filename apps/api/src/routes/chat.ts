@@ -6,6 +6,7 @@ import type { Session, User } from 'lucia'
 import { db } from '../db/index.js'
 import { decks, deckAccess, slides, contentBlocks, chatMessages, templates, themes, uploadedFiles } from '../db/schema.js'
 import { authMiddleware } from '../middleware/auth.js'
+import { chatRateLimit } from '../middleware/rate-limit.js'
 import { getModelStream } from '../providers/index.js'
 import { buildSystemPrompt } from '../prompts/system.js'
 
@@ -21,7 +22,7 @@ const chat = new Hono<AuthEnv>()
 chat.use('*', authMiddleware)
 
 // POST / — Stream chat response via SSE
-chat.post('/', async (c) => {
+chat.post('/', chatRateLimit, async (c) => {
   const user = c.get('user')
   const body = await c.req.json()
   const { message, deckId, activeSlideId, modelId, history } = body
