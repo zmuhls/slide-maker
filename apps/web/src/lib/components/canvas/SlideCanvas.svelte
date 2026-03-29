@@ -115,8 +115,7 @@
           <SlideRenderer slide={activeSlide} {editable} onEditorReady={handleEditorReady} />
         </div>
       {:else}
-        <!-- svelte-ignore a11y_no_static_element_interactions -->
-        <div class="preview-container" ondblclick={enterEditMode}>
+        <div class="preview-container">
           <iframe
             class="slide-preview-frame"
             srcdoc={slideHtml}
@@ -124,6 +123,8 @@
             title="Slide preview"
           ></iframe>
           {#if editable}
+            <!-- svelte-ignore a11y_no_static_element_interactions -->
+            <div class="click-overlay" ondblclick={enterEditMode}></div>
             <div class="edit-hint">Double-click to edit</div>
           {/if}
         </div>
@@ -167,11 +168,18 @@
     border-radius: var(--radius-md);
     background: white;
   }
+  .click-overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    cursor: pointer;
+  }
   .edit-hint {
     position: absolute;
     bottom: 12px;
     left: 50%;
     transform: translateX(-50%);
+    z-index: 2;
     background: rgba(0, 0, 0, 0.6);
     color: rgba(255, 255, 255, 0.85);
     font-size: 0.7rem;
