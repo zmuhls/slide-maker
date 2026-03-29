@@ -65,7 +65,7 @@
 </script>
 
 <div class="add-slide-menu">
-  <button class="add-btn" onclick={toggle}>+ Add</button>
+  <button class="add-btn" onclick={toggle}>+</button>
   {#if open}
     <div class="dropdown">
       {#each layouts as l}
@@ -89,17 +89,17 @@
   .add-btn {
     font-size: 11px;
     padding: 2px 8px;
-    background: #3b82f6;
-    color: white;
-    border: none;
-    border-radius: 3px;
+    background: transparent;
+    color: var(--color-primary);
+    border: 1px solid var(--color-primary);
+    border-radius: var(--radius-sm);
     cursor: pointer;
     font-weight: 500;
     transition: background 0.15s;
   }
 
   .add-btn:hover {
-    background: #2563eb;
+    background: var(--color-ghost-bg);
   }
 
   .dropdown {

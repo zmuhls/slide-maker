@@ -62,7 +62,7 @@
 
   .tab-bar {
     display: flex;
-    border-bottom: 1px solid var(--color-border, #e5e7eb);
+    border-bottom: 1px solid var(--color-bg-tertiary, #f1f5f9);
     flex-shrink: 0;
   }
 
@@ -78,6 +78,10 @@
     cursor: pointer;
     transition: color 0.15s, border-color 0.15s;
     text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-width: 0;
   }
 
   .tab-btn:hover {
@@ -85,8 +89,8 @@
   }
 
   .tab-btn.active {
-    color: #3b82f6;
-    border-bottom-color: #3b82f6;
+    color: var(--color-primary);
+    border-bottom-color: var(--color-primary);
   }
 
   .tab-content {

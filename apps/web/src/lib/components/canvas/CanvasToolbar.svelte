@@ -5,13 +5,15 @@
   import { activeSlideId } from '$lib/stores/ui'
   import { API_URL } from '$lib/api'
 
-  type CanvasMode = 'edit' | 'view' | 'preview'
+  type CanvasMode = 'edit' | 'view'
   let {
     canvasMode = 'view' as CanvasMode,
     onSetMode,
+    onPreview,
   }: {
     canvasMode?: CanvasMode
     onSetMode?: (mode: CanvasMode) => void
+    onPreview?: () => void
   } = $props()
 
   let slides = $derived($currentDeck?.slides ?? [])
@@ -123,9 +125,8 @@
       </button>
       <button
         class="mode-btn"
-        class:active={canvasMode === 'preview'}
-        onclick={() => onSetMode?.('preview')}
-        title="Preview full deck as webpage"
+        onclick={() => onPreview?.()}
+        title="Preview full deck in new tab"
       >
         Preview
       </button>
@@ -153,7 +154,7 @@
       {/if}
     </div>
     <button class="export-btn" onclick={handleExport} disabled={exporting || !$currentDeck}>
-      {exporting ? 'Exporting...' : 'Export ZIP'}
+      {exporting ? '...' : 'Export'}
     </button>
   </div>
 </div>
@@ -163,10 +164,13 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 0.5rem 1rem;
+    padding: 0.5rem 0.75rem;
     border-bottom: 1px solid var(--color-border);
     background: var(--color-bg);
     flex-shrink: 0;
+    gap: 0.25rem;
+    flex-wrap: nowrap;
+    min-width: 0;
   }
   .back-btn {
     background: none;
@@ -193,6 +197,8 @@
     display: flex;
     align-items: center;
     gap: 0.5rem;
+    min-width: 0;
+    flex-shrink: 1;
   }
   .nav-btn {
     background: transparent;
@@ -223,6 +229,8 @@
     display: flex;
     align-items: center;
     gap: 0.5rem;
+    min-width: 0;
+    flex-shrink: 0;
   }
   .branding-wrapper {
     position: relative;
@@ -278,32 +286,37 @@
   }
   .branding-field input:focus,
   .branding-field select:focus {
-    border-color: #3b82f6;
+    border-color: var(--color-primary);
   }
   .branding-save {
     padding: 5px 10px;
     font-size: 11px;
     font-weight: 600;
-    background: #3b82f6;
-    color: white;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-  }
-  .branding-save:hover { opacity: 0.9; }
-  .export-btn {
-    background: var(--color-success);
-    color: white;
-    border: none;
+    background: transparent;
+    color: var(--color-primary);
+    border: 1px solid var(--color-primary);
     border-radius: var(--radius-sm);
-    padding: 0.35rem 0.75rem;
-    font-size: 0.8rem;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .branding-save:hover {
+    background: var(--color-ghost-bg);
+  }
+  .export-btn {
+    background: transparent;
+    color: var(--color-text-secondary);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    padding: 0.3rem 0.7rem;
+    font-size: 0.7rem;
     font-weight: 500;
     cursor: pointer;
-    transition: opacity 0.15s;
+    transition: color 0.15s, border-color 0.15s, background 0.15s;
   }
   .export-btn:hover:not(:disabled) {
-    opacity: 0.9;
+    color: var(--color-primary);
+    border-color: var(--color-primary);
+    background: var(--color-ghost-bg);
   }
   .export-btn:disabled {
     opacity: 0.5;
@@ -311,29 +324,29 @@
   }
   .mode-switcher {
     display: flex;
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-sm);
-    overflow: hidden;
+    border: none;
+    border-radius: 0;
+    overflow: visible;
+    gap: 4px;
   }
   .mode-btn {
     background: transparent;
-    border: none;
-    border-right: 1px solid var(--color-border);
-    padding: 0.35rem 0.65rem;
-    font-size: 0.75rem;
+    border: 1px solid transparent;
+    border-radius: var(--radius-sm);
+    padding: 0.3rem 0.6rem;
+    font-size: 0.7rem;
     font-weight: 500;
     cursor: pointer;
-    color: var(--color-text-secondary);
-    transition: background 0.15s, color 0.15s;
-  }
-  .mode-btn:last-child {
-    border-right: none;
+    color: var(--color-text-muted);
+    transition: background 0.15s, color 0.15s, border-color 0.15s;
   }
   .mode-btn:hover:not(.active) {
-    background: var(--color-bg-tertiary);
+    background: var(--color-ghost-bg);
+    color: var(--color-text-secondary);
   }
   .mode-btn.active {
-    background: var(--color-primary, #3b82f6);
-    color: white;
+    background: var(--color-ghost-bg);
+    color: var(--color-primary);
+    border-color: var(--color-primary);
   }
 </style>

@@ -24,6 +24,8 @@
   --color-text-muted: #94a3b8;
   --color-border: #e2e8f0;
   --color-border-focus: var(--blue);
+  --color-ghost-bg: rgba(59, 115, 230, 0.08);
+  --color-ghost-bg-hover: rgba(59, 115, 230, 0.12);
   --color-success: #10b981;
   --color-error: #ef4444;
   --color-warning: var(--gold);
@@ -37,7 +39,7 @@
   --panel-right-width: 240px;
 
   /* Radii */
-  --radius-sm: 4px;
+  --radius-sm: 6px;
   --radius-md: 8px;
   --radius-lg: 16px;
   --radius-full: 9999px;

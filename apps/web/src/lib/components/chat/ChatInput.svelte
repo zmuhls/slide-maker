@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { chatStreaming } from '$lib/stores/chat'
+  import { chatStreaming, chatDraft } from '$lib/stores/chat'
   import { currentDeck } from '$lib/stores/deck'
   import { api } from '$lib/api'
   import { get } from 'svelte/store'
@@ -12,6 +12,17 @@
   let text = $state('')
   let dragOver = $state(false)
   let uploading = $state(false)
+
+  let textarea: HTMLTextAreaElement | undefined = $state()
+
+  $effect(() => {
+    const draft = $chatDraft
+    if (!draft) return
+    text = text ? `${text}\n${draft}` : draft
+    chatDraft.set('')
+    // Focus the textarea so the user can keep typing
+    textarea?.focus()
+  })
 
   let showAddMenu = $derived(text.trim() === '/add')
 
@@ -106,6 +117,7 @@
     <div class="drop-overlay">Drop file to upload</div>
   {/if}
   <textarea
+    bind:this={textarea}
     bind:value={text}
     placeholder="Ask AI, /add module, /search images..."
     onkeydown={handleKeydown}
@@ -178,20 +190,21 @@
     padding: 6px 14px;
     font-size: 13px;
     font-weight: 500;
-    border: none;
-    border-radius: 4px;
-    background: var(--color-primary, #2563eb);
-    color: white;
+    border: 1px solid var(--color-primary);
+    border-radius: var(--radius-sm);
+    background: transparent;
+    color: var(--color-primary);
     cursor: pointer;
     align-self: flex-end;
-    min-width: 56px;
+    min-width: 48px;
     display: flex;
     align-items: center;
     justify-content: center;
+    transition: background 0.15s;
   }
 
   button:hover:not(:disabled) {
-    opacity: 0.9;
+    background: var(--color-ghost-bg);
   }
 
   button:disabled {
@@ -203,8 +216,8 @@
     display: inline-block;
     width: 14px;
     height: 14px;
-    border: 2px solid rgba(255, 255, 255, 0.3);
-    border-top-color: white;
+    border: 2px solid rgba(59, 115, 230, 0.2);
+    border-top-color: var(--color-primary);
     border-radius: 50%;
     animation: spin 0.6s linear infinite;
   }

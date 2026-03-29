@@ -115,14 +115,14 @@
     border: 1px solid var(--color-border, #e5e7eb);
     border-radius: 4px;
     margin: 0 6px 4px;
-    background: white;
+    background: var(--color-bg);
     cursor: pointer;
     transition: border-color 0.15s, background-color 0.15s;
   }
 
   .slide-card.active {
-    border-color: #3b82f6;
-    background: #eff6ff;
+    border-color: var(--color-primary);
+    background: var(--color-ghost-bg);
   }
 
   .card-header {
@@ -165,13 +165,14 @@
 
   .active-badge {
     font-size: 9px;
-    font-weight: 700;
-    color: #3b82f6;
-    background: #dbeafe;
-    padding: 1px 5px;
-    border-radius: 3px;
+    font-weight: 600;
+    color: var(--color-primary);
+    background: none;
+    padding: 1px 0;
+    border-radius: 0;
     flex-shrink: 0;
-    letter-spacing: 0.3px;
+    letter-spacing: 0.4px;
+    border-bottom: 1.5px solid var(--color-primary);
   }
 
   .delete-btn {
