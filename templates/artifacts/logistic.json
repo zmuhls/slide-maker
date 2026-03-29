@@ -1,0 +1,13 @@
+{
+  "id": "artifact-logistic",
+  "name": "Logistic Visualization",
+  "type": "artifact",
+  "source": "https://creative-clawing.com/gallery/logistic.html",
+  "description": "Interactive logistic visualization from Creative Clawing gallery",
+  "category": "interactive-js",
+  "config": {
+    "width": "100%",
+    "height": "400px",
+    "sandbox": "allow-scripts"
+  }
+}
