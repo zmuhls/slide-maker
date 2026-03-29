@@ -140,10 +140,8 @@
   .zone-drop {
     display: flex;
     flex-direction: column;
-    justify-content: center;
     gap: 12px;
     min-height: 2rem;
-    flex: 1;
     padding: 0;
   }
 
