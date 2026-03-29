@@ -11,14 +11,13 @@
   import SlideRenderer from './SlideRenderer.svelte'
   import type { Editor } from '@tiptap/core'
 
-  let { editable = true }: { editable?: boolean } = $props()
+  type CanvasMode = 'edit' | 'view'
+
+  let { editable = true, canvasMode = $bindable<CanvasMode>('view') }: { editable?: boolean; canvasMode?: CanvasMode } = $props()
 
   let activeSlide = $derived(
     $currentDeck?.slides.find((s) => s.id === $activeSlideId) ?? null
   )
-
-  type CanvasMode = 'edit' | 'view'
-  let canvasMode: CanvasMode = $state('view')
 
   // Track the active TipTap editor for the format toolbar
   let activeEditor: Editor | null = $state(null)
@@ -51,15 +50,12 @@
     window.open(`${API_URL}/api/decks/${$currentDeck.id}/preview`, '_blank')
   }
 
-  // Switch back to view when changing slides (only track activeSlideId, not canvasMode)
+  // Clear stale editor ref when switching slides (keep the current mode)
   $effect(() => {
     // eslint-disable-next-line @typescript-eslint/no-unused-expressions
     $activeSlideId
     untrack(() => {
-      if (canvasMode === 'edit') {
-        canvasMode = 'view'
-        activeEditor = null
-      }
+      activeEditor = null
     })
   })
 
@@ -138,8 +134,8 @@
           {/key}
           {#if editable}
             <!-- svelte-ignore a11y_no_static_element_interactions -->
-            <div class="click-overlay" ondblclick={() => setMode('edit')}></div>
-            <div class="edit-hint">Double-click to edit</div>
+            <div class="click-overlay" onclick={() => setMode('edit')}></div>
+            <div class="edit-hint">Click to edit</div>
           {/if}
         </div>
       {/if}

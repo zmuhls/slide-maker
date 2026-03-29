@@ -22,15 +22,10 @@ All artifacts originate from the Creative Clawing gallery:
 
 | Artifact | Category | Interactive | Description |
 |----------|----------|-------------|-------------|
-| lorenz | chaos | yes (rotate) | Lorenz attractor, 3D trail visualization |
 | boids | emergence | yes (click to add) | Flocking simulation, agent-based movement |
+| fourier | signal | yes (draw path) | Rotating epicycles decompose waveforms |
 | life | cellular automata | yes (draw) | Conway's Game of Life |
-| fourier | signal | yes (draw path) | Fourier series circle drawing |
-| turing | reaction-diffusion | yes (paint) | Turing pattern formation |
-| mandelbrot | fractal | yes (zoom) | Mandelbrot set zoom |
-| nbody | physics | yes (drag) | N-body gravitational simulation |
-| pagerank | graph | yes (click nodes) | PageRank visualization |
-| percolation | phase transition | yes (adjust p) | Percolation grid model |
-| logistic | chaos | yes (hover) | Logistic map bifurcation diagram |
-| voronoi | geometry | yes (click) | Voronoi diagram partitioning |
-| penrose | tiling | no | Aperiodic Penrose tiling |
+| logistic | chaos | yes (hover) | Bifurcation diagram — order meets chaos |
+| lorenz | chaos | yes (rotate) | 3D chaotic butterfly attractor |
+| percolation | phase transition | yes (adjust p) | Phase transition on a probability grid |
+| voronoi | geometry | yes (click) | Click to partition the plane by nearest points |

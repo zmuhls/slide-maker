@@ -2,8 +2,8 @@
   "name": "Branded Hero",
   "layout": "title-slide",
   "modules": [
-    { "type": "heading", "zone": "hero", "data": { "text": "Your Presentation Title", "level": 1 } },
-    { "type": "heading", "zone": "hero", "data": { "text": "A compelling subtitle that sets the tone", "level": 3 } },
-    { "type": "text", "zone": "hero", "data": { "markdown": "Presented by **Your Name** | Department or Organization | Date" } }
+    { "type": "heading", "zone": "hero", "data": { "text": "Presentation Title", "level": 1 } },
+    { "type": "heading", "zone": "hero", "data": { "text": "Subtitle goes here", "level": 3 } },
+    { "type": "text", "zone": "hero", "data": { "markdown": "**Your Name** | Department | Date" } }
   ]
 }

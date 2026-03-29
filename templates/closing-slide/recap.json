@@ -3,11 +3,10 @@
   "layout": "closing-slide",
   "modules": [
     { "type": "heading", "zone": "hero", "data": { "text": "Key Takeaways", "level": 2 } },
-    { "type": "text", "zone": "hero", "data": { "markdown": "Thank you for your attention. Here is a summary of the main points we covered today." } },
     { "type": "stream-list", "zone": "hero", "data": { "items": [
-      { "text": "The problem space and why it matters to our team" },
-      { "text": "Our proposed solution and the tradeoffs we considered" },
-      { "text": "Next steps: prototype by end of sprint, review in two weeks" }
+      { "text": "The problem and why it matters" },
+      { "text": "Our solution and tradeoffs" },
+      { "text": "Next steps and timeline" }
     ] } }
   ]
 }

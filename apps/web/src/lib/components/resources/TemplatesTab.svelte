@@ -42,7 +42,7 @@
 
   const layoutMeta: Record<string, { bg: string; fg: string; accent: string }> = {
     // Keep title/closing close to the existing deep navy
-    'title-slide':      { bg: '#1D3A83', fg: 'rgba(255,255,255,0.25)', accent: 'rgba(255,255,255,0.15)' },
+    'title-slide':      { bg: '#0f2b5c', fg: 'rgba(100,181,246,0.3)', accent: 'rgba(59,130,246,0.2)' },
     // Give split layouts a slightly different navy with cool complement accents
     'layout-split':     { bg: '#172a45', fg: 'rgba(255,255,255,0.22)',  accent: 'rgba(255,255,255,0.12)' },
     // Leave full-content neutral to imply text-first slides
@@ -51,12 +51,12 @@
     'layout-grid':      { bg: '#0f3444', fg: 'rgba(255,255,255,0.22)',  accent: 'rgba(255,255,255,0.12)' },
     'layout-full-dark': { bg: '#333333', fg: 'rgba(255,255,255,0.15)', accent: 'rgba(255,255,255,0.08)' },
     'layout-divider':   { bg: '#3B73E6', fg: 'rgba(255,255,255,0.25)', accent: 'rgba(255,255,255,0.12)' },
-    'closing-slide':    { bg: '#1D3A83', fg: 'rgba(255,255,255,0.25)', accent: 'rgba(255,255,255,0.12)' },
+    'closing-slide':    { bg: '#0f2b5c', fg: 'rgba(100,181,246,0.3)', accent: 'rgba(59,130,246,0.2)' },
   }
 
   const layoutMetaLight: Record<string, { bg: string; fg: string; accent: string }> = {
-    'title-slide':      { bg: '#e4e9f4', fg: 'rgba(29,58,131,0.25)', accent: 'rgba(29,58,131,0.14)' },
-    'closing-slide':    { bg: '#e4e9f4', fg: 'rgba(29,58,131,0.25)', accent: 'rgba(29,58,131,0.14)' },
+    'title-slide':      { bg: '#dce4f5', fg: 'rgba(15,43,92,0.3)', accent: 'rgba(59,130,246,0.18)' },
+    'closing-slide':    { bg: '#dce4f5', fg: 'rgba(15,43,92,0.3)', accent: 'rgba(59,130,246,0.18)' },
     'layout-divider':   { bg: '#e6edfa', fg: 'rgba(59,115,230,0.28)', accent: 'rgba(59,115,230,0.16)' },
     'layout-full-dark': { bg: '#e2e4e8', fg: 'rgba(0,0,0,0.12)', accent: 'rgba(0,0,0,0.06)' },
   }

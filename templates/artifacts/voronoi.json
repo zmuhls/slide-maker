@@ -1,9 +1,9 @@
 {
   "id": "artifact-voronoi",
-  "name": "Voronoi Visualization",
+  "name": "Voronoi",
   "type": "artifact",
   "source": "https://creative-clawing.com/gallery/voronoi.html",
-  "description": "Interactive voronoi visualization from Creative Clawing gallery",
+  "description": "Click to add points that partition the plane into nearest-neighbor regions",
   "category": "interactive-js",
   "config": {
     "width": "100%",

@@ -4,9 +4,9 @@
   "modules": [
     { "type": "heading", "zone": "main", "data": { "text": "Product Roadmap", "level": 2 } },
     { "type": "card-grid", "zone": "main", "data": { "columns": 3, "cards": [
-      { "title": "Q1: Foundation", "body": "Core infrastructure, auth system, basic CRUD operations, and CI/CD pipeline.", "variant": "cyan" },
-      { "title": "Q2: Features", "body": "Real-time collaboration, AI integration, export capabilities, and theme system.", "variant": "cyan" },
-      { "title": "Q3: Scale", "body": "Performance optimization, enterprise features, analytics dashboard, and API v2.", "variant": "cyan" }
+      { "title": "Q1: Foundation", "body": "Core infrastructure and CI/CD.", "variant": "cyan" },
+      { "title": "Q2: Features", "body": "Collaboration and AI integration.", "variant": "cyan" },
+      { "title": "Q3: Scale", "body": "Performance and analytics.", "variant": "cyan" }
     ] } }
   ]
 }

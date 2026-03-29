@@ -54,12 +54,12 @@ export function buildSystemPrompt(opts: BuildPromptOptions): string {
             `      - Module "${b.id}" type="${b.type}" zone="${(b.data as Record<string, unknown>).zone ?? 'unknown'}" data=${JSON.stringify(b.data)}`
         )
         .join('\n')
-      return `    Slide ${s.order + 1} (id="${s.id}", layout="${s.type}")${active}\n${blocksSummary || '      (no modules)'}`
+      return `    Slide ${s.order + 1} (id="${s.id}", layout="${s.layout}")${active}\n${blocksSummary || '      (no modules)'}`
     })
     .join('\n')
 
   const templatesList = templates?.length
-    ? templates.map((t) => `  - "${t.name}" (id="${t.id}", type="${t.slideType}")`).join('\n')
+    ? templates.map((t) => `  - "${t.name}" (id="${t.id}", type="${t.layout}")`).join('\n')
     : '  (none loaded)'
 
   const themeInfo = theme
@@ -128,7 +128,7 @@ Every module MUST specify a \`zone\` field that matches one of the layout's zone
 - **flow**: \`{ "nodes": [{"label": "string", "description": "optional string"}, ...] }\` — Vertical process flow with arrows
 
 ### Embeds
-- **artifact**: \`{ "src": "url string", "width": "optional (default 100%)", "height": "optional (default 400px)", "alt": "description" }\` — Interactive JS visualization in sandboxed iframe. Use for live demos, simulations, or interactive widgets.
+- **artifact**: \`{ "src": "url string", "width": "optional (default 100%)", "height": "optional (default 400px)", "alt": "description" }\` — Interactive JS visualization in sandboxed iframe. Use for live demos, simulations, or interactive visualizations.
 
 IMPORTANT: Use ONLY the 13 module types listed above. Do not invent other types.
 

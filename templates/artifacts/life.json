@@ -1,9 +1,9 @@
 {
   "id": "artifact-life",
-  "name": "Life Visualization",
+  "name": "Game of Life",
   "type": "artifact",
   "source": "https://creative-clawing.com/gallery/life.html",
-  "description": "Interactive life visualization from Creative Clawing gallery",
+  "description": "Conway's cellular automaton — draw cells, watch them evolve",
   "category": "interactive-js",
   "config": {
     "width": "100%",

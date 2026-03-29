@@ -1,5 +1,5 @@
 <script lang="ts">
-  let { data, editing = false } = $props<{
+  let { data, editable = false } = $props<{
     data: {
       src?: string
       url?: string
@@ -9,12 +9,12 @@
       height?: string
       alt?: string
     }
-    editing?: boolean
+    editable?: boolean
   }>()
 
   const width = $derived(data.width || '100%')
   const height = $derived(data.height || '400px')
-  const alt = $derived(data.alt || 'Interactive widget')
+  const alt = $derived(data.alt || 'Interactive visualization')
 
   // Build iframe src: prefer rawSource with config injected, fallback to src/url
   let iframeSrc = $derived.by(() => {
@@ -30,11 +30,17 @@
   })
 </script>
 
-<div class="artifact-module" style="width: {width};">
+<div class="artifact-card">
+  {#if editable}
+    <div class="artifact-header">
+      <span class="artifact-label">{alt}</span>
+    </div>
+  {/if}
   {#if iframeSrc}
     <iframe
       src={iframeSrc}
-      style="width: 100%; height: {height}; border: none; border-radius: 8px;"
+      class="artifact-iframe"
+      class:no-interact={editable}
       sandbox="allow-scripts"
       loading="lazy"
       title={alt}
@@ -42,15 +48,44 @@
   {:else}
     <div class="artifact-placeholder">
       <span class="artifact-icon">?</span>
-      <p>No artifact source URL configured</p>
+      <p>No artifact source configured</p>
     </div>
   {/if}
 </div>
 
 <style>
-  .artifact-module {
-    border-radius: 8px;
+  .artifact-card {
+    border: 1px solid var(--color-border, rgba(255, 255, 255, 0.08));
+    border-radius: 4px;
     overflow: hidden;
+    background: rgba(0, 0, 0, 0.02);
+    max-width: 280px;
+  }
+  .artifact-header {
+    display: flex;
+    align-items: center;
+    padding: 3px 8px;
+    background: rgba(0, 0, 0, 0.04);
+    border-bottom: 1px solid var(--color-border, rgba(255, 255, 255, 0.06));
+    min-height: 20px;
+  }
+  .artifact-label {
+    font-size: 9px;
+    font-weight: 500;
+    color: var(--color-text-muted, #6b7280);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .artifact-iframe {
+    display: block;
+    border: none;
+    width: 100%;
+    aspect-ratio: 1;
+    max-height: 280px;
+  }
+  .artifact-iframe.no-interact {
+    pointer-events: none;
   }
   .artifact-placeholder {
     display: flex;
@@ -60,7 +95,6 @@
     height: 200px;
     background: rgba(255, 255, 255, 0.03);
     border: 1px dashed rgba(255, 255, 255, 0.1);
-    border-radius: 8px;
     color: rgba(255, 255, 255, 0.4);
     font-size: 0.9rem;
   }

@@ -14,6 +14,24 @@
   let draggingLeft = $state(false)
   let draggingRight = $state(false)
 
+  // Canvas mode — bound to SlideCanvas
+  let canvasMode = $state<'edit' | 'view'>('view')
+
+  // Auto-collapse panels in view mode, restore in edit mode
+  let savedLeft = $state(false)
+  let savedRight = $state(false)
+  $effect(() => {
+    if (canvasMode === 'view') {
+      savedLeft = leftCollapsed
+      savedRight = rightCollapsed
+      leftCollapsed = true
+      rightCollapsed = true
+    } else {
+      leftCollapsed = savedLeft
+      rightCollapsed = savedRight
+    }
+  })
+
   const MIN_PANEL = 200
   const MAX_PANEL = 500
 
@@ -72,15 +90,15 @@
     </div>
   {/if}
 
-  <button class="collapse-btn left-collapse" onclick={() => leftCollapsed = !leftCollapsed} title={leftCollapsed ? 'Show left panel' : 'Hide left panel'}>
+  <button class="collapse-btn left-collapse" onclick={() => { if (canvasMode === 'view') { canvasMode = 'edit' } else { leftCollapsed = !leftCollapsed } }} title={leftCollapsed ? 'Show panels & edit' : 'Hide left panel'}>
     {leftCollapsed ? '▶' : '◀'}
   </button>
 
   <div class="center-panel">
-    <SlideCanvas {editable} />
+    <SlideCanvas {editable} bind:canvasMode />
   </div>
 
-  <button class="collapse-btn right-collapse" onclick={() => rightCollapsed = !rightCollapsed} title={rightCollapsed ? 'Show right panel' : 'Hide right panel'}>
+  <button class="collapse-btn right-collapse" onclick={() => { if (canvasMode === 'view') { canvasMode = 'edit' } else { rightCollapsed = !rightCollapsed } }} title={rightCollapsed ? 'Show panels & edit' : 'Hide right panel'}>
     {rightCollapsed ? '◀' : '▶'}
   </button>
 

@@ -4,8 +4,8 @@
   "modules": [
     { "type": "label", "zone": "content", "data": { "text": "Gallery", "color": "cyan" } },
     { "type": "heading", "zone": "content", "data": { "text": "Visual Showcase", "level": 2 } },
-    { "type": "card", "zone": "content", "data": { "title": "Step 1: Setup", "body": "Configure your environment and install dependencies.", "variant": "cyan" } },
-    { "type": "card", "zone": "content", "data": { "title": "Step 2: Build", "body": "Create the components and connect the data layer.", "variant": "cyan" } },
-    { "type": "carousel", "zone": "stage", "data": { "items": [{ "src": "", "caption": "Screenshot of the first step" }, { "src": "", "caption": "Screenshot of the second step" }, { "src": "", "caption": "Final result" }] } }
+    { "type": "card", "zone": "content", "data": { "title": "Step 1", "body": "Setup and configure.", "variant": "cyan" } },
+    { "type": "card", "zone": "content", "data": { "title": "Step 2", "body": "Build and connect.", "variant": "cyan" } },
+    { "type": "carousel", "zone": "stage", "data": { "items": [{ "src": "", "caption": "First step" }, { "src": "", "caption": "Second step" }, { "src": "", "caption": "Result" }] } }
   ]
 }

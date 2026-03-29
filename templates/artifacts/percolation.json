@@ -1,13 +1,13 @@
 {
   "id": "artifact-percolation",
-  "name": "Percolation Visualization",
+  "name": "Percolation",
   "type": "artifact",
   "source": "https://creative-clawing.com/gallery/percolation.html",
-  "description": "Interactive percolation visualization from Creative Clawing gallery",
+  "description": "Phase transition — adjust probability to see paths connect across the grid",
   "category": "interactive-js",
   "config": {
     "width": "100%",
-    "height": "400px",
+    "height": "500px",
     "sandbox": "allow-scripts"
   }
 }

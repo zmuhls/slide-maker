@@ -42,8 +42,18 @@
   }
 
   function handleDndFinalize(e: CustomEvent<{ items: typeof blockItems }>) {
-    blockItems = e.detail.items
+    blockItems = e.detail.items.map((b, i) => ({ ...b, order: i }))
     updateSlideInDeck(slide.id, (s) => ({ ...s, blocks: blockItems }))
+
+    // Persist new order to API
+    for (const item of blockItems) {
+      fetch(`${API_URL}/api/decks/${slide.deckId}/slides/${slide.id}/blocks/${item.id}`, {
+        method: 'PATCH',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ order: item.order }),
+      }).catch(console.error)
+    }
   }
 
   function handleClick() {

@@ -1,9 +1,9 @@
 {
   "id": "artifact-fourier",
-  "name": "Fourier Visualization",
+  "name": "Fourier",
   "type": "artifact",
   "source": "https://creative-clawing.com/gallery/fourier.html",
-  "description": "Interactive fourier visualization from Creative Clawing gallery",
+  "description": "Rotating epicycles that decompose drawn paths into sine waves",
   "category": "interactive-js",
   "config": {
     "width": "100%",

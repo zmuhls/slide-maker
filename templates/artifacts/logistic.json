@@ -1,9 +1,9 @@
 {
   "id": "artifact-logistic",
-  "name": "Logistic Visualization",
+  "name": "Logistic Map",
   "type": "artifact",
   "source": "https://creative-clawing.com/gallery/logistic.html",
-  "description": "Interactive logistic visualization from Creative Clawing gallery",
+  "description": "Bifurcation diagram — hover to explore order turning to chaos",
   "category": "interactive-js",
   "config": {
     "width": "100%",

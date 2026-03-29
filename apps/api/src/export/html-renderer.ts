@@ -198,11 +198,16 @@ function renderModule(mod: Module, files?: ExportFile[]): string {
 
     case 'artifact': {
       const rawSrc = String(d.src || d.url || '')
-      const src = /^https?:\/\//i.test(rawSrc) ? rawSrc : ''
-      const width = String(d.width || '100%')
-      const height = String(d.height || '400px')
-      const alt = esc(String(d.alt || 'Interactive widget'))
-      return `<div class="artifact-wrapper"${step}><iframe src="${esc(src)}" width="${esc(width)}" height="${esc(height)}" style="border:none;border-radius:8px;" sandbox="allow-scripts" loading="lazy" title="${alt}"></iframe></div>`
+      const rawSource = d.rawSource ? String(d.rawSource) : ''
+      const isUrl = /^https?:\/\//i.test(rawSrc)
+      const alt = esc(String(d.alt || 'Interactive visualization'))
+      if (isUrl) {
+        return `<div class="artifact-wrapper"${step}><iframe src="${esc(rawSrc)}" sandbox="allow-scripts" loading="lazy" title="${alt}"></iframe></div>`
+      }
+      if (rawSource) {
+        return `<div class="artifact-wrapper"${step}><iframe srcdoc="${esc(rawSource)}" sandbox="allow-scripts" loading="lazy" title="${alt}"></iframe></div>`
+      }
+      return `<div class="artifact-wrapper"${step} style="aspect-ratio:1;display:flex;align-items:center;justify-content:center;color:#94a3b8;font-size:13px;">${alt}</div>`
     }
 
     case 'code': {

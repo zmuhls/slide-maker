@@ -7,7 +7,7 @@ const flatArtifact: ArtifactRef = {
   id: 'artifact-boids',
   name: 'Boids Visualization',
   description: 'Interactive boids visualization',
-  type: 'widget',
+  type: 'visualization',
   source: 'https://creative-clawing.com/gallery/boids.html',
   config: { width: '100%', height: '400px', sandbox: 'allow-scripts' },
 }
@@ -27,10 +27,10 @@ const schemaArtifact: ArtifactRef = {
 
 const nullConfigArtifact: ArtifactRef = {
   id: 'artifact-empty',
-  name: 'Empty Widget',
+  name: 'Empty Visualization',
   description: 'No config',
-  type: 'widget',
-  source: 'https://example.com/widget.html',
+  type: 'visualization',
+  source: 'https://example.com/visualization.html',
   config: null,
 }
 
@@ -38,8 +38,8 @@ const emptyConfigArtifact: ArtifactRef = {
   id: 'artifact-empty2',
   name: 'Empty Config',
   description: 'Empty object config',
-  type: 'widget',
-  source: 'https://example.com/widget.html',
+  type: 'visualization',
+  source: 'https://example.com/visualization.html',
   config: {},
 }
 
@@ -105,7 +105,7 @@ describe('buildAtRef', () => {
     const jsonBlock = ref.split('```json\n')[1].split('\n```')[0]
     const payload = JSON.parse(jsonBlock)
     expect(payload.name).toBe('Boids Visualization')
-    expect(payload.type).toBe('widget')
+    expect(payload.type).toBe('visualization')
     expect(payload.source).toBe('https://creative-clawing.com/gallery/boids.html')
     expect(payload.config).toEqual({
       width: '100%',

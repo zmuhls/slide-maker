@@ -408,7 +408,7 @@ Object.entries(states).forEach(([abbr,d])=>{
           id: tmpl.id,
           name: tmpl.name,
           description: tmpl.description || '',
-          type: 'widget',
+          type: 'visualization',
           source: tmpl.source,
           config: tmpl.config ?? {},
           builtIn: true,

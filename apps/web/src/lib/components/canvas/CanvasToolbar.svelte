@@ -239,8 +239,8 @@
     background: transparent;
     border: 1px solid var(--color-border);
     border-radius: var(--radius-sm);
-    padding: 0.35rem 0.65rem;
-    font-size: 0.75rem;
+    padding: 0.4rem 0.85rem;
+    font-size: 0.8rem;
     font-weight: 500;
     cursor: pointer;
     color: var(--color-text-secondary);
@@ -307,8 +307,8 @@
     color: var(--color-text-secondary);
     border: 1px solid var(--color-border);
     border-radius: var(--radius-sm);
-    padding: 0.3rem 0.7rem;
-    font-size: 0.7rem;
+    padding: 0.4rem 0.85rem;
+    font-size: 0.8rem;
     font-weight: 500;
     cursor: pointer;
     transition: color 0.15s, border-color 0.15s, background 0.15s;
@@ -333,8 +333,8 @@
     background: transparent;
     border: 1px solid transparent;
     border-radius: var(--radius-sm);
-    padding: 0.3rem 0.6rem;
-    font-size: 0.7rem;
+    padding: 0.4rem 0.85rem;
+    font-size: 0.8rem;
     font-weight: 500;
     cursor: pointer;
     color: var(--color-text-muted);

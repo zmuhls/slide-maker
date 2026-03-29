@@ -35,7 +35,7 @@
   let configError = $state<string | null>(null)
 
   // Collapse state — tracks which groups are expanded (all open by default)
-  let expandedGroups = $state<Set<string>>(new Set(['chart', 'diagram', 'map', 'widget']))
+  let expandedGroups = $state<Set<string>>(new Set(['chart', 'diagram', 'map', 'visualization']))
 
   $effect(() => {
     fetch(`${API_URL}/api/artifacts`, { credentials: 'include' })
@@ -66,10 +66,10 @@
       chart: { label: 'Charts', badge: 'C' },
       diagram: { label: 'Diagrams', badge: 'D' },
       map: { label: 'Maps', badge: 'M' },
-      widget: { label: 'Widgets', badge: 'W' },
+      visualization: { label: 'Visualization', badge: 'V' },
     }
 
-    const typeOrder = ['chart', 'diagram', 'map', 'widget']
+    const typeOrder = ['chart', 'diagram', 'map', 'visualization']
     const result: ArtifactGroup[] = []
 
     for (const type of typeOrder) {

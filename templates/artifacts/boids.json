@@ -1,9 +1,9 @@
 {
   "id": "artifact-boids",
-  "name": "Boids Visualization",
+  "name": "Boids",
   "type": "artifact",
   "source": "https://creative-clawing.com/gallery/boids.html",
-  "description": "Interactive boids visualization from Creative Clawing gallery",
+  "description": "Flocking simulation with emergent swarming behavior",
   "category": "interactive-js",
   "config": {
     "width": "100%",

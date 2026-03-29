@@ -1,9 +1,9 @@
 {
   "id": "artifact-lorenz",
-  "name": "Lorenz Visualization",
+  "name": "Lorenz Attractor",
   "type": "artifact",
   "source": "https://creative-clawing.com/gallery/lorenz.html",
-  "description": "Interactive lorenz visualization from Creative Clawing gallery",
+  "description": "3D chaotic butterfly attractor that never repeats",
   "category": "interactive-js",
   "config": {
     "width": "100%",

@@ -94,7 +94,7 @@ export const artifacts = sqliteTable('artifacts', {
   id: text('id').primaryKey(),
   name: text('name').notNull(),
   description: text('description').notNull().default(''),
-  type: text('type', { enum: ['chart', 'map', 'diagram', 'widget'] }).notNull(),
+  type: text('type', { enum: ['chart', 'map', 'diagram', 'visualization'] }).notNull(),
   source: text('source').notNull(),
   config: text('config', { mode: 'json' }).notNull().default('{}'),
   builtIn: integer('built_in', { mode: 'boolean' }).notNull().default(false),

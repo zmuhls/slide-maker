@@ -97,6 +97,10 @@
       resizing = false
       window.removeEventListener('mousemove', onMove)
       window.removeEventListener('mouseup', onUp)
+      // Persist resize for artifact/image modules
+      if (customW && customH && (module.type === 'artifact' || module.type === 'image')) {
+        onchange?.({ ...module.data, width: `${Math.round(customW)}px`, height: `${Math.round(customH)}px` })
+      }
     }
     window.addEventListener('mousemove', onMove)
     window.addEventListener('mouseup', onUp)
@@ -114,19 +118,21 @@
 >
   {#if editable}
     <div class="module-controls">
-      {#if !isFirst}
-        <button class="ctrl-btn" onclick={() => onmoveup?.()} title="Move up">▲</button>
-      {/if}
-      {#if !isLast}
-        <button class="ctrl-btn" onclick={() => onmovedown?.()} title="Move down">▼</button>
-      {/if}
+      <div class="ctrl-group">
+        {#if !isFirst}
+          <button class="ctrl-btn" onclick={() => onmoveup?.()} title="Move up">▲</button>
+        {/if}
+        {#if !isLast}
+          <button class="ctrl-btn" onclick={() => onmovedown?.()} title="Move down">▼</button>
+        {/if}
+      </div>
       <select
         class="step-select"
         value={module.stepOrder != null ? String(module.stepOrder) : ''}
         onchange={handleStepChange}
         title="Step reveal order"
       >
-        <option value="">--</option>
+        <option value="">Step</option>
         <option value="0">1</option>
         <option value="1">2</option>
         <option value="2">3</option>
@@ -202,60 +208,81 @@
   /* Controls */
   .module-controls {
     position: absolute;
-    top: -8px;
-    right: 2px;
+    top: 4px;
+    right: 4px;
     display: none;
     align-items: center;
-    gap: 3px;
+    gap: 2px;
     z-index: 10;
+    background: rgba(255, 255, 255, 0.95);
+    border: 1px solid var(--color-border, #e5e7eb);
+    border-radius: var(--radius-sm, 6px);
+    padding: 2px 3px;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+    backdrop-filter: blur(4px);
   }
   .module-wrapper.editable:hover .module-controls {
     display: flex;
   }
 
+  .ctrl-group {
+    display: flex;
+    gap: 1px;
+  }
+
   .ctrl-btn {
-    width: auto;
-    min-width: 18px;
-    height: 18px;
+    width: 26px;
+    height: 26px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 10px;
-    background: rgba(255, 255, 255, 0.9);
-    border: 1px solid var(--color-border);
-    border-radius: 9px;
+    font-size: 11px;
+    background: transparent;
+    border: none;
+    border-radius: 4px;
     cursor: pointer;
-    color: var(--color-text-muted);
-    padding: 0 4px;
+    color: var(--color-text-muted, #6b7280);
+    padding: 0;
     font-family: var(--font-body);
     line-height: 1;
+    transition: background 0.1s, color 0.1s;
+  }
+  .ctrl-btn:hover {
+    background: var(--color-ghost-bg, rgba(59, 115, 230, 0.08));
+    color: var(--color-primary, #3B73E6);
   }
   .step-select {
-    height: 18px;
-    font-size: 9px;
-    border: 1px solid var(--color-border);
-    border-radius: 9px;
-    background: rgba(255, 255, 255, 0.9);
-    color: var(--color-text-muted);
-    padding: 0 4px;
+    height: 26px;
+    font-size: 10px;
+    border: none;
+    border-radius: 4px;
+    background: transparent;
+    color: var(--color-text-muted, #6b7280);
+    padding: 0 2px 0 6px;
     cursor: pointer;
     font-family: var(--font-body);
     outline: none;
+    transition: background 0.1s;
+  }
+  .step-select:hover {
+    background: var(--color-ghost-bg, rgba(59, 115, 230, 0.08));
   }
   .step-select:focus {
-    border-color: var(--teal, #2FB8D6);
+    background: var(--color-ghost-bg, rgba(59, 115, 230, 0.08));
+    color: var(--color-primary, #3B73E6);
   }
   .delete-btn:hover {
     color: #dc2626;
-    border-color: #dc2626;
-    background: #fef2f2;
+    background: rgba(220, 38, 38, 0.06);
   }
   .delete-btn.confirming {
     color: white;
     background: #dc2626;
-    border-color: #dc2626;
-    padding: 0 6px;
     font-weight: 600;
+    border-radius: 4px;
+    width: auto;
+    padding: 0 8px;
+    font-size: 10px;
   }
 
   /* Corner resize */
