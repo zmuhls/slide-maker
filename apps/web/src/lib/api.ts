@@ -33,6 +33,8 @@ export const api = {
   deleteDeck: (id: string) => request(`/api/decks/${id}`, { method: 'DELETE' }),
 
   // Sharing
+  searchUsers: (q: string) =>
+    request<{ users: { id: string; name: string; email: string }[] }>(`/api/decks/users/search?q=${encodeURIComponent(q)}`),
   shareDeck: (id: string, data: { email: string; role: 'editor' | 'viewer' }) =>
     request(`/api/decks/${id}/share`, { method: 'POST', body: JSON.stringify(data) }),
   removeDeckShare: (id: string, userId: string) =>

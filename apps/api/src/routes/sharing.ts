@@ -1,5 +1,5 @@
 import { Hono } from 'hono'
-import { eq, and } from 'drizzle-orm'
+import { eq, and, like, or, sql } from 'drizzle-orm'
 import type { Session, User } from 'lucia'
 import { lt } from 'drizzle-orm'
 import { db } from '../db/index.js'
@@ -18,6 +18,37 @@ const LOCK_TTL_MS = 5 * 60 * 1000 // 5 minutes
 const sharing = new Hono<AuthEnv>()
 
 sharing.use('*', authMiddleware)
+
+// ── User Search (for sharing autocomplete) ──
+
+// GET /users/search?q=... — Search approved users by name or email
+sharing.get('/users/search', async (c) => {
+  const q = c.req.query('q')?.trim()
+  if (!q || q.length < 2) {
+    return c.json({ users: [] })
+  }
+
+  const pattern = `%${q}%`
+  const results = await db
+    .select({
+      id: users.id,
+      name: users.name,
+      email: users.email,
+    })
+    .from(users)
+    .where(
+      and(
+        eq(users.status, 'approved'),
+        or(
+          like(users.name, pattern),
+          like(users.email, pattern),
+        ),
+      ),
+    )
+    .limit(8)
+
+  return c.json({ users: results })
+})
 
 // ── Sharing ──
 
