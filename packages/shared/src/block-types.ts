@@ -29,6 +29,7 @@ export const LAYOUT_ZONES: Record<SlideLayout, Zone[]> = {
 export const MODULE_TYPES = [
   'heading', 'text', 'card', 'label', 'tip-box', 'prompt-block',
   'image', 'carousel', 'comparison', 'card-grid', 'flow', 'stream-list',
+  'artifact',
 ] as const
 export type ModuleType = (typeof MODULE_TYPES)[number]
 
@@ -45,6 +46,7 @@ export interface ComparisonData { panels: { title: string; content: string }[] }
 export interface CardGridData { cards: { title: string; content: string; icon?: string; color?: string }[]; columns?: 2 | 3 | 4 }
 export interface FlowData { nodes: { icon?: string; label: string; description?: string }[] }
 export interface StreamListData { items: string[] }
+export interface ArtifactData { src: string; config?: Record<string, unknown>; width?: string; height?: string; alt?: string }
 
 export type ModuleDataMap = {
   heading: HeadingData
@@ -59,4 +61,5 @@ export type ModuleDataMap = {
   'card-grid': CardGridData
   flow: FlowData
   'stream-list': StreamListData
+  artifact: ArtifactData
 }

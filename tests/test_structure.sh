@@ -83,7 +83,7 @@ check "index.ts" '[ -f packages/shared/src/index.ts ]'
 echo ""
 echo "── Svelte components (renderers) ──"
 for comp in ModuleRenderer HeadingModule TextModule CardModule LabelModule TipBoxModule \
-  PromptBlockModule ImageModule CarouselModule ComparisonModule CardGridModule FlowModule StreamListModule; do
+  PromptBlockModule ImageModule CarouselModule ComparisonModule CardGridModule FlowModule StreamListModule ArtifactModule; do
   check "renderer: $comp" "[ -f apps/web/src/lib/components/renderers/${comp}.svelte ]"
 done
 

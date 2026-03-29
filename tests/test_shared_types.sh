@@ -41,14 +41,14 @@ check "layout-split maps to content,stage" "grep -A1 'layout-split' '$BT' | grep
 check "layout-content maps to main" "grep -A1 'layout-content' '$BT' | grep -q 'main'"
 
 echo ""
-echo "── Module Types (12 required) ──"
-for mod in heading text card label tip-box prompt-block image carousel comparison card-grid flow stream-list; do
+echo "── Module Types (13 required) ──"
+for mod in heading text card label tip-box prompt-block image carousel comparison card-grid flow stream-list artifact; do
   check "module: $mod" "grep -q \"'$mod'\" '$BT'"
 done
 
 echo ""
 echo "── Data Interfaces ──"
-for iface in HeadingData TextData CardData LabelData TipBoxData PromptBlockData ImageData CarouselData ComparisonData CardGridData FlowData StreamListData; do
+for iface in HeadingData TextData CardData LabelData TipBoxData PromptBlockData ImageData CarouselData ComparisonData CardGridData FlowData StreamListData ArtifactData; do
   check "interface: $iface" "grep -q 'export interface $iface' '$BT'"
 done
 check "ModuleDataMap exported" "grep -q 'ModuleDataMap' '$BT'"

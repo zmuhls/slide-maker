@@ -11,7 +11,7 @@ pass() { PASS=$((PASS + 1)); echo "  ✓ $1"; }
 fail() { FAIL=$((FAIL + 1)); echo "  ✗ $1"; }
 
 VALID_LAYOUTS="title-slide layout-split layout-content layout-grid layout-full-dark layout-divider closing-slide"
-VALID_MODULES="heading text card label tip-box prompt-block image carousel comparison card-grid flow stream-list"
+VALID_MODULES="heading text card label tip-box prompt-block image carousel comparison card-grid flow stream-list artifact"
 VALID_ZONES="content stage main hero"
 
 echo "═══════════════════════════════════════════════"
@@ -19,7 +19,8 @@ echo "  SEED TEMPLATES"
 echo "═══════════════════════════════════════════════"
 echo ""
 
-TEMPLATES=$(find templates -name '*.json' | sort)
+# Only test slide templates (not artifact catalog entries)
+TEMPLATES=$(find templates -name '*.json' -not -path '*/artifacts/*' | sort)
 COUNT=0
 
 for tmpl in $TEMPLATES; do

@@ -176,6 +176,14 @@ function renderModule(mod: Module, files?: ExportFile[]): string {
       return html
     }
 
+    case 'artifact': {
+      const src = String(d.src || d.url || '')
+      const width = String(d.width || '100%')
+      const height = String(d.height || '400px')
+      const alt = esc(String(d.alt || 'Interactive visualization'))
+      return `<div class="artifact-wrapper"${step}><iframe src="${esc(src)}" width="${esc(width)}" height="${esc(height)}" style="border:none;border-radius:8px;" sandbox="allow-scripts" loading="lazy" title="${alt}"></iframe></div>`
+    }
+
     case 'code': {
       const code = String(d.code || d.content || '')
       const lang = String(d.language || '')

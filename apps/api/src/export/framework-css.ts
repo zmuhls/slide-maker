@@ -177,6 +177,10 @@ figure { text-align: center; margin: 0; }
 figure img { max-width: 100%; max-height: 60vh; border-radius: 6px; object-fit: contain; }
 figcaption { margin-top: 8px; font-size: 0.85rem; color: var(--text-muted); }
 
+/* ── Module: Artifact ─────────────────────────────────────────────── */
+.artifact-wrapper { width: 100%; border-radius: 8px; overflow: hidden; }
+.artifact-wrapper iframe { display: block; }
+
 /* ── Blockquote ──────────────────────────────────────────────────── */
 blockquote {
   border-left: 3px solid var(--accent-cyan); padding: 16px 24px;
