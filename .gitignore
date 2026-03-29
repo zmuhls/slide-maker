@@ -28,3 +28,4 @@ data/
 
 # Uploads
 apps/api/uploads/
+.env_server
