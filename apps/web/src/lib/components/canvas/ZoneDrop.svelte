@@ -31,6 +31,7 @@
     onReorder?: (zone: string, items: Module[]) => void
     onModuleDataChange?: (moduleId: string, data: Record<string, unknown>) => void
     onModuleDelete?: (moduleId: string) => void
+    onModuleStepChange?: (moduleId: string, stepOrder: number | null) => void
     onEditorReady?: (editor: unknown) => void
   } = $props()
 
@@ -109,6 +110,7 @@
           ondelete={() => onModuleDelete?.(mod.id)}
           onmoveup={() => moveModule(mod.id, 'up')}
           onmovedown={() => moveModule(mod.id, 'down')}
+          onstepchange={(step) => onModuleStepChange?.(mod.id, step)}
           isFirst={i === 0}
           isLast={i === items.length - 1}
           oneditorready={onEditorReady}

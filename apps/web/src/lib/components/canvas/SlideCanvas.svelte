@@ -1,4 +1,5 @@
 <script lang="ts">
+  import '$lib/framework-preview.css'
   import { currentDeck } from '$lib/stores/deck'
   import { activeSlideId } from '$lib/stores/ui'
   import CanvasToolbar from './CanvasToolbar.svelte'
