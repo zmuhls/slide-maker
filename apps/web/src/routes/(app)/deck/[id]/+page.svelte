@@ -54,7 +54,10 @@
       currentDeck.set(res.deck ?? res);
       const deck = res.deck ?? res;
       if (deck.slides?.length > 0) {
-        activeSlideId.set(deck.slides[0].id);
+        // Restore last active slide from sessionStorage on refresh
+        const savedSlideId = sessionStorage.getItem(`deck-active-slide-${deckId}`);
+        const validSaved = savedSlideId && deck.slides.some((s: any) => s.id === savedSlideId);
+        activeSlideId.set(validSaved ? savedSlideId : deck.slides[0].id);
       }
 
       // Load chat history
@@ -89,6 +92,11 @@
 
       window.addEventListener('beforeunload', handleBeforeUnload);
       window.addEventListener('keydown', handleKeyboard);
+
+      // Persist active slide to sessionStorage so refresh restores it
+      activeSlideId.subscribe((id) => {
+        if (id && deckId) sessionStorage.setItem(`deck-active-slide-${deckId}`, id);
+      });
     } catch (err: any) {
       error = err.message || 'Failed to load deck';
     } finally {

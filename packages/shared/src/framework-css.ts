@@ -48,7 +48,7 @@ h1 { font-size: clamp(2.5rem, 5vw, 4.5rem); font-weight: 600; }
 h2 { font-size: clamp(2rem, 3.8vw, 3.2rem); font-weight: 500; }
 h3 { font-size: clamp(1.5rem, 2.8vw, 2.2rem); font-weight: 500; }
 h4 { font-size: clamp(1.2rem, 2vw, 1.6rem); font-weight: 500; }
-.text-body { font-size: clamp(1.3rem, 2.2vw, 1.8rem); line-height: 1.65; color: var(--text-muted); }
+.text-body { font-size: clamp(1rem, 1.8vw, 1.5rem); line-height: 1.55; color: var(--text-muted); }
 code, pre { font-family: 'JetBrains Mono', monospace; }
 pre { background: rgba(0,0,0,0.3); border: 1px solid var(--border-subtle); border-radius: 8px; padding: 20px 24px; overflow-x: auto; font-size: 1.05rem; line-height: 1.5; }
 
@@ -103,7 +103,7 @@ pre { background: rgba(0,0,0,0.3); border: 1px solid var(--border-subtle); borde
 .card-cyan { border-left: 3px solid var(--accent-cyan); }
 .card-navy { border-left: 3px solid var(--accent-navy); }
 .card h3 { font-size: 1.3rem; margin-bottom: 8px; }
-.card p { font-size: 1.15rem; color: var(--text-muted); line-height: 1.5; }
+.card p { font-size: 1rem; color: var(--text-muted); line-height: 1.45; }
 
 /* ── Module: Label ───────────────────────────────────────────────── */
 .label {
@@ -120,7 +120,7 @@ pre { background: rgba(0,0,0,0.3); border: 1px solid var(--border-subtle); borde
 /* ── Module: Tip Box ─────────────────────────────────────────────── */
 .tip-box {
   background: rgba(100,181,246,0.05); border: 1px solid rgba(100,181,246,0.12);
-  border-radius: 8px; padding: 20px 24px; font-size: 1.15rem; line-height: 1.6;
+  border-radius: 8px; padding: 20px 24px; font-size: 1rem; line-height: 1.6;
 }
 .tip-box strong { display: block; margin-bottom: 6px; color: var(--accent-cyan); font-weight: 500; }
 
@@ -164,7 +164,7 @@ pre { background: rgba(0,0,0,0.3); border: 1px solid var(--border-subtle); borde
   border-radius: 10px; padding: 24px;
 }
 .comparison-panel h3 { font-size: 1.3rem; margin-bottom: 8px; }
-.comparison-panel p { font-size: 1.15rem; color: var(--text-muted); line-height: 1.5; }
+.comparison-panel p { font-size: 1rem; color: var(--text-muted); line-height: 1.45; }
 
 /* ── Module: Card Grid ───────────────────────────────────────────── */
 .card-grid { display: grid; gap: 20px; width: 100%; }
@@ -173,7 +173,7 @@ pre { background: rgba(0,0,0,0.3); border: 1px solid var(--border-subtle); borde
 .flow { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: center; }
 .flow-node {
   background: rgba(255,255,255,0.03); border: 1px solid var(--border-subtle);
-  border-radius: 8px; padding: 14px 22px; font-size: 1.15rem; text-align: center;
+  border-radius: 8px; padding: 14px 22px; font-size: 1rem; text-align: center;
 }
 .flow-arrow { font-size: 1.2rem; color: var(--text-muted); }
 
@@ -182,7 +182,7 @@ pre { background: rgba(0,0,0,0.3); border: 1px solid var(--border-subtle); borde
 .stream-list li {
   padding: 12px 16px; border-left: 2px solid var(--accent-cyan);
   margin-bottom: 6px; background: rgba(255,255,255,0.02); border-radius: 0 6px 6px 0;
-  font-size: 1.15rem; line-height: 1.5;
+  font-size: 1rem; line-height: 1.5;
 }
 
 /* ── Module: Image ───────────────────────────────────────────────── */
@@ -203,7 +203,7 @@ figcaption { margin-top: 8px; font-size: 0.85rem; color: var(--text-muted); }
 /* ── Blockquote ──────────────────────────────────────────────────── */
 blockquote {
   border-left: 3px solid var(--accent-cyan); padding: 16px 24px;
-  font-style: italic; font-size: 1.15rem; background: rgba(100,181,246,0.04);
+  font-style: italic; font-size: 1rem; background: rgba(100,181,246,0.04);
   border-radius: 0 6px 6px 0;
 }
 blockquote cite { display: block; margin-top: 8px; font-size: 0.85rem; color: var(--text-muted); font-style: normal; }
@@ -223,9 +223,14 @@ export const FRAMEWORK_CSS_EXPORT = FRAMEWORK_CSS_BASE + `
 /* ── Slide Base (multi-slide deck) ──────────────────────────────── */
 .slide {
   display: none; position: absolute; top: 0; left: 0; width: 100vw; height: 100vh;
-  padding: 60px 80px; overflow: auto; flex-direction: column; justify-content: center;
+  padding: 60px 80px; overflow: hidden; flex-direction: column; justify-content: center;
 }
 .slide.active { display: flex; }
+
+/* ── Auto-shrink: keep slide content within viewport ────────────── */
+.slide > .content, .slide > .stage, .slide > .main, .slide > .hero {
+  overflow: hidden; min-height: 0;
+}
 
 /* ── Step Reveal ─────────────────────────────────────────────────── */
 .step-hidden { opacity: 0; visibility: hidden; transform: translateY(4px); }
@@ -309,7 +314,12 @@ export const FRAMEWORK_CSS_PREVIEW = FRAMEWORK_CSS_BASE + `
 /* ── Slide Base (single-slide preview) ──────────────────────────── */
 .slide {
   display: flex; position: relative; width: 100%; height: 100vh;
-  padding: 60px 80px; overflow: auto; flex-direction: column; justify-content: center;
+  padding: 60px 80px; overflow: hidden; flex-direction: column; justify-content: center;
+}
+
+/* ── Auto-shrink: keep slide content within viewport ────────────── */
+.slide > .content, .slide > .stage, .slide > .main, .slide > .hero {
+  overflow: hidden; min-height: 0;
 }
 
 /* ── Step Reveal (all visible in preview, with step indicator) ──── */
