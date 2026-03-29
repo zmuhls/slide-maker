@@ -5,6 +5,7 @@ import { lt } from 'drizzle-orm'
 import { db } from '../db/index.js'
 import { decks, deckAccess, deckLocks, deckPresence, users } from '../db/schema.js'
 import { authMiddleware } from '../middleware/auth.js'
+import { heartbeatRateLimit } from '../middleware/rate-limit.js'
 
 type AuthEnv = {
   Variables: {
@@ -267,7 +268,7 @@ sharing.delete('/:id/lock', async (c) => {
 })
 
 // POST /:id/lock/heartbeat — Refresh lock TTL
-sharing.post('/:id/lock/heartbeat', async (c) => {
+sharing.post('/:id/lock/heartbeat', heartbeatRateLimit, async (c) => {
   const user = c.get('user')
   const deckId = c.req.param('id')
 
@@ -297,7 +298,7 @@ sharing.post('/:id/lock/heartbeat', async (c) => {
 const PRESENCE_TTL_MS = 2 * 60 * 1000 // 2 minutes
 
 // POST /:id/presence — Heartbeat: upsert my presence
-sharing.post('/:id/presence', async (c) => {
+sharing.post('/:id/presence', heartbeatRateLimit, async (c) => {
   const user = c.get('user')
   const deckId = c.req.param('id')
 

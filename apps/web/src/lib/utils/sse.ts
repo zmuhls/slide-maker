@@ -3,7 +3,6 @@ export async function streamChat(
   deckId: string,
   activeSlideId: string | null,
   modelId: string,
-  history: { role: 'user' | 'assistant'; content: string }[],
   onText: (text: string) => void,
   onDone: () => void,
   onError: (error: string) => void,
@@ -13,7 +12,7 @@ export async function streamChat(
     method: 'POST',
     credentials: 'include',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ message, deckId, activeSlideId, modelId, history }),
+    body: JSON.stringify({ message, deckId, activeSlideId, modelId }),
   })
 
   if (!response.ok) {

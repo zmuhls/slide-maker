@@ -80,12 +80,15 @@ export async function exportDeckAsZip(
 
     if (files?.length) {
       for (const file of files) {
-        const filePath = path.resolve(UPLOAD_DIR, file.path)
-        if (!filePath.startsWith(UPLOAD_DIR + path.sep) && filePath !== UPLOAD_DIR) {
+        const resolvedPath = path.isAbsolute(file.path) ? file.path : path.resolve(UPLOAD_DIR, file.path)
+        // Traversal check: must be inside UPLOAD_DIR or be an absolute path to an existing file
+        if (!path.isAbsolute(file.path) && !resolvedPath.startsWith(UPLOAD_DIR + path.sep) && resolvedPath !== UPLOAD_DIR) {
           continue // skip files outside upload directory
         }
-        if (fs.existsSync(filePath)) {
-          archive.file(filePath, { name: `${slug}/assets/${path.basename(file.filename)}` })
+        if (fs.existsSync(resolvedPath)) {
+          const ext = path.extname(file.filename)
+          const assetFilename = file.id + ext
+          archive.file(resolvedPath, { name: `${slug}/assets/${assetFilename}` })
         }
       }
     }

@@ -25,7 +25,7 @@ chat.use('*', authMiddleware)
 chat.post('/', chatRateLimit, async (c) => {
   const user = c.get('user')
   const body = await c.req.json()
-  const { message, deckId, activeSlideId, modelId, history } = body
+  const { message, deckId, activeSlideId, modelId } = body
 
   if (!message || !deckId || !modelId) {
     return c.json({ error: 'message, deckId, and modelId are required' }, 400)
@@ -138,10 +138,16 @@ chat.post('/', chatRateLimit, async (c) => {
     .where(eq(chatMessages.deckId, deckId))
     .orderBy(chatMessages.createdAt)
 
-  const chatHistory: { role: 'user' | 'assistant'; content: string }[] = dbMessages.map((m) => ({
+  let chatHistory: { role: 'user' | 'assistant'; content: string }[] = dbMessages.map((m) => ({
     role: m.role as 'user' | 'assistant',
     content: m.content,
   }))
+
+  // Limit history to prevent context window overflow
+  const MAX_HISTORY = 30
+  if (chatHistory.length > MAX_HISTORY) {
+    chatHistory = chatHistory.slice(-MAX_HISTORY)
+  }
 
   chatHistory.push({ role: 'user', content: message })
 
@@ -204,7 +210,8 @@ chat.post('/', chatRateLimit, async (c) => {
       })
 
       // Estimate and record token usage
-      const inputTokens = Math.ceil((systemPrompt.length + message.length) / 4)
+      const allInputLength = systemPrompt.length + chatHistory.reduce((sum, m) => sum + (m.content?.length ?? 0), 0) + message.length
+      const inputTokens = Math.ceil(allInputLength / 4)
       const outputTokens = Math.ceil(fullResponse.length / 4)
       await db.insert(tokenUsage).values({
         id: createId(),

@@ -8,13 +8,13 @@ import { authMiddleware } from '../middleware/auth.js'
 const resourcesRouter = new Hono()
 
 // GET /api/templates — list all templates
-resourcesRouter.get('/templates', async (c) => {
+resourcesRouter.get('/templates', authMiddleware, async (c) => {
   const allTemplates = await db.select().from(templates)
   return c.json({ templates: allTemplates })
 })
 
 // GET /api/themes — list all themes
-resourcesRouter.get('/themes', async (c) => {
+resourcesRouter.get('/themes', authMiddleware, async (c) => {
   const allThemes = await db.select().from(themes)
   return c.json({ themes: allThemes })
 })
@@ -88,7 +88,7 @@ resourcesRouter.delete('/themes/:id', authMiddleware, async (c) => {
 })
 
 // GET /api/artifacts — list all artifacts
-resourcesRouter.get('/artifacts', async (c) => {
+resourcesRouter.get('/artifacts', authMiddleware, async (c) => {
   const allArtifacts = await db.select().from(artifacts)
   return c.json({ artifacts: allArtifacts })
 })

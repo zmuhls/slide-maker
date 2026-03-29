@@ -227,10 +227,8 @@ async function applyMutationSilent(mutation: Record<string, unknown>): Promise<v
       break
     }
     default:
-      // For any other action, just apply normally (won't double-push history
-      // because applyMutation's history.pushMutation would be called, but
-      // for safety we handle core cases above)
-      await applyMutation(mutation)
+      console.warn('applyMutationSilent: unhandled action', mutation.action)
+      break
   }
 }
 

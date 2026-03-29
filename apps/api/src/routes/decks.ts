@@ -14,6 +14,8 @@ type AuthEnv = {
   }
 }
 
+const VALID_BLOCK_TYPES = new Set(['heading', 'text', 'card', 'label', 'tip-box', 'prompt-block', 'image', 'carousel', 'comparison', 'card-grid', 'flow', 'stream-list', 'artifact'])
+
 export const decksRouter = new Hono<AuthEnv>()
 
 // All routes require auth
@@ -221,75 +223,93 @@ decksRouter.post('/:id/slides', async (c) => {
   ]
   const slideLayout = validLayouts.includes(layout) ? layout : 'layout-split'
 
-  // Calculate order
-  let order: number
-
-  if (insertAfter) {
-    // Find the slide to insert after
-    const afterSlide = await db
-      .select()
-      .from(slides)
-      .where(and(eq(slides.id, insertAfter), eq(slides.deckId, deckId)))
-      .get()
-
-    if (!afterSlide) {
-      return c.json({ error: 'insertAfter slide not found' }, 400)
+  // Validate block types before starting transaction
+  if (moduleDefs && Array.isArray(moduleDefs)) {
+    for (const mod of moduleDefs) {
+      if (!VALID_BLOCK_TYPES.has(mod.type)) {
+        return c.json({ error: `Invalid block type: ${mod.type}` }, 400)
+      }
     }
-
-    order = afterSlide.order + 1
-
-    // Shift subsequent slides
-    await db
-      .update(slides)
-      .set({ order: sql`${slides.order} + 1` })
-      .where(and(eq(slides.deckId, deckId), sql`${slides.order} >= ${order}`))
-  } else {
-    // Append to end
-    const lastSlide = await db
-      .select({ maxOrder: sql<number>`COALESCE(MAX(${slides.order}), -1)` })
-      .from(slides)
-      .where(eq(slides.deckId, deckId))
-      .get()
-
-    order = (lastSlide?.maxOrder ?? -1) + 1
   }
 
   const slideId = createId()
   const now = new Date()
-
-  await db.insert(slides).values({
-    id: slideId,
-    deckId,
-    layout: slideLayout,
-    splitRatio: splitRatio || '0.45',
-    order,
-    notes: null,
-    createdAt: now,
-    updatedAt: now,
-  })
-
-  // Create content blocks (modules) if provided
   const createdBlocks: (typeof contentBlocks.$inferSelect)[] = []
-  if (moduleDefs && Array.isArray(moduleDefs)) {
-    for (let i = 0; i < moduleDefs.length; i++) {
-      const mod = moduleDefs[i]
-      const blockId = createId()
-      const blockRow = {
-        id: blockId,
-        slideId,
-        type: mod.type,
-        zone: mod.zone || 'content',
-        data: mod.data || {},
-        order: i,
-        stepOrder: mod.stepOrder ?? null,
-      }
-      await db.insert(contentBlocks).values(blockRow)
-      createdBlocks.push(blockRow)
-    }
-  }
 
-  // Update deck's updatedAt
-  await db.update(decks).set({ updatedAt: now }).where(eq(decks.id, deckId))
+  try {
+  await db.transaction(async (tx) => {
+    // Calculate order
+    let order: number
+
+    if (insertAfter) {
+      // Find the slide to insert after
+      const afterSlide = await tx
+        .select()
+        .from(slides)
+        .where(and(eq(slides.id, insertAfter), eq(slides.deckId, deckId)))
+        .get()
+
+      if (!afterSlide) {
+        throw new Error('insertAfter slide not found')
+      }
+
+      order = afterSlide.order + 1
+
+      // Shift subsequent slides
+      await tx
+        .update(slides)
+        .set({ order: sql`${slides.order} + 1` })
+        .where(and(eq(slides.deckId, deckId), sql`${slides.order} >= ${order}`))
+    } else {
+      // Append to end
+      const lastSlide = await tx
+        .select({ maxOrder: sql<number>`COALESCE(MAX(${slides.order}), -1)` })
+        .from(slides)
+        .where(eq(slides.deckId, deckId))
+        .get()
+
+      order = (lastSlide?.maxOrder ?? -1) + 1
+    }
+
+    await tx.insert(slides).values({
+      id: slideId,
+      deckId,
+      layout: slideLayout,
+      splitRatio: splitRatio || '0.45',
+      order,
+      notes: null,
+      createdAt: now,
+      updatedAt: now,
+    })
+
+    // Create content blocks (modules) if provided
+    if (moduleDefs && Array.isArray(moduleDefs)) {
+      for (let i = 0; i < moduleDefs.length; i++) {
+        const mod = moduleDefs[i]
+        const blockId = createId()
+        const blockRow = {
+          id: blockId,
+          slideId,
+          type: mod.type,
+          zone: mod.zone || 'content',
+          data: mod.data || {},
+          order: i,
+          stepOrder: mod.stepOrder ?? null,
+        }
+        await tx.insert(contentBlocks).values(blockRow)
+        createdBlocks.push(blockRow)
+      }
+    }
+
+    // Update deck's updatedAt
+    await tx.update(decks).set({ updatedAt: now }).where(eq(decks.id, deckId))
+  })
+  } catch (err) {
+    if (err instanceof Error && err.message === 'insertAfter slide not found') {
+      return c.json({ error: 'insertAfter slide not found' }, 400)
+    }
+    throw err
+  }
 
   const newSlide = await db.select().from(slides).where(eq(slides.id, slideId)).get()
   return c.json({ ...newSlide, blocks: createdBlocks }, 201)
@@ -418,6 +438,10 @@ decksRouter.post('/:id/slides/:slideId/blocks', async (c) => {
 
   const body = await c.req.json()
   const { type, data: blockData, zone, stepOrder } = body
+
+  if (!VALID_BLOCK_TYPES.has(type)) {
+    return c.json({ error: 'Invalid block type' }, 400)
+  }
 
   // Get next order
   const lastBlock = await db

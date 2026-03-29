@@ -120,11 +120,6 @@
     const modelId = get(selectedModelId)
     const slideId = get(activeSlideId)
 
-    // Build history from current messages (exclude streaming)
-    const history = get(chatMessages)
-      .filter((m) => !m.streaming)
-      .map((m) => ({ role: m.role, content: m.content }))
-
     // Add user message
     addUserMessage(text)
 
@@ -142,7 +137,6 @@
       deck.id,
       slideId,
       modelId,
-      history,
       (chunk) => {
         if (firstChunk) {
           // Replace "Thinking..." with first real content

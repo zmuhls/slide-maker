@@ -51,6 +51,14 @@ function createRateLimitMiddleware(limiter: RateLimiterMemory) {
   }
 }
 
+// Heartbeat (presence/lock): 30 requests per minute per IP
+const heartbeatLimiter = new RateLimiterMemory({
+  points: 30,
+  duration: 60,
+  keyPrefix: 'heartbeat',
+})
+
 export const loginRateLimit = createRateLimitMiddleware(loginLimiter)
 export const registerRateLimit = createRateLimitMiddleware(registerLimiter)
 export const chatRateLimit = createRateLimitMiddleware(chatLimiter)
+export const heartbeatRateLimit = createRateLimitMiddleware(heartbeatLimiter)
