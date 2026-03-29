@@ -35,6 +35,8 @@
 
   let items = $state<Module[]>([])
   let showPicker = $state(false)
+  let pickerX = $state(0)
+  let pickerY = $state(0)
   let highlightedIds = $state<Set<string>>(new Set())
   let knownIds: Set<string> = new Set()
 
@@ -65,8 +67,17 @@
     onReorder?.(zone, items)
   }
 
-  function togglePicker() {
-    showPicker = !showPicker
+  function togglePicker(e: MouseEvent) {
+    if (showPicker) {
+      showPicker = false
+      return
+    }
+    // Position the picker near the button click, but as a fixed overlay
+    const btn = e.currentTarget as HTMLElement
+    const rect = btn.getBoundingClientRect()
+    pickerX = Math.min(rect.left, window.innerWidth - 320)
+    pickerY = Math.max(rect.top - 280, 10)
+    showPicker = true
   }
 
   function handleModuleAdded() {
@@ -75,19 +86,6 @@
     onReorder?.(zone, items)
   }
 
-  function handlePickerClickOutside(e: MouseEvent) {
-    const target = e.target as HTMLElement
-    if (!target.closest('.picker-wrapper') && !target.closest('.add-module-btn')) {
-      showPicker = false
-    }
-  }
-
-  $effect(() => {
-    if (showPicker) {
-      document.addEventListener('click', handlePickerClickOutside, true)
-      return () => document.removeEventListener('click', handlePickerClickOutside, true)
-    }
-  })
 </script>
 
 <div
@@ -105,11 +103,6 @@
     <div class="empty-zone">
       {#if editable && deckId && slideId}
         <button class="add-module-btn empty-add" onclick={togglePicker}>+ Module</button>
-        {#if showPicker}
-          <div class="picker-wrapper picker-centered">
-            <ModulePicker {deckId} {slideId} {zone} onAdd={handleModuleAdded} />
-          </div>
-        {/if}
       {:else}
         <div class="empty-hint">+ Add module</div>
       {/if}
@@ -128,15 +121,20 @@
     {#if editable && deckId && slideId}
       <div class="add-module-row">
         <button class="add-module-btn" onclick={togglePicker}>+ Module</button>
-        {#if showPicker}
-          <div class="picker-wrapper">
-            <ModulePicker {deckId} {slideId} {zone} onAdd={handleModuleAdded} />
-          </div>
-        {/if}
       </div>
     {/if}
   {/if}
 </div>
+
+{#if showPicker}
+  <!-- svelte-ignore a11y_no_static_element_interactions -->
+  <div class="picker-overlay" onclick={() => showPicker = false}>
+    <!-- svelte-ignore a11y_no_static_element_interactions -->
+    <div class="picker-floating" style="left: {pickerX}px; top: {pickerY}px;" onclick={(e) => e.stopPropagation()}>
+      <ModulePicker {deckId} {slideId} {zone} onAdd={handleModuleAdded} />
+    </div>
+  </div>
+{/if}
 
 <style>
   .zone-drop {
@@ -229,18 +227,21 @@
     font-size: 0.75rem;
   }
 
-  .picker-wrapper {
-    position: absolute;
-    top: 100%;
-    left: 50%;
-    transform: translateX(-50%);
-    margin-top: 4px;
-    z-index: 60;
+  .picker-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    background: rgba(0, 0, 0, 0.15);
   }
 
-  .picker-centered {
-    top: auto;
-    bottom: auto;
-    margin-top: 8px;
+  .picker-floating {
+    position: fixed;
+    z-index: 1001;
+    background: var(--color-bg, white);
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+    padding: 4px;
+    max-width: 320px;
   }
 </style>
