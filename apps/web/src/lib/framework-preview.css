@@ -1,34 +1,28 @@
 /* ── Framework Preview CSS ──────────────────────────────────────────
    Makes the canvas editor look identical to the exported/preview HTML.
    Scoped to .slide-frame to avoid affecting the rest of the UI.
-   Source of truth: apps/api/src/export/framework-css.ts
+   Uses CSS custom properties set dynamically by SlideCanvas.svelte
+   based on the active theme.
    ─────────────────────────────────────────────────────────────────── */
 
-/* ── Base: dark theme matching export ────────────────────────────── */
+/* ── Base: theme-driven via custom properties ────────────────────── */
 .slide-frame {
-  --accent-cyan: #64b5f6;
-  --accent-blue: #3b82f6;
-  --accent-navy: #1e3a5f;
+  /* Fallback accent colors (theme-independent) */
   --accent-red: #f87171;
   --accent-amber: #fbbf24;
   --accent-green: #6ee7b7;
-  --bg-light: #fafaf9;
-  --border-subtle: rgba(255,255,255,0.06);
-  --stroke: rgba(255,255,255,0.06);
-  --text-primary: #f0f0f0;
-  --text-muted: rgba(240,240,240,0.65);
 
-  background: #111827 !important;
-  color: #f0f0f0 !important;
-  font-family: 'Inter', sans-serif;
+  background: var(--theme-bg, #111827) !important;
+  color: var(--theme-text, #f0f0f0) !important;
+  font-family: var(--theme-body-font, 'Inter'), sans-serif;
 }
 
-/* ── Override slide backgrounds for dark theme ────────────────────── */
+/* ── Override slide backgrounds per layout ────────────────────────── */
 .slide-frame .slide[data-layout="layout-split"],
 .slide-frame .slide[data-layout="layout-content"],
 .slide-frame .slide[data-layout="layout-grid"] {
-  background: #111827 !important;
-  color: #f0f0f0 !important;
+  background: var(--theme-bg, #111827) !important;
+  color: var(--theme-text, #f0f0f0) !important;
 }
 
 .slide-frame .slide[data-layout="layout-full-dark"] {
@@ -39,22 +33,22 @@
 .slide-frame .slide[data-layout="title-slide"],
 .slide-frame .slide[data-layout="layout-divider"],
 .slide-frame .slide[data-layout="closing-slide"] {
-  background: var(--accent-navy) !important;
+  background: var(--theme-primary, #1e3a5f) !important;
   color: white !important;
 }
 
-/* ── Split layout: stage gets subtle dark treatment ──────────────── */
+/* ── Split layout: stage gets subtle treatment ───────────────────── */
 .slide-frame .zone-right {
-  background: rgba(255,255,255,0.02);
-  border-left: 1px solid var(--border-subtle);
+  background: var(--theme-card-bg, rgba(255,255,255,0.02));
+  border-left: 1px solid var(--theme-border, rgba(255,255,255,0.06));
 }
 
 /* ── Typography ──────────────────────────────────────────────────── */
 .slide-frame h1, .slide-frame h2, .slide-frame h3, .slide-frame h4,
 .slide-frame .heading {
-  font-family: 'Outfit', sans-serif !important;
+  font-family: var(--theme-heading-font, 'Outfit'), sans-serif !important;
   line-height: 1.2;
-  color: #f0f0f0 !important;
+  color: var(--theme-text, #f0f0f0) !important;
 }
 
 .slide-frame h1, .slide-frame .heading-1 { font-size: clamp(2rem, 4vw, 3.5rem) !important; font-weight: 600 !important; }
@@ -67,34 +61,35 @@
 .slide-frame p {
   font-size: clamp(0.95rem, 1.4vw, 1.25rem) !important;
   line-height: 1.65 !important;
-  color: var(--text-muted) !important;
+  color: var(--theme-text-muted, rgba(240,240,240,0.65)) !important;
 }
 
-/* ── TipTap editor content inherits dark theme ───────────────────── */
+/* ── TipTap editor content inherits theme ────────────────────────── */
 .slide-frame .tiptap-mount,
 .slide-frame .tiptap,
 .slide-frame .rich-text-editor {
-  color: var(--text-muted) !important;
+  color: var(--theme-text-muted, rgba(240,240,240,0.65)) !important;
 }
-.slide-frame .tiptap p { color: var(--text-muted) !important; }
-.slide-frame .tiptap strong { color: #f0f0f0 !important; }
-.slide-frame .tiptap a { color: var(--accent-cyan) !important; }
+.slide-frame .tiptap p { color: var(--theme-text-muted, rgba(240,240,240,0.65)) !important; }
+.slide-frame .tiptap strong { color: var(--theme-text, #f0f0f0) !important; }
+.slide-frame .tiptap a { color: var(--theme-accent, #64b5f6) !important; }
 
 /* ── Module: Card ────────────────────────────────────────────────── */
 .slide-frame .card {
-  background: rgba(255,255,255,0.03) !important;
-  border: 1px solid var(--border-subtle) !important;
+  background: var(--theme-card-bg, rgba(255,255,255,0.03)) !important;
+  border: 1px solid var(--theme-border, rgba(255,255,255,0.06)) !important;
   border-radius: 10px !important;
+  padding: 24px !important;
   border-left-width: 1px !important;
-  color: var(--text-muted) !important;
+  color: var(--theme-text-muted, rgba(240,240,240,0.65)) !important;
 }
 .slide-frame .card-cyan,
 .slide-frame .card[class*="cyan"] {
-  border-left: 3px solid var(--accent-cyan) !important;
+  border-left: 3px solid var(--theme-accent, #64b5f6) !important;
 }
 .slide-frame .card-navy,
 .slide-frame .card[class*="navy"] {
-  border-left: 3px solid var(--accent-navy) !important;
+  border-left: 3px solid var(--theme-primary, #1e3a5f) !important;
 }
 
 /* ── Module: Label ───────────────────────────────────────────────── */
@@ -106,36 +101,38 @@
   text-transform: uppercase !important;
   letter-spacing: 0.06em !important;
 }
-.slide-frame .label-cyan { background: rgba(100,181,246,0.1) !important; color: var(--accent-cyan) !important; }
-.slide-frame .label-blue { background: rgba(59,130,246,0.1) !important; color: var(--accent-blue) !important; }
-.slide-frame .label-navy { background: rgba(30,58,95,0.2) !important; color: #7b9fd4 !important; }
+.slide-frame .label-cyan { background: color-mix(in srgb, var(--theme-accent, #64b5f6) 15%, transparent) !important; color: var(--theme-accent, #64b5f6) !important; }
+.slide-frame .label-blue { background: color-mix(in srgb, var(--theme-secondary, #3b82f6) 15%, transparent) !important; color: var(--theme-secondary, #3b82f6) !important; }
+.slide-frame .label-navy { background: color-mix(in srgb, var(--theme-primary, #1e3a5f) 20%, transparent) !important; color: color-mix(in srgb, var(--theme-primary, #1e3a5f) 60%, white) !important; }
 .slide-frame .label-red { background: rgba(248,113,113,0.1) !important; color: var(--accent-red) !important; }
 .slide-frame .label-amber { background: rgba(251,191,36,0.1) !important; color: var(--accent-amber) !important; }
 .slide-frame .label-green { background: rgba(110,231,183,0.1) !important; color: var(--accent-green) !important; }
 
 /* ── Module: Tip Box ─────────────────────────────────────────────── */
 .slide-frame .tip-box {
-  background: rgba(100,181,246,0.05) !important;
-  border: 1px solid rgba(100,181,246,0.12) !important;
+  background: color-mix(in srgb, var(--theme-accent, #64b5f6) 5%, transparent) !important;
+  border: 1px solid color-mix(in srgb, var(--theme-accent, #64b5f6) 12%, transparent) !important;
   border-radius: 8px !important;
-  color: var(--text-muted) !important;
+  padding: 20px 24px !important;
+  color: var(--theme-text-muted, rgba(240,240,240,0.65)) !important;
 }
 .slide-frame .tip-box strong,
 .slide-frame .tip-box-title {
-  color: var(--accent-cyan) !important;
+  color: var(--theme-accent, #64b5f6) !important;
 }
 
 /* ── Module: Prompt Block ────────────────────────────────────────── */
 .slide-frame .prompt-block {
   background: rgba(0,0,0,0.3) !important;
-  border: 1px solid var(--border-subtle) !important;
+  border: 1px solid var(--theme-border, rgba(255,255,255,0.06)) !important;
   border-radius: 8px !important;
-  color: #f0f0f0 !important;
+  padding: 20px 24px !important;
+  color: var(--theme-text, #f0f0f0) !important;
 }
 .slide-frame .prompt-block pre {
   background: transparent !important;
   border: none !important;
-  color: #f0f0f0 !important;
+  color: var(--theme-text, #f0f0f0) !important;
 }
 .slide-frame .prompt-good { border-color: rgba(110,231,183,0.3) !important; background: rgba(110,231,183,0.04) !important; }
 .slide-frame .prompt-mid { border-color: rgba(251,191,36,0.3) !important; background: rgba(251,191,36,0.04) !important; }
@@ -148,14 +145,14 @@
 }
 .slide-frame .stream-list li {
   padding: 12px 16px !important;
-  border-left: 2px solid var(--accent-cyan) !important;
+  border-left: 2px solid var(--theme-accent, #64b5f6) !important;
   margin-bottom: 6px !important;
-  background: rgba(255,255,255,0.02) !important;
+  background: var(--theme-card-bg, rgba(255,255,255,0.02)) !important;
   border-radius: 0 6px 6px 0 !important;
-  color: var(--text-muted) !important;
+  color: var(--theme-text-muted, rgba(240,240,240,0.65)) !important;
 }
 .slide-frame .stream-list li::before {
-  display: none !important; /* remove the teal dot, use border-left instead */
+  display: none !important;
 }
 
 /* ── Module: Comparison ──────────────────────────────────────────── */
@@ -163,37 +160,38 @@
   border: none !important;
 }
 .slide-frame .comparison-panel {
-  background: rgba(255,255,255,0.02) !important;
-  border: 1px solid var(--border-subtle) !important;
+  background: var(--theme-card-bg, rgba(255,255,255,0.02)) !important;
+  border: 1px solid var(--theme-border, rgba(255,255,255,0.06)) !important;
   border-radius: 10px !important;
-  color: var(--text-muted) !important;
+  padding: 24px !important;
+  color: var(--theme-text-muted, rgba(240,240,240,0.65)) !important;
 }
 .slide-frame .comparison-panel h4 {
-  color: var(--accent-cyan) !important;
+  color: var(--theme-accent, #64b5f6) !important;
 }
 
 /* ── Module: Card Grid ───────────────────────────────────────────── */
 .slide-frame .card-grid .card {
-  background: rgba(255,255,255,0.03) !important;
-  border: 1px solid var(--border-subtle) !important;
-  color: var(--text-muted) !important;
+  background: var(--theme-card-bg, rgba(255,255,255,0.03)) !important;
+  border: 1px solid var(--theme-border, rgba(255,255,255,0.06)) !important;
+  color: var(--theme-text-muted, rgba(240,240,240,0.65)) !important;
 }
 .slide-frame .card-grid .card-title {
-  color: #f0f0f0 !important;
+  color: var(--theme-text, #f0f0f0) !important;
 }
 
 /* ── Module: Flow ────────────────────────────────────────────────── */
 .slide-frame .flow-node .flow-icon {
-  background: var(--accent-cyan) !important;
+  background: var(--theme-accent, #64b5f6) !important;
 }
 .slide-frame .flow-node .flow-label {
-  color: #f0f0f0 !important;
+  color: var(--theme-text, #f0f0f0) !important;
 }
 .slide-frame .flow-node .flow-desc {
-  color: var(--text-muted) !important;
+  color: var(--theme-text-muted, rgba(240,240,240,0.65)) !important;
 }
 .slide-frame .flow-arrow {
-  background: var(--accent-cyan) !important;
+  background: var(--theme-accent, #64b5f6) !important;
   opacity: 0.3;
 }
 
@@ -202,24 +200,26 @@
   border-radius: 6px;
 }
 .slide-frame figcaption {
-  color: var(--text-muted) !important;
+  color: var(--theme-text-muted, rgba(240,240,240,0.65)) !important;
 }
 
 /* ── Module: Carousel ────────────────────────────────────────────── */
 .slide-frame .carousel-placeholder {
-  background: rgba(255,255,255,0.03) !important;
-  border: 1px solid var(--border-subtle) !important;
-  color: var(--text-muted) !important;
+  background: var(--theme-card-bg, rgba(255,255,255,0.03)) !important;
+  border: 1px solid var(--theme-border, rgba(255,255,255,0.06)) !important;
+  color: var(--theme-text-muted, rgba(240,240,240,0.65)) !important;
 }
 
 /* ── Blockquote ──────────────────────────────────────────────────── */
 .slide-frame blockquote {
-  border-left: 3px solid var(--accent-cyan) !important;
-  background: rgba(100,181,246,0.04) !important;
-  color: var(--text-muted) !important;
+  border-left: 3px solid var(--theme-accent, #64b5f6) !important;
+  background: color-mix(in srgb, var(--theme-accent, #64b5f6) 4%, transparent) !important;
+  color: var(--theme-text-muted, rgba(240,240,240,0.65)) !important;
+  padding: 16px 24px !important;
+  border-radius: 0 6px 6px 0 !important;
 }
 
-/* ── Zone drop areas in dark theme ───────────────────────────────── */
+/* ── Zone drop areas ─────────────────────────────────────────────── */
 .slide-frame .zone-drop {
   color: inherit;
 }
@@ -227,14 +227,14 @@
   background: transparent !important;
 }
 .slide-frame .module-item:hover {
-  background: rgba(255,255,255,0.04) !important;
+  background: var(--theme-card-bg, rgba(255,255,255,0.04)) !important;
 }
 .slide-frame .empty-hint {
-  color: rgba(255,255,255,0.25) !important;
-  border-color: rgba(255,255,255,0.1) !important;
+  color: var(--theme-text-muted, rgba(255,255,255,0.25)) !important;
+  border-color: var(--theme-border, rgba(255,255,255,0.1)) !important;
 }
 
-/* ── Controls visibility on dark bg ──────────────────────────────── */
+/* ── Controls visibility ─────────────────────────────────────────── */
 .slide-frame .module-controls .ctrl-btn,
 .slide-frame .module-controls .delete-btn,
 .slide-frame .module-controls .step-select {
@@ -243,13 +243,13 @@
   border-color: rgba(255,255,255,0.15) !important;
 }
 .slide-frame .add-module-btn {
-  background: rgba(100,181,246,0.1) !important;
-  color: var(--accent-cyan) !important;
-  border-color: rgba(100,181,246,0.25) !important;
+  background: color-mix(in srgb, var(--theme-accent, #64b5f6) 10%, transparent) !important;
+  color: var(--theme-accent, #64b5f6) !important;
+  border-color: color-mix(in srgb, var(--theme-accent, #64b5f6) 25%, transparent) !important;
 }
 
 /* ── Inline code ─────────────────────────────────────────────────── */
 .slide-frame code {
-  background: rgba(255,255,255,0.06) !important;
-  color: var(--accent-cyan) !important;
+  background: var(--theme-card-bg, rgba(255,255,255,0.06)) !important;
+  color: var(--theme-accent, #64b5f6) !important;
 }

@@ -4,13 +4,20 @@
   import { applyMutation } from '$lib/utils/mutations'
   import { get } from 'svelte/store'
 
+  interface ArtifactConfigField {
+    type: string
+    label: string
+    default: unknown
+    itemShape?: Record<string, string>
+  }
+
   interface Artifact {
     id: string
     name: string
     description: string
     type: string
     source: string
-    config: unknown
+    config: Record<string, ArtifactConfigField> | unknown
     builtIn: boolean
   }
 
@@ -18,6 +25,11 @@
   let loading = $state(true)
   let error = $state<string | null>(null)
   let inserting = $state<string | null>(null)
+
+  // Config editor state
+  let editingArtifactId = $state<string | null>(null)
+  let configJson = $state('')
+  let configError = $state<string | null>(null)
 
   $effect(() => {
     const API_URL = import.meta.env.PUBLIC_API_URL ?? 'http://localhost:3001'
@@ -34,15 +46,63 @@
       })
   })
 
-  async function insertArtifact(artifact: Artifact) {
+  function openConfigEditor(artifact: Artifact) {
+    if (editingArtifactId === artifact.id) {
+      editingArtifactId = null
+      return
+    }
+    editingArtifactId = artifact.id
+    configError = null
+    // Build default config from the artifact's config schema
+    const cfg = artifact.config as Record<string, ArtifactConfigField> | null
+    if (cfg && typeof cfg === 'object') {
+      const defaults: Record<string, unknown> = {}
+      for (const [key, field] of Object.entries(cfg)) {
+        if (field && typeof field === 'object' && 'default' in field) {
+          defaults[key] = field.default
+        }
+      }
+      configJson = JSON.stringify(defaults, null, 2)
+    } else {
+      configJson = '{}'
+    }
+  }
+
+  function buildSourceWithConfig(artifact: Artifact, configData: Record<string, unknown>): string {
+    // Inject data-config as a JSON attribute on the body element
+    const configStr = JSON.stringify(configData).replace(/"/g, '&quot;')
+    // Replace <body> with <body data-config="...">
+    let source = artifact.source
+    if (source.includes('<body>')) {
+      source = source.replace('<body>', `<body data-config="${configStr}">`)
+    } else if (source.includes('<body ')) {
+      source = source.replace('<body ', `<body data-config="${configStr}" `)
+    }
+    return source
+  }
+
+  async function insertArtifact(artifact: Artifact, useConfig: boolean = false) {
     const slideId = get(activeSlideId)
     if (!slideId || inserting) return
 
     inserting = artifact.id
+    configError = null
 
     try {
+      let finalSource = artifact.source
+      if (useConfig && configJson.trim()) {
+        try {
+          const parsed = JSON.parse(configJson)
+          finalSource = buildSourceWithConfig(artifact, parsed)
+        } catch {
+          configError = 'Invalid JSON. Please fix and try again.'
+          inserting = null
+          return
+        }
+      }
+
       // Create a data URI from the source HTML
-      const blob = new Blob([artifact.source], { type: 'text/html' })
+      const blob = new Blob([finalSource], { type: 'text/html' })
       const src = URL.createObjectURL(blob)
 
       await applyMutation({
@@ -54,6 +114,7 @@
             zone: 'stage',
             data: {
               src,
+              rawSource: finalSource,
               alt: artifact.name,
               width: '100%',
               height: '300px',
@@ -61,6 +122,8 @@
           },
         },
       })
+
+      editingArtifactId = null
     } catch (err) {
       console.error('Failed to insert artifact:', err)
     } finally {
@@ -74,6 +137,11 @@
     widget: 'W',
     map: 'M',
   }
+
+  function hasConfig(artifact: Artifact): boolean {
+    const cfg = artifact.config as Record<string, unknown> | null
+    return cfg != null && typeof cfg === 'object' && Object.keys(cfg).length > 0
+  }
 </script>
 
 <div class="artifacts-tab">
@@ -86,21 +154,56 @@
   {:else}
     <div class="artifact-list">
       {#each artifacts as artifact (artifact.id)}
-        <button
-          class="artifact-card"
-          onclick={() => insertArtifact(artifact)}
-          disabled={inserting !== null || !$activeSlideId}
-          title={$activeSlideId ? `Insert ${artifact.name} into current slide` : 'Select a slide first'}
-        >
-          <div class="artifact-header">
-            <span class="type-badge">{typeIcons[artifact.type] ?? '?'}</span>
-            <span class="artifact-name">{artifact.name}</span>
+        <div class="artifact-card" class:editing={editingArtifactId === artifact.id}>
+          <div class="artifact-main">
+            <div class="artifact-header">
+              <span class="type-badge">{typeIcons[artifact.type] ?? '?'}</span>
+              <span class="artifact-name">{artifact.name}</span>
+            </div>
+            <p class="artifact-desc">{artifact.description}</p>
+            <div class="artifact-actions">
+              <button
+                class="insert-btn"
+                onclick={() => insertArtifact(artifact, false)}
+                disabled={inserting !== null || !$activeSlideId}
+                title={$activeSlideId ? 'Insert with defaults' : 'Select a slide first'}
+              >
+                {inserting === artifact.id ? 'Inserting...' : 'Insert'}
+              </button>
+              {#if hasConfig(artifact)}
+                <button
+                  class="config-btn"
+                  onclick={() => openConfigEditor(artifact)}
+                  title="Configure data before inserting"
+                >
+                  {editingArtifactId === artifact.id ? 'Close' : 'Configure'}
+                </button>
+              {/if}
+            </div>
           </div>
-          <p class="artifact-desc">{artifact.description}</p>
-          {#if inserting === artifact.id}
-            <span class="inserting-label">Inserting...</span>
+
+          {#if editingArtifactId === artifact.id}
+            <div class="config-editor">
+              <label class="config-label">Edit data (JSON):</label>
+              <textarea
+                class="config-textarea"
+                bind:value={configJson}
+                rows="8"
+                spellcheck="false"
+              ></textarea>
+              {#if configError}
+                <p class="config-error">{configError}</p>
+              {/if}
+              <button
+                class="insert-configured-btn"
+                onclick={() => insertArtifact(artifact, true)}
+                disabled={inserting !== null || !$activeSlideId}
+              >
+                Insert with Config
+              </button>
+            </div>
           {/if}
-        </button>
+        </div>
       {/each}
     </div>
   {/if}
@@ -135,25 +238,27 @@
   .artifact-card {
     display: flex;
     flex-direction: column;
-    gap: 4px;
-    padding: 10px 12px;
     background: white;
     border: 1px solid var(--color-border, #e5e7eb);
     border-radius: 6px;
-    cursor: pointer;
-    text-align: left;
     transition: border-color 0.15s, box-shadow 0.15s;
-    position: relative;
+    overflow: hidden;
   }
 
-  .artifact-card:hover:not(:disabled) {
+  .artifact-card:hover {
     border-color: #93c5fd;
     box-shadow: 0 1px 4px rgba(59, 130, 246, 0.1);
   }
 
-  .artifact-card:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
+  .artifact-card.editing {
+    border-color: #3b82f6;
+  }
+
+  .artifact-main {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 10px 12px;
   }
 
   .artifact-header {
@@ -189,12 +294,91 @@
     line-height: 1.4;
   }
 
-  .inserting-label {
-    position: absolute;
-    top: 6px;
-    right: 8px;
-    font-size: 10px;
-    color: #3b82f6;
-    font-weight: 500;
+  .artifact-actions {
+    display: flex;
+    gap: 6px;
+    margin-top: 6px;
   }
+
+  .insert-btn,
+  .config-btn {
+    padding: 4px 10px;
+    font-size: 10px;
+    font-weight: 600;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background 0.15s, opacity 0.15s;
+  }
+
+  .insert-btn {
+    background: #3b82f6;
+    color: white;
+    border: none;
+  }
+  .insert-btn:hover:not(:disabled) { opacity: 0.9; }
+  .insert-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .config-btn {
+    background: #f1f5f9;
+    color: #475569;
+    border: 1px solid #e2e8f0;
+  }
+  .config-btn:hover { background: #e2e8f0; color: #334155; }
+
+  /* ── Config editor ── */
+  .config-editor {
+    padding: 8px 12px 12px;
+    border-top: 1px solid var(--color-border, #e5e7eb);
+    background: #f9fafb;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .config-label {
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--color-text-muted, #6b7280);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+  }
+
+  .config-textarea {
+    width: 100%;
+    font-family: 'JetBrains Mono', 'Fira Code', monospace;
+    font-size: 11px;
+    line-height: 1.5;
+    padding: 8px;
+    border: 1px solid var(--color-border, #e5e7eb);
+    border-radius: 4px;
+    background: white;
+    color: var(--color-text, #1f2937);
+    resize: vertical;
+    box-sizing: border-box;
+  }
+  .config-textarea:focus {
+    outline: none;
+    border-color: #3b82f6;
+  }
+
+  .config-error {
+    font-size: 10px;
+    color: #ef4444;
+    margin: 0;
+  }
+
+  .insert-configured-btn {
+    padding: 5px 12px;
+    font-size: 11px;
+    font-weight: 600;
+    background: #3b82f6;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    align-self: flex-start;
+    transition: opacity 0.15s;
+  }
+  .insert-configured-btn:hover:not(:disabled) { opacity: 0.9; }
+  .insert-configured-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 </style>

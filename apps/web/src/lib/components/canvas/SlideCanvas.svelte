@@ -2,6 +2,7 @@
   import '$lib/framework-preview.css'
   import { currentDeck } from '$lib/stores/deck'
   import { activeSlideId } from '$lib/stores/ui'
+  import { activeTheme, ensureThemesLoaded, isDark } from '$lib/stores/themes'
   import CanvasToolbar from './CanvasToolbar.svelte'
   import FormatToolbar from './FormatToolbar.svelte'
   import SlideRenderer from './SlideRenderer.svelte'
@@ -24,6 +25,41 @@
     // Small delay so toolbar clicks still work
     setTimeout(() => { activeEditor = null }, 300)
   }
+
+  // Load themes on mount so activeTheme can resolve
+  $effect(() => {
+    ensureThemesLoaded()
+  })
+
+  // Derive theme-driven CSS variables
+  let theme = $derived($activeTheme)
+
+  let themeStyle = $derived.by(() => {
+    const bg = theme?.colors?.bg ?? '#111827'
+    const dark = isDark(bg)
+    const text = dark ? '#f0f0f0' : '#1a1a2e'
+    const textMuted = dark ? 'rgba(240,240,240,0.65)' : 'rgba(26,26,46,0.65)'
+    const primary = theme?.colors?.primary ?? '#1e3a5f'
+    const secondary = theme?.colors?.secondary ?? '#3b82f6'
+    const accent = theme?.colors?.accent ?? '#64b5f6'
+    const headingFont = theme?.fonts?.heading ?? 'Outfit'
+    const bodyFont = theme?.fonts?.body ?? 'Inter'
+    const cardBg = dark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)'
+    const border = dark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.08)'
+
+    return [
+      `--theme-bg: ${bg}`,
+      `--theme-text: ${text}`,
+      `--theme-text-muted: ${textMuted}`,
+      `--theme-primary: ${primary}`,
+      `--theme-secondary: ${secondary}`,
+      `--theme-accent: ${accent}`,
+      `--theme-heading-font: ${headingFont}`,
+      `--theme-body-font: ${bodyFont}`,
+      `--theme-card-bg: ${cardBg}`,
+      `--theme-border: ${border}`,
+    ].join('; ')
+  })
 </script>
 
 <div class="slide-canvas">
@@ -33,7 +69,7 @@
   {/if}
   <div class="canvas-area">
     {#if activeSlide}
-      <div class="slide-frame">
+      <div class="slide-frame" style={themeStyle}>
         <SlideRenderer slide={activeSlide} {editable} onEditorReady={handleEditorReady} />
       </div>
     {:else}
