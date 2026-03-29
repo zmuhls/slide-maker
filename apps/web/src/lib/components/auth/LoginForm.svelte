@@ -92,16 +92,16 @@
   }
 
   .form-header p {
-    font-size: 0.875rem;
+    font-size: 1.125rem;
     opacity: 0.85;
   }
 
   .brand-slide {
-    color: #1a1a2e;
+    color: #60a5fa;
     font-weight: 700;
   }
   .brand-wiz {
-    color: #1D3A83;
+    color: #93c5fd;
     font-weight: 700;
   }
 
