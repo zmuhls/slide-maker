@@ -66,6 +66,7 @@
 
     let fullText = ''
     let firstChunk = true
+    let appliedMutationCount = 0
 
     await streamChat(
       text,
@@ -84,20 +85,18 @@
           appendToAssistant(assistantId, chunk)
         }
         fullText += chunk
+
+        // Apply mutations live as they stream in
+        const mutations = extractMutations(fullText)
+        while (appliedMutationCount < mutations.length) {
+          applyMutation(mutations[appliedMutationCount]).catch((err) =>
+            console.error('Failed to apply mutation:', err, mutations[appliedMutationCount])
+          )
+          appliedMutationCount++
+        }
       },
       async () => {
         finishAssistant(assistantId)
-
-        // Extract and apply mutations from the full response
-        const mutations = extractMutations(fullText)
-        for (const mutation of mutations) {
-          try {
-            await applyMutation(mutation)
-          } catch (err) {
-            console.error('Failed to apply mutation:', err, mutation)
-          }
-        }
-
         chatStreaming.set(false)
       },
       (error) => {

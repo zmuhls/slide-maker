@@ -34,9 +34,25 @@
 
   let items = $state<Module[]>([])
   let showPicker = $state(false)
+  let prevModuleIds = $state<Set<string>>(new Set())
+  let highlightedIds = $state<Set<string>>(new Set())
 
   $effect(() => {
     items = modules.map((m) => ({ ...m }))
+  })
+
+  $effect(() => {
+    const currentIds = new Set(modules.map((m) => m.id))
+    for (const id of currentIds) {
+      if (!prevModuleIds.has(id)) {
+        highlightedIds.add(id)
+        setTimeout(() => {
+          highlightedIds.delete(id)
+          highlightedIds = new Set(highlightedIds)
+        }, 1500)
+      }
+    }
+    prevModuleIds = currentIds
   })
 
   function handleConsider(e: CustomEvent<{ items: Module[] }>) {
@@ -99,7 +115,7 @@
     </div>
   {:else}
     {#each items as mod (mod.id)}
-      <div class="module-item">
+      <div class="module-item" class:just-added={highlightedIds.has(mod.id)}>
         <ModuleRenderer
           module={mod}
           {editable}
@@ -172,6 +188,15 @@
 
   .module-item:hover {
     background: rgba(255, 255, 255, 0.14);
+  }
+
+  .module-item.just-added {
+    animation: module-glow 1.5s ease-out;
+  }
+
+  @keyframes module-glow {
+    0% { box-shadow: 0 0 0 3px rgba(59, 115, 230, 0.5); }
+    100% { box-shadow: 0 0 0 0 rgba(59, 115, 230, 0); }
   }
 
   .add-module-row {
