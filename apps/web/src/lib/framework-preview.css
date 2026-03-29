@@ -274,13 +274,26 @@
   border-color: var(--theme-border, rgba(255,255,255,0.1)) !important;
 }
 
-/* ── Controls visibility ─────────────────────────────────────────── */
+/* ── Controls: always light, immune to theme ─────────────────────── */
+.slide-frame .module-controls {
+  color-scheme: light !important;
+}
 .slide-frame .module-controls .ctrl-btn,
-.slide-frame .module-controls .delete-btn,
+.slide-frame .module-controls .delete-btn {
+  background: white !important;
+  color: #555 !important;
+  border-color: #ccc !important;
+}
+.slide-frame .module-controls .ctrl-btn:hover {
+  background: #f0f0f0 !important;
+  color: #222 !important;
+}
 .slide-frame .module-controls .step-select {
-  background: rgba(17,24,39,0.85) !important;
-  color: rgba(255,255,255,0.7) !important;
-  border-color: rgba(255,255,255,0.15) !important;
+  background: white !important;
+  color: #333 !important;
+  border-color: #ccc !important;
+  -webkit-appearance: menulist !important;
+  appearance: menulist !important;
 }
 .slide-frame .add-module-btn {
   background: color-mix(in srgb, var(--theme-accent, #64b5f6) 10%, transparent) !important;
