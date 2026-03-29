@@ -52,6 +52,9 @@
 
   let Renderer = $derived(rendererMap[module.type] ?? null)
 
+  // Artifact edit trigger
+  let artifactEditTrigger = $state(0)
+
   // Delete
   let confirmDelete = $state(false)
   function handleDelete() {
@@ -126,6 +129,9 @@
           <button class="ctrl-btn" onclick={() => onmovedown?.()} title="Move down" aria-label="Move module down">▼</button>
         {/if}
       </div>
+      {#if module.type === 'artifact'}
+        <button class="ctrl-btn edit-src-btn" onclick={() => artifactEditTrigger++} title="Edit source" aria-label="Edit artifact source">Edit</button>
+      {/if}
       <select
         class="step-select"
         value={module.stepOrder != null ? String(module.stepOrder) : ''}
@@ -157,7 +163,7 @@
 
   <div class="module-content" style:transform={scaleFactor !== 1 ? `scale(${scaleFactor})` : undefined} style:transform-origin={scaleFactor !== 1 ? 'top center' : undefined}>
     {#if Renderer}
-      <Renderer data={module.data} {editable} {onchange} oneditorready={module.type === 'text' ? oneditorready : undefined} />
+      <Renderer data={module.data} {editable} {onchange} oneditorready={module.type === 'text' ? oneditorready : undefined} editTrigger={module.type === 'artifact' ? artifactEditTrigger : undefined} />
     {:else}
       <div class="unknown-module">Unknown: {module.type}</div>
     {/if}
@@ -271,6 +277,13 @@
   }
   .step-select:focus {
     background: var(--color-ghost-bg, rgba(59, 115, 230, 0.08));
+    color: var(--color-primary, #3B73E6);
+  }
+  .edit-src-btn {
+    width: auto !important;
+    padding: 0 6px;
+    font-size: 10px;
+    font-weight: 500;
     color: var(--color-primary, #3B73E6);
   }
   .delete-btn:hover {

@@ -1,5 +1,5 @@
 <script lang="ts">
-  let { data, editable = false, onchange } = $props<{
+  let { data, editable = false, onchange, editTrigger = 0 } = $props<{
     data: {
       src?: string
       url?: string
@@ -11,7 +11,17 @@
     }
     editable?: boolean
     onchange?: (newData: Record<string, unknown>) => void
+    editTrigger?: number
   }>()
+
+  // Parent increments editTrigger to open the editor
+  let lastTrigger = 0
+  $effect(() => {
+    if (editTrigger > lastTrigger) {
+      lastTrigger = editTrigger
+      openEditor()
+    }
+  })
 
   const width = $derived(data.width || '100%')
   const height = $derived(data.height || '400px')
@@ -108,7 +118,6 @@
   {#if editable}
     <div class="artifact-header">
       <span class="artifact-label">{alt}</span>
-      <button class="edit-data-btn" onclick={openEditor} type="button">Edit Source</button>
     </div>
   {/if}
   {#if useSrcdoc}
@@ -200,7 +209,7 @@
   .artifact-header {
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    gap: 6px;
     padding: 3px 8px;
     background: rgba(0, 0, 0, 0.04);
     border-bottom: 1px solid var(--color-border, rgba(255, 255, 255, 0.06));
