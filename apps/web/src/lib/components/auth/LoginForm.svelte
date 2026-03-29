@@ -2,6 +2,7 @@
   import { api } from '$lib/api';
   import { currentUser } from '$lib/stores/auth';
   import { goto } from '$app/navigation';
+  import { base } from '$app/paths';
 
   let email = $state('');
   let password = $state('');
@@ -16,7 +17,7 @@
     try {
       const { user } = await api.login({ email, password });
       currentUser.set(user);
-      goto('/');
+      goto(`${base}/`);
     } catch (err: any) {
       error = err.message || 'Login failed';
     } finally {
