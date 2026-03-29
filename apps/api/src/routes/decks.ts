@@ -208,14 +208,18 @@ decksRouter.post('/:id/slides', async (c) => {
   }
 
   const body = await c.req.json()
-  const { type, layout, blocks: blockData, insertAfter } = body
+  const { layout, splitRatio, modules: moduleDefs, insertAfter } = body
 
-  if (!type) {
-    return c.json({ error: 'Slide type is required' }, 400)
-  }
-
-  const validLayouts = ['single', 'two-column', 'two-column-wide-left', 'two-column-wide-right']
-  const slideLayout = validLayouts.includes(layout) ? layout : 'single'
+  const validLayouts = [
+    'layout-split',
+    'layout-full',
+    'layout-grid-2x2',
+    'layout-grid-1x3',
+    'layout-sidebar-left',
+    'layout-sidebar-right',
+    'layout-blank',
+  ]
+  const slideLayout = validLayouts.includes(layout) ? layout : 'layout-split'
 
   // Calculate order
   let order: number
@@ -256,29 +260,28 @@ decksRouter.post('/:id/slides', async (c) => {
   await db.insert(slides).values({
     id: slideId,
     deckId,
-    type,
     layout: slideLayout,
+    splitRatio: splitRatio || '0.45',
     order,
     notes: null,
-    fragments: false,
     createdAt: now,
     updatedAt: now,
   })
 
-  // Create content blocks if provided
+  // Create content blocks (modules) if provided
   const createdBlocks: (typeof contentBlocks.$inferSelect)[] = []
-  if (blockData && Array.isArray(blockData)) {
-    for (let i = 0; i < blockData.length; i++) {
-      const block = blockData[i]
+  if (moduleDefs && Array.isArray(moduleDefs)) {
+    for (let i = 0; i < moduleDefs.length; i++) {
+      const mod = moduleDefs[i]
       const blockId = createId()
       const blockRow = {
         id: blockId,
         slideId,
-        type: block.type,
-        data: block.data || {},
-        layout: block.layout || null,
+        type: mod.type,
+        zone: mod.zone || 'content',
+        data: mod.data || {},
         order: i,
-        fragmentOrder: block.fragmentOrder ?? null,
+        stepOrder: mod.stepOrder ?? null,
       }
       await db.insert(contentBlocks).values(blockRow)
       createdBlocks.push(blockRow)
@@ -322,9 +325,17 @@ decksRouter.patch('/:id/slides/:slideId', async (c) => {
   const updates: Record<string, unknown> = { updatedAt: new Date() }
 
   if (body.notes !== undefined) updates.notes = body.notes
-  if (body.fragments !== undefined) updates.fragments = body.fragments
+  if (body.splitRatio !== undefined) updates.splitRatio = body.splitRatio
   if (body.layout !== undefined) {
-    const validLayouts = ['single', 'two-column', 'two-column-wide-left', 'two-column-wide-right']
+    const validLayouts = [
+      'layout-split',
+      'layout-full',
+      'layout-grid-2x2',
+      'layout-grid-1x3',
+      'layout-sidebar-left',
+      'layout-sidebar-right',
+      'layout-blank',
+    ]
     if (validLayouts.includes(body.layout)) updates.layout = body.layout
   }
 
@@ -393,7 +404,7 @@ decksRouter.post('/:id/slides/:slideId/blocks', async (c) => {
   }
 
   const body = await c.req.json()
-  const { type, data: blockData } = body
+  const { type, data: blockData, zone, stepOrder } = body
 
   // Get next order
   const lastBlock = await db
@@ -407,10 +418,10 @@ decksRouter.post('/:id/slides/:slideId/blocks', async (c) => {
     id: blockId,
     slideId,
     type,
+    zone: zone || 'content',
     data: blockData || {},
-    layout: null,
     order: (lastBlock?.maxOrder ?? -1) + 1,
-    fragmentOrder: body.fragmentOrder ?? null,
+    stepOrder: stepOrder ?? null,
   }
 
   await db.insert(contentBlocks).values(block)
@@ -425,7 +436,7 @@ decksRouter.patch('/:id/slides/:slideId/blocks/:blockId', async (c) => {
   const deckId = c.req.param('id')
 
   const body = await c.req.json()
-  const { data: blockData, layout } = body
+  const { data: blockData, zone, order: blockOrder, stepOrder } = body
 
   const existing = await db.select().from(contentBlocks).where(eq(contentBlocks.id, blockId)).get()
   if (!existing) {
@@ -439,8 +450,16 @@ decksRouter.patch('/:id/slides/:slideId/blocks/:blockId', async (c) => {
     updates.data = mergedData
   }
 
-  if (layout !== undefined) {
-    updates.layout = layout
+  if (zone !== undefined) {
+    updates.zone = zone
+  }
+
+  if (blockOrder !== undefined) {
+    updates.order = blockOrder
+  }
+
+  if (stepOrder !== undefined) {
+    updates.stepOrder = stepOrder
   }
 
   if (Object.keys(updates).length > 0) {

@@ -5,18 +5,19 @@ interface ContentBlock {
   id: string
   slideId: string
   type: string
+  zone: string
   data: Record<string, unknown>
-  layout: { x: number; y: number; width: number; height: number } | null
   order: number
+  stepOrder: number | null
 }
 
 interface SlideWithBlocks {
   id: string
   deckId: string
-  type: string
+  layout: string
+  splitRatio: string
   order: number
   notes: string | null
-  fragments: boolean
   createdAt: number
   updatedAt: number
   blocks: ContentBlock[]

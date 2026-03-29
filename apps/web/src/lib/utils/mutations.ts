@@ -28,13 +28,13 @@ export async function applyMutation(mutation: Record<string, unknown>): Promise<
 
   switch (mutation.action) {
     case 'addSlide': {
-      const blockDefs = (payload.blocks as { type: string; data: Record<string, unknown> }[]) || []
+      const moduleDefs = (payload.modules as any[]) || []
 
       // Persist to API first — it generates the real IDs
       const result = await apiCall(`/api/decks/${deck.id}/slides`, 'POST', {
-        type: (payload.type as string) || 'body',
-        layout: (payload.layout as string) || 'single',
-        blocks: blockDefs,
+        layout: (payload.layout as string) || 'layout-split',
+        splitRatio: payload.splitRatio,
+        modules: moduleDefs,
         insertAfter: payload.insertAfter || undefined,
       })
 
@@ -43,7 +43,7 @@ export async function applyMutation(mutation: Record<string, unknown>): Promise<
       if (newSlide?.id) {
         const slide = {
           ...newSlide,
-          blocks: newSlide.blocks || [],
+          blocks: newSlide.blocks || newSlide.modules || [],
         }
         addSlideToDeck(slide)
         // Auto-select the new slide
@@ -63,13 +63,13 @@ export async function applyMutation(mutation: Record<string, unknown>): Promise<
       const slideId = payload.slideId as string
       const updates: Record<string, unknown> = {}
       if (payload.notes !== undefined) updates.notes = payload.notes
-      if (payload.fragments !== undefined) updates.fragments = payload.fragments
+      if (payload.splitRatio !== undefined) updates.splitRatio = payload.splitRatio
       if (payload.layout !== undefined) updates.layout = payload.layout
       await apiCall(`/api/decks/${deck.id}/slides/${slideId}`, 'PATCH', updates)
       updateSlideInDeck(slideId, (s) => ({
         ...s,
         ...(payload.notes !== undefined ? { notes: payload.notes as string | null } : {}),
-        ...(payload.fragments !== undefined ? { fragments: payload.fragments as boolean } : {}),
+        ...(payload.splitRatio !== undefined ? { splitRatio: payload.splitRatio as string } : {}),
         ...(payload.layout !== undefined ? { layout: payload.layout as string } : {}),
       }))
       break
@@ -77,11 +77,13 @@ export async function applyMutation(mutation: Record<string, unknown>): Promise<
 
     case 'addBlock': {
       const slideId = payload.slideId as string
-      const blockDef = payload.block as { type: string; data: Record<string, unknown> }
+      const blockDef = payload.block as { type: string; zone?: string; data: Record<string, unknown>; stepOrder?: number }
 
       const result = await apiCall(`/api/decks/${deck.id}/slides/${slideId}/blocks`, 'POST', {
         type: blockDef.type,
+        zone: blockDef.zone || 'content',
         data: blockDef.data || {},
+        stepOrder: blockDef.stepOrder,
       })
 
       if (result?.block) {
