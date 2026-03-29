@@ -42,7 +42,7 @@
       class="artifact-iframe"
       class:no-interact={editable}
       style="height: {height};"
-      sandbox="allow-scripts allow-same-origin"
+      sandbox="allow-scripts"
       title={alt}
     ></iframe>
   {:else}

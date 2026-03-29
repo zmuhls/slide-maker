@@ -144,14 +144,13 @@ function renderModule(mod: Module): string {
     }
 
     case 'text': {
-      // data.html is TipTap-generated structured HTML — render it directly
+      // data.html is TipTap-generated HTML — rendered in sandboxed iframe (no allow-same-origin)
       const html = d.html ? String(d.html) : ''
       const hasHtmlContent = html && html.replace(/<[^>]*>/g, '').trim().length > 0
       if (hasHtmlContent) return `<div class="text-body">${html}</div>`
       // Fallback: markdown or plain text — convert to HTML
       const content = String(d.markdown || d.content || d.text || '')
       if (content) return `<div class="text-body">${markdownToHtml(content)}</div>`
-      // Last resort: render the html even if it looks empty
       if (html) return `<div class="text-body">${html}</div>`
       return ''
     }
@@ -285,18 +284,28 @@ function renderModule(mod: Module): string {
 
 // ── Build Theme CSS Overrides ────────────────────────────────────────
 
+// Validate theme values at render time (defense-in-depth, mirrors html-renderer.ts)
+const hexColorRegex = /^#[0-9a-fA-F]{3,8}$/
+const fontNameRegex = /^[a-zA-Z0-9 \-]+$/
+function safeColor(val: unknown, fallback: string): string {
+  return typeof val === 'string' && hexColorRegex.test(val) ? val : fallback
+}
+function safeFont(val: unknown, fallback: string): string {
+  return typeof val === 'string' && fontNameRegex.test(val) ? val : fallback
+}
+
 function buildThemeCss(theme: Theme | null | undefined): string {
   if (!theme) return ''
 
-  const bg = theme.colors?.bg ?? '#111827'
+  const bg = safeColor(theme.colors?.bg, '#111827')
   const dark = isDark(bg)
   const text = dark ? '#f0f0f0' : '#1a1a2e'
   const textMuted = dark ? 'rgba(240,240,240,0.65)' : 'rgba(26,26,46,0.65)'
-  const primary = theme.colors?.primary ?? '#1e3a5f'
-  const secondary = theme.colors?.secondary ?? '#3b82f6'
-  const accent = theme.colors?.accent ?? '#64b5f6'
-  const headingFont = theme.fonts?.heading ?? 'Outfit'
-  const bodyFont = theme.fonts?.body ?? 'Inter'
+  const primary = safeColor(theme.colors?.primary, '#1e3a5f')
+  const secondary = safeColor(theme.colors?.secondary, '#3b82f6')
+  const accent = safeColor(theme.colors?.accent, '#64b5f6')
+  const headingFont = safeFont(theme.fonts?.heading, 'Outfit')
+  const bodyFont = safeFont(theme.fonts?.body, 'Inter')
   const isDarkPrimary = isDark(primary)
   const primaryText = isDarkPrimary ? '#ffffff' : '#1a1a2e'
   const cardBg = dark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)'

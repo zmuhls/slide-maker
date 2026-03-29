@@ -128,7 +128,7 @@
           <iframe
             class="slide-preview-frame"
             srcdoc={slideHtml}
-            sandbox="allow-same-origin allow-scripts"
+            sandbox="allow-scripts"
             title="Slide preview"
           ></iframe>
           {/key}
