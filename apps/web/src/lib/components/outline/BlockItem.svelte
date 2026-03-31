@@ -8,7 +8,7 @@
     slideId?: string
   } = $props()
 
-  let confirmingDelete = $state(false)
+  let deleting = $state(false)
 
   const typeLabels: Record<string, string> = {
     heading: 'Heading',
@@ -76,15 +76,13 @@
 
   async function handleDelete(e: MouseEvent) {
     e.stopPropagation()
-    if (!confirmingDelete) {
-      confirmingDelete = true
-      setTimeout(() => confirmingDelete = false, 2000)
-      return
-    }
+    if (deleting) return
+    deleting = true
+
     const sid = slideId ?? block.slideId
-    if (!sid) return
+    if (!sid) { deleting = false; return }
     const deck = get(currentDeck)
-    if (!deck) return
+    if (!deck) { deleting = false; return }
 
     try {
       const res = await fetch(`${API_URL}/api/decks/${deck.id}/slides/${sid}/blocks/${block.id}`, {
@@ -100,12 +98,13 @@
     } catch (err) {
       console.error('Failed to delete block:', err)
     }
-    confirmingDelete = false
+    deleting = false
   }
 </script>
 
 <div class="block-item">
-  <button class="block-header" onclick={() => expanded = !expanded}>
+  <!-- svelte-ignore a11y_no_static_element_interactions -->
+  <div class="block-header" onclick={() => expanded = !expanded} onkeydown={(e) => e.key === 'Enter' && (expanded = !expanded)} role="button" tabindex="0">
     <span class="drag-handle">{'\u283F'}</span>
     <span class="block-label">{label}</span>
     {#if preview}
@@ -114,13 +113,13 @@
     <span class="expand-arrow">{expanded ? '\u25BC' : '\u25B6'}</span>
     <button
       class="delete-block-btn"
-      class:confirming={confirmingDelete}
       onclick={handleDelete}
-      title={confirmingDelete ? 'Click again to delete' : 'Delete module'}
+      disabled={deleting}
+      title="Delete module"
     >
       {'\u2715'}
     </button>
-  </button>
+  </div>
 
   {#if expanded}
     <div class="block-fields" onclick={(e) => e.stopPropagation()}>
@@ -295,12 +294,13 @@
     border: none;
     cursor: pointer;
     color: var(--color-text-muted, #9ca3af);
-    font-size: 10px;
-    padding: 0 2px;
+    font-size: 12px;
+    padding: 4px 6px;
     line-height: 1;
     flex-shrink: 0;
     opacity: 0;
-    transition: opacity 0.15s, color 0.15s;
+    border-radius: var(--radius-sm, 6px);
+    transition: opacity 0.15s, color 0.15s, background-color 0.15s;
   }
 
   .block-header:hover .delete-block-btn {
@@ -309,10 +309,11 @@
 
   .delete-block-btn:hover {
     color: #ef4444;
+    background: rgba(239, 68, 68, 0.1);
   }
 
-  .delete-block-btn.confirming {
-    opacity: 1;
-    color: #ef4444;
+  .delete-block-btn:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
   }
 </style>
