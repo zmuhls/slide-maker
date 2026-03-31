@@ -169,7 +169,7 @@
     background: var(--color-bg);
     flex-shrink: 0;
     gap: 0.25rem;
-    flex-wrap: nowrap;
+    flex-wrap: wrap;
     min-width: 0;
   }
   .back-btn {
@@ -182,6 +182,8 @@
     padding: 4px 8px;
     border-radius: 4px;
     transition: background 0.15s, color 0.15s;
+    flex-shrink: 0;
+    white-space: nowrap;
   }
   .back-btn:hover {
     background: var(--color-bg-tertiary);
@@ -198,7 +200,7 @@
     align-items: center;
     gap: 0.5rem;
     min-width: 0;
-    flex-shrink: 1;
+    flex-shrink: 0;
   }
   .nav-btn {
     background: transparent;
@@ -231,7 +233,8 @@
     align-items: center;
     gap: 0.5rem;
     min-width: 0;
-    flex-shrink: 0;
+    flex-shrink: 1;
+    flex-wrap: wrap;
   }
   .branding-wrapper {
     position: relative;
