@@ -236,81 +236,69 @@ decksRouter.post('/:id/slides', async (c) => {
   const now = new Date()
   const createdBlocks: (typeof contentBlocks.$inferSelect)[] = []
 
-  try {
-  db.transaction((tx) => {
-    // Calculate order
-    let order: number
+  // Calculate order
+  let order: number
 
-    if (insertAfter) {
-      // Find the slide to insert after
-      const afterSlide = tx
-        .select()
-        .from(slides)
-        .where(and(eq(slides.id, insertAfter), eq(slides.deckId, deckId)))
-        .get()
+  if (insertAfter) {
+    const afterSlide = await db
+      .select()
+      .from(slides)
+      .where(and(eq(slides.id, insertAfter), eq(slides.deckId, deckId)))
+      .get()
 
-      if (!afterSlide) {
-        throw new Error('insertAfter slide not found')
-      }
-
-      order = afterSlide.order + 1
-
-      // Shift subsequent slides
-      tx
-        .update(slides)
-        .set({ order: sql`${slides.order} + 1` })
-        .where(and(eq(slides.deckId, deckId), sql`${slides.order} >= ${order}`))
-        .run()
-    } else {
-      // Append to end
-      const lastSlide = tx
-        .select({ maxOrder: sql<number>`COALESCE(MAX(${slides.order}), -1)` })
-        .from(slides)
-        .where(eq(slides.deckId, deckId))
-        .get()
-
-      order = (lastSlide?.maxOrder ?? -1) + 1
-    }
-
-    tx.insert(slides).values({
-      id: slideId,
-      deckId,
-      layout: slideLayout,
-      splitRatio: splitRatio || '0.45',
-      order,
-      notes: null,
-      createdAt: now,
-      updatedAt: now,
-    }).run()
-
-    // Create content blocks (modules) if provided
-    if (moduleDefs && Array.isArray(moduleDefs)) {
-      for (let i = 0; i < moduleDefs.length; i++) {
-        const mod = moduleDefs[i]
-        const blockId = createId()
-        const blockRow = {
-          id: blockId,
-          slideId,
-          type: mod.type,
-          zone: mod.zone || 'content',
-          data: mod.data || {},
-          order: i,
-          stepOrder: mod.stepOrder ?? null,
-        }
-        tx.insert(contentBlocks).values(blockRow).run()
-        createdBlocks.push(blockRow)
-      }
-    }
-
-    // Update deck's updatedAt
-    tx.update(decks).set({ updatedAt: now }).where(eq(decks.id, deckId)).run()
-  })
-  } catch (err) {
-    if (err instanceof Error && err.message === 'insertAfter slide not found') {
+    if (!afterSlide) {
       return c.json({ error: 'insertAfter slide not found' }, 400)
     }
-    throw err
+
+    order = afterSlide.order + 1
+
+    // Shift subsequent slides
+    await db
+      .update(slides)
+      .set({ order: sql`${slides.order} + 1` })
+      .where(and(eq(slides.deckId, deckId), sql`${slides.order} >= ${order}`))
+  } else {
+    const lastSlide = await db
+      .select({ maxOrder: sql<number>`COALESCE(MAX(${slides.order}), -1)` })
+      .from(slides)
+      .where(eq(slides.deckId, deckId))
+      .get()
+
+    order = (lastSlide?.maxOrder ?? -1) + 1
   }
+
+  await db.insert(slides).values({
+    id: slideId,
+    deckId,
+    layout: slideLayout,
+    splitRatio: splitRatio || '0.45',
+    order,
+    notes: null,
+    createdAt: now,
+    updatedAt: now,
+  })
+
+  // Create content blocks (modules) if provided
+  if (moduleDefs && Array.isArray(moduleDefs)) {
+    for (let i = 0; i < moduleDefs.length; i++) {
+      const mod = moduleDefs[i]
+      const blockId = createId()
+      const blockRow = {
+        id: blockId,
+        slideId,
+        type: mod.type,
+        zone: mod.zone || 'content',
+        data: mod.data || {},
+        order: i,
+        stepOrder: mod.stepOrder ?? null,
+      }
+      await db.insert(contentBlocks).values(blockRow)
+      createdBlocks.push(blockRow)
+    }
+  }
+
+  // Update deck's updatedAt
+  await db.update(decks).set({ updatedAt: now }).where(eq(decks.id, deckId))
 
   const newSlide = await db.select().from(slides).where(eq(slides.id, slideId)).get()
   return c.json({ ...newSlide, blocks: createdBlocks }, 201)
