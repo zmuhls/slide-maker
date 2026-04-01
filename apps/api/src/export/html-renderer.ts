@@ -126,6 +126,7 @@ function rewriteSrc(src: string, files?: ExportFile[]): string {
 
 interface RenderOptions {
   extractArtifacts?: boolean
+  externalJs?: boolean // when true, reference js/engine.js instead of inlining
 }
 
 const extractedArtifacts: Map<string, string> = new Map()
@@ -435,6 +436,10 @@ export function renderDeckHtml(
   // Include fonts from theme
   const fontUrl = `https://fonts.googleapis.com/css2?family=${encodeURIComponent(bodyFont)}:wght@400;500;600;700&family=${encodeURIComponent(headingFont)}:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap`
 
+  const engineScripts = opts?.externalJs
+    ? '<script src="js/engine.js"></script>'
+    : `<script>\n${NAVIGATION_JS}\n  </script>\n  <script>\n${CAROUSEL_JS}\n  </script>`
+
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -460,12 +465,7 @@ ${slidesHtml}
     <button id="next-btn" aria-label="Next">&rarr;</button>
   </nav>
 
-  <script>
-${NAVIGATION_JS}
-  </script>
-  <script>
-${CAROUSEL_JS}
-  </script>
+  ${engineScripts}
 </body>
 </html>`
 }
