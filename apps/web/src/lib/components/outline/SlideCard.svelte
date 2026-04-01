@@ -71,13 +71,8 @@
   }
 
   function handleClick() {
-    // Toggle open/closed when clicking an already-active slide
-    const cur = get(activeSlideId)
-    if (cur === slide.id) {
-      activeSlideId.set(null)
-    } else {
-      activeSlideId.set(slide.id)
-    }
+    // Sticky selection: never clear to null on click
+    activeSlideId.set(slide.id)
   }
 
   async function handleDelete(e: MouseEvent) {

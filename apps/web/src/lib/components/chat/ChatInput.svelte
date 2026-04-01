@@ -3,6 +3,7 @@
   import { currentDeck } from '$lib/stores/deck'
   import { api } from '$lib/api'
   import { get } from 'svelte/store'
+  import { activeSlideId } from '$lib/stores/ui'
 
   interface Props {
     onsend: (text: string) => void
@@ -25,6 +26,18 @@
   })
 
   let showAddMenu = $derived(text.trim() === '/add')
+  let hasSlides = $derived(!!$currentDeck && ($currentDeck.slides?.length ?? 0) > 0)
+  let placeholderText = $derived(() => {
+    if (!hasSlides) return 'Describe your first slide — AI will create it'
+    return $activeSlideId ? 'Ask AI to edit slides + resources' : 'Select a slide to enable AI edits (or type /search)'
+  })
+  let canSend = $derived(() => {
+    const trimmed = text.trim()
+    if (!trimmed || $chatStreaming || uploading) return false
+    if (trimmed.startsWith('/search ')) return true
+    // Allow creation when the deck has no slides yet; otherwise require an active slide
+    return !hasSlides || !!$activeSlideId
+  })
 
   const moduleShortcuts = [
     { type: 'heading', label: 'Heading' },
@@ -49,6 +62,8 @@
   function handleSubmit() {
     const trimmed = text.trim()
     if (!trimmed || $chatStreaming) return
+    // Allow /search without an active slide; allow normal prompts if deck is empty
+    if (!trimmed.startsWith('/search ') && hasSlides && !$activeSlideId) return
     onsend(trimmed)
     text = ''
   }
@@ -119,12 +134,17 @@
   <textarea
     bind:this={textarea}
     bind:value={text}
-    placeholder="Ask AI to edit slides + resources"
+    placeholder={placeholderText}
     onkeydown={handleKeydown}
     disabled={$chatStreaming || uploading}
     rows={2}
   ></textarea>
-  <button class="send-btn" onclick={handleSubmit} disabled={$chatStreaming || uploading || !text.trim()} title="Send (Enter)">
+  <button
+    class="send-btn"
+    onclick={handleSubmit}
+    disabled={!canSend}
+    title={canSend ? 'Send (Enter)' : ($activeSlideId ? 'Type a message' : 'Select a slide first (or use /search)')}
+  >
     {#if $chatStreaming || uploading}
       <span class="spinner"></span>
     {:else}

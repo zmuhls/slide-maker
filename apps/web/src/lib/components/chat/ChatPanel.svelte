@@ -125,6 +125,9 @@
 
     const modelId = get(selectedModelId)
     const slideId = get(activeSlideId)
+    const hasSlides = (deck.slides?.length ?? 0) > 0
+    // Guard: require an active slide only if the deck already has slides
+    if (!slideId && hasSlides) return
 
     // Build history from current messages (exclude streaming)
     const history = get(chatMessages)
