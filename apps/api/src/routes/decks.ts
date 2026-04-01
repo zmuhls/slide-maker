@@ -237,13 +237,13 @@ decksRouter.post('/:id/slides', async (c) => {
   const createdBlocks: (typeof contentBlocks.$inferSelect)[] = []
 
   try {
-  await db.transaction(async (tx) => {
+  db.transaction((tx) => {
     // Calculate order
     let order: number
 
     if (insertAfter) {
       // Find the slide to insert after
-      const afterSlide = await tx
+      const afterSlide = tx
         .select()
         .from(slides)
         .where(and(eq(slides.id, insertAfter), eq(slides.deckId, deckId)))
@@ -256,13 +256,14 @@ decksRouter.post('/:id/slides', async (c) => {
       order = afterSlide.order + 1
 
       // Shift subsequent slides
-      await tx
+      tx
         .update(slides)
         .set({ order: sql`${slides.order} + 1` })
         .where(and(eq(slides.deckId, deckId), sql`${slides.order} >= ${order}`))
+        .run()
     } else {
       // Append to end
-      const lastSlide = await tx
+      const lastSlide = tx
         .select({ maxOrder: sql<number>`COALESCE(MAX(${slides.order}), -1)` })
         .from(slides)
         .where(eq(slides.deckId, deckId))
@@ -271,7 +272,7 @@ decksRouter.post('/:id/slides', async (c) => {
       order = (lastSlide?.maxOrder ?? -1) + 1
     }
 
-    await tx.insert(slides).values({
+    tx.insert(slides).values({
       id: slideId,
       deckId,
       layout: slideLayout,
@@ -280,7 +281,7 @@ decksRouter.post('/:id/slides', async (c) => {
       notes: null,
       createdAt: now,
       updatedAt: now,
-    })
+    }).run()
 
     // Create content blocks (modules) if provided
     if (moduleDefs && Array.isArray(moduleDefs)) {
@@ -296,13 +297,13 @@ decksRouter.post('/:id/slides', async (c) => {
           order: i,
           stepOrder: mod.stepOrder ?? null,
         }
-        await tx.insert(contentBlocks).values(blockRow)
+        tx.insert(contentBlocks).values(blockRow).run()
         createdBlocks.push(blockRow)
       }
     }
 
     // Update deck's updatedAt
-    await tx.update(decks).set({ updatedAt: now }).where(eq(decks.id, deckId))
+    tx.update(decks).set({ updatedAt: now }).where(eq(decks.id, deckId)).run()
   })
   } catch (err) {
     if (err instanceof Error && err.message === 'insertAfter slide not found') {
