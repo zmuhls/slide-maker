@@ -278,7 +278,9 @@ function renderModule(mod: Module, files?: ExportFile[], opts?: RenderOptions): 
       const alt = esc(String(d.alt || 'Interactive visualization'))
       const aw = d.width ? String(d.width) : ''
       const ah = d.height ? String(d.height) : ''
-      const sizeStyle = aw || ah ? ` style="${aw ? `width:${esc(aw)};` : ''}${ah ? `height:${esc(ah)};aspect-ratio:auto;` : ''}"` : ''
+      const align = typeof d.align === 'string' ? String(d.align) : 'center'
+      const alignCss = align === 'left' ? 'margin-right:auto;' : align === 'right' ? 'margin-left:auto;' : 'margin:0 auto;'
+      const sizeStyle = ` style="${aw ? `width:${esc(aw)};` : ''}${ah ? `height:${esc(ah)};aspect-ratio:auto;` : ''}${alignCss}"`
       const iframeTag = (content: string) => `<div class="artifact-wrapper"${step}${sizeStyle}>${content}</div>`
       if (isUrl) {
         return iframeTag(`<iframe src="${esc(rawSrc)}" sandbox="allow-scripts" loading="lazy" title="${alt}"></iframe>`)

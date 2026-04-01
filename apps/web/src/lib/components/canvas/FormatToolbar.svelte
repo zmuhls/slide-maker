@@ -1,5 +1,9 @@
 <script lang="ts">
   import type { Editor } from '@tiptap/core'
+  import { get } from 'svelte/store'
+  import { currentDeck } from '$lib/stores/deck'
+  import { activeSlideId, activeModuleControls } from '$lib/stores/ui'
+  import { applyMutation } from '$lib/utils/mutations'
 
   let { editor }: { editor: Editor | null } = $props()
 
@@ -28,6 +32,25 @@
       editor?.off('transaction', update)
     }
   })
+
+  async function setAlignment(dir: 'left' | 'center' | 'right') {
+    if (editor) {
+      const el = editor.view.dom
+      if (el) el.style.textAlign = dir
+      return
+    }
+    // No active text editor: if a module popover is open, apply alignment to that block
+    const modId = get(activeModuleControls)
+    const slideId = get(activeSlideId)
+    const deck = get(currentDeck)
+    if (!modId || !slideId || !deck) return
+    const slide = deck.slides.find((s) => s.id === slideId)
+    const block = slide?.blocks.find((b) => b.id === modId)
+    if (!block) return
+    if (block.type === 'artifact' || block.type === 'image') {
+      await applyMutation({ action: 'updateBlock', payload: { slideId, blockId: block.id, data: { align: dir } } })
+    }
+  }
 
   function cmd(fn: () => void) {
     return (e: MouseEvent) => { e.preventDefault(); fn() }
@@ -87,13 +110,13 @@
       <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><text x="1" y="8" font-size="7" font-weight="bold" font-family="sans-serif">1</text><text x="1" y="15" font-size="7" font-weight="bold" font-family="sans-serif">2</text><text x="1" y="21" font-size="7" font-weight="bold" font-family="sans-serif">3</text><rect x="9" y="5" width="12" height="2" rx="1"/><rect x="9" y="11" width="12" height="2" rx="1"/><rect x="9" y="17" width="12" height="2" rx="1"/></svg>
     </button>
     <div class="sep"></div>
-    <button class="fmt-btn" onmousedown={cmd(() => { const el = editor?.view.dom; if (el) el.style.textAlign = 'left' })} title="Align Left">
+    <button class="fmt-btn" onmousedown={cmd(() => setAlignment('left'))} title="Align Left">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><rect x="3" y="4" width="18" height="2" rx="1"/><rect x="3" y="9" width="12" height="2" rx="1"/><rect x="3" y="14" width="16" height="2" rx="1"/><rect x="3" y="19" width="10" height="2" rx="1"/></svg>
     </button>
-    <button class="fmt-btn" onmousedown={cmd(() => { const el = editor?.view.dom; if (el) el.style.textAlign = 'center' })} title="Align Center">
+    <button class="fmt-btn" onmousedown={cmd(() => setAlignment('center'))} title="Align Center">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><rect x="3" y="4" width="18" height="2" rx="1"/><rect x="6" y="9" width="12" height="2" rx="1"/><rect x="4" y="14" width="16" height="2" rx="1"/><rect x="7" y="19" width="10" height="2" rx="1"/></svg>
     </button>
-    <button class="fmt-btn" onmousedown={cmd(() => { const el = editor?.view.dom; if (el) el.style.textAlign = 'right' })} title="Align Right">
+    <button class="fmt-btn" onmousedown={cmd(() => setAlignment('right'))} title="Align Right">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><rect x="3" y="4" width="18" height="2" rx="1"/><rect x="9" y="9" width="12" height="2" rx="1"/><rect x="5" y="14" width="16" height="2" rx="1"/><rect x="11" y="19" width="10" height="2" rx="1"/></svg>
     </button>
   </div>

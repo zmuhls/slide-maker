@@ -229,4 +229,10 @@ describe('module CSS rules in base', () => {
     expect(override.length).toBeGreaterThan(0)
     expect(getProperty(override[0], 'aspect-ratio')).toBe('auto')
   })
+
+  it('artifact wrapper centers itself horizontally', () => {
+    const rules = findRules(FRAMEWORK_CSS_BASE, '.artifact-wrapper')
+    expect(rules.length).toBeGreaterThan(0)
+    expect(getProperty(rules[0], 'margin')).toBe('0 auto')
+  })
 })
