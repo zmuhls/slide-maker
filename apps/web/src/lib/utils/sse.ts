@@ -7,14 +7,26 @@ export async function streamChat(
   onText: (text: string) => void,
   onDone: () => void,
   onError: (error: string) => void,
+  signal?: AbortSignal,
 ): Promise<void> {
   const { API_URL } = await import('$lib/api')
-  const response = await fetch(`${API_URL}/api/chat`, {
-    method: 'POST',
-    credentials: 'include',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ message, deckId, activeSlideId, modelId, history }),
-  })
+  let response: Response
+  try {
+    response = await fetch(`${API_URL}/api/chat`, {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message, deckId, activeSlideId, modelId, history }),
+      signal,
+    })
+  } catch (e: any) {
+    if (signal?.aborted) {
+      onError('aborted')
+      return
+    }
+    onError(e?.message || 'Chat request failed')
+    return
+  }
 
   if (!response.ok) {
     const body = await response.json().catch(() => ({ error: response.statusText }))
@@ -29,6 +41,7 @@ export async function streamChat(
   let buffer = ''
 
   while (true) {
+    if (signal?.aborted) { onError('aborted'); break }
     const { done, value } = await reader.read()
     if (done) break
 

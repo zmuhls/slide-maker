@@ -24,6 +24,8 @@
   let clearing = $state(false)
   let showConfirm = $state(false)
   let confirmText = $state('')
+  let controller: AbortController | null = $state(null)
+  let currentAssistantId: string | null = $state(null)
 
   // Subscribe to store
   $effect(() => {
@@ -133,8 +135,15 @@
 
     // Create streaming assistant message
     const assistantId = addAssistantMessage()
+    currentAssistantId = assistantId
     appendToAssistant(assistantId, 'Thinking...')
     chatStreaming.set(true)
+
+    // Prepare abort controller for hanging/stop behavior
+    controller?.abort()
+    controller = new AbortController()
+    const abortSignal = controller.signal
+    const hardTimeout = setTimeout(() => { controller?.abort() }, 115_000)
 
     let fullText = ''
     let firstChunk = true
@@ -170,13 +179,29 @@
       async () => {
         finishAssistant(assistantId)
         chatStreaming.set(false)
+        clearTimeout(hardTimeout)
+        currentAssistantId = null
+        controller = null
       },
       (error) => {
         appendToAssistant(assistantId, `\n\n[Error: ${error}]`)
         finishAssistant(assistantId)
         chatStreaming.set(false)
+        clearTimeout(hardTimeout)
+        currentAssistantId = null
+        controller = null
       },
+      abortSignal,
     )
+  }
+
+  function stopStreaming() {
+    if (!controller || !$chatStreaming) return
+    controller.abort()
+    if (currentAssistantId) finishAssistant(currentAssistantId)
+    chatStreaming.set(false)
+    currentAssistantId = null
+    controller = null
   }
 
   async function resetChat() {
@@ -205,6 +230,9 @@
     <span class="chat-title"><span class="brand-slide">Slide</span> <span class="brand-wiz">Wiz</span></span>
     <div class="chat-controls">
       <ModelSelector />
+      {#if $chatStreaming}
+        <button class="stop-btn" title="Stop response" onclick={stopStreaming} aria-label="Stop streaming">Stop</button>
+      {/if}
       <div class="reset-wrap">
         <button
           class="reset-btn"
@@ -264,6 +292,16 @@
   }
 
   .reset-wrap { position: relative; }
+
+  .stop-btn {
+    padding: 4px 8px;
+    font-size: 12px;
+    border: 1px solid #ef4444;
+    border-radius: 6px;
+    background: transparent;
+    color: #ef4444;
+    cursor: pointer;
+  }
 
   .reset-btn {
     padding: 4px 8px;
