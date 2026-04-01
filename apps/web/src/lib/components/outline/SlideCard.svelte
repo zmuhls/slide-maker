@@ -71,7 +71,13 @@
   }
 
   function handleClick() {
-    activeSlideId.set(slide.id)
+    // Toggle open/closed when clicking an already-active slide
+    const cur = get(activeSlideId)
+    if (cur === slide.id) {
+      activeSlideId.set(null)
+    } else {
+      activeSlideId.set(slide.id)
+    }
   }
 
   async function handleDelete(e: MouseEvent) {
@@ -105,8 +111,8 @@
   }
 </script>
 
-<div class="slide-card" class:active data-slide-id={slide.id} onclick={handleClick} onkeydown={(e) => e.key === 'Enter' && handleClick()} role="button" tabindex="0">
-  <div class="card-header">
+<div class="slide-card" class:active data-slide-id={slide.id}>
+  <div class="card-header" onclick={handleClick} onkeydown={(e) => e.key === 'Enter' && handleClick()} role="button" tabindex="0">
     <span class="drag-handle" title="Drag to reorder">{'\u2807'}</span>
     <span class="arrow">{active ? '\u25BC' : '\u25B6'}</span>
     <span class="slide-label">{index + 1}. {layoutLabel}</span>
@@ -124,7 +130,7 @@
   </div>
 
   {#if active && blockItems.length > 0}
-    <div class="blocks-list" use:dndzone={{ items: blockItems, flipDurationMs, dropTargetStyle: {} }} onconsider={handleDndConsider} onfinalize={handleDndFinalize}>
+    <div class="blocks-list" use:dndzone={{ items: blockItems, flipDurationMs, dropTargetStyle: {}, dropFromOthersDisabled: true, dragHandleSelector: '.drag-handle' }} onconsider={handleDndConsider} onfinalize={handleDndFinalize}>
       {#each blockItems as block (block.id)}
         <div animate:flip={{ duration: flipDurationMs }}>
           <BlockItem {block} slideId={slide.id} />
@@ -204,13 +210,13 @@
     border: none;
     cursor: pointer;
     color: var(--color-text-muted, #9ca3af);
-    font-size: 11px;
-    padding: 3px 5px;
+    font-size: 12px;
+    padding: 2px 4px;
     line-height: 1;
     flex-shrink: 0;
     opacity: 0;
-    border-radius: var(--radius-sm, 6px);
-    transition: opacity 0.15s, color 0.15s, background-color 0.15s;
+    border-radius: 4px;
+    transition: opacity 0.15s, color 0.15s;
   }
 
   .slide-card:hover .delete-btn {

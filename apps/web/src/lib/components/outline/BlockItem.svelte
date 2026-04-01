@@ -9,7 +9,6 @@
   } = $props()
 
   let deleting = $state(false)
-  let confirmingDelete = $state(false)
 
   const typeLabels: Record<string, string> = {
     heading: 'Heading',
@@ -78,14 +77,6 @@
   async function handleDelete(e: MouseEvent) {
     e.stopPropagation()
     if (deleting) return
-
-    // two-tap confirm to prevent accidental deletes
-    if (!confirmingDelete) {
-      confirmingDelete = true
-      // auto-cancel confirm after short delay to avoid sticky state
-      setTimeout(() => (confirmingDelete = false), 1800)
-      return
-    }
     deleting = true
 
     const sid = slideId ?? block.slideId
@@ -108,7 +99,6 @@
       console.error('Failed to delete block:', err)
     }
     deleting = false
-    confirmingDelete = false
   }
 </script>
 
@@ -123,12 +113,11 @@
     <span class="expand-arrow">{expanded ? '\u25BC' : '\u25B6'}</span>
     <button
       class="delete-block-btn"
-      class:confirming={confirmingDelete}
       type="button"
       onclick={handleDelete}
       disabled={deleting}
-      aria-label={confirmingDelete ? 'Click again to delete' : 'Delete module'}
-      title={confirmingDelete ? 'Click again to delete' : 'Delete module'}
+      aria-label="Delete module"
+      title="Delete module"
     >
       {'\u2715'}
     </button>
@@ -291,17 +280,17 @@
     background: none; border: none; cursor: pointer;
     color: var(--color-text-muted, #9ca3af);
     font-size: 12px; padding: 4px; line-height: 1; flex-shrink: 0;
-    border-radius: var(--radius-sm, 6px);
+    border-radius: 4px;
     min-width: 20px; min-height: 20px;
     display: inline-flex; align-items: center; justify-content: center;
-    transition: color 0.12s ease, background-color 0.12s ease, transform 0.06s ease;
+    transition: color 0.12s ease, transform 0.06s ease;
   }
 
   .block-header:hover .delete-block-btn { color: #6b7280; }
 
-  .delete-block-btn:hover { color: #ef4444; background: rgba(239, 68, 68, 0.08); }
+  .delete-block-btn:hover { color: #ef4444; background: rgba(239, 68, 68, 0.1); }
   .delete-block-btn:active { transform: translateY(1px); }
 
-  .delete-block-btn.confirming { color: #ef4444; background: rgba(239, 68, 68, 0.12); }
+  .delete-block-btn.confirming { color: #fff; background: #ef4444; }
   .delete-block-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 </style>

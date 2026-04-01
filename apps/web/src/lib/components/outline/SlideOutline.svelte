@@ -7,9 +7,11 @@
   import { activeSlideId } from '$lib/stores/ui'
   import { dndzone } from 'svelte-dnd-action'
   import { API_URL } from '$lib/api'
-  import { goto } from '$app/navigation'
-  import { base } from '$app/paths'
+  import { history } from '$lib/stores/history'
+  import { undo, redo } from '$lib/utils/mutations'
 
+  const canUndo = history.canUndo
+  const canRedo = history.canRedo
   const flipDurationMs = 200
 
   let dragItems = $state<any[]>([])
@@ -74,7 +76,12 @@
   <div class="outline-header">
     <span class="outline-label">SLIDES</span>
     <div class="header-actions">
-      <button class="back-btn" title="Back to decks" onclick={() => goto(`${base}/`)} aria-label="Back to decks">⟵</button>
+      <button class="history-btn" title="Undo (Cmd+Z)" onclick={undo} disabled={!$canUndo} aria-label="Undo">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10h13a4 4 0 0 1 0 8H7"/><polyline points="7 6 3 10 7 14"/></svg>
+      </button>
+      <button class="history-btn" title="Redo (Cmd+Shift+Z)" onclick={redo} disabled={!$canRedo} aria-label="Redo">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10H8a4 4 0 0 0 0 8h10"/><polyline points="17 6 21 10 17 14"/></svg>
+      </button>
       {#if $currentDeck}
         <AddSlideMenu deckId={$currentDeck.id} />
       {/if}
@@ -88,7 +95,7 @@
   {:else}
     <div
       class="slide-list"
-      use:dndzone={{ items: dragItems, flipDurationMs }}
+      use:dndzone={{ items: dragItems, flipDurationMs, dropFromOthersDisabled: true, dragHandleSelector: '.drag-handle' }}
       onconsider={handleConsider}
       onfinalize={handleFinalize}
     >
@@ -127,14 +134,17 @@
   }
 
   .header-actions { display: flex; align-items: center; gap: 6px; }
-  .back-btn {
+  .history-btn {
     width: 24px; height: 24px;
     display: inline-flex; align-items: center; justify-content: center;
     background: transparent; border: 1px solid var(--color-border);
     border-radius: 6px; color: var(--color-text-muted);
-    cursor: pointer; font-size: 13px; line-height: 1;
+    cursor: pointer; padding: 0;
+    transition: color 0.12s, border-color 0.12s, background 0.12s;
   }
-  .back-btn:hover { color: var(--color-primary); border-color: var(--color-primary); background: var(--color-ghost-bg); }
+  .history-btn:hover:not(:disabled) { color: var(--color-primary); border-color: var(--color-primary); background: var(--color-ghost-bg); }
+  .history-btn:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 1px; }
+  .history-btn:disabled { opacity: 0.35; cursor: default; }
 
   .slide-list {
     flex: 1;
