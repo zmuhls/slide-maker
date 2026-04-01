@@ -345,11 +345,6 @@ export const FRAMEWORK_CSS_PREVIEW = FRAMEWORK_CSS_BASE + `
   padding: 60px 80px; overflow: visible; flex-direction: column; justify-content: flex-start;
 }
 
-/* ── Zone overflow ────────────────────────────────────────────────── */
-.slide > .content, .slide > .stage, .slide > .main, .slide > .hero {
-  overflow: visible; min-height: 0; flex-shrink: 0;
-}
-
 /* ── Step Reveal (all visible in preview, with step indicator) ──── */
 .step-hidden { opacity: 1; transform: none; position: relative; }
 .step-hidden::after {

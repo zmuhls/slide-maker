@@ -129,6 +129,11 @@
     // Guard: require an active slide only if the deck already has slides
     if (!slideId && hasSlides) return
 
+    // Build history from current messages (exclude streaming)
+    const history = get(chatMessages)
+      .filter((m) => !m.streaming)
+      .map((m) => ({ role: m.role, content: m.content }))
+
     // Add user message
     addUserMessage(text)
 
