@@ -121,7 +121,12 @@ export function buildSystemPrompt(opts: BuildPromptOptions): string {
     .join('\n')
 
   const activeSlideInfo = (() => {
-    if (!activeSlideId) return 'Active Slide: none — do not modify slides; ask the user to select a slide first.'
+    if (!activeSlideId) {
+      if ((deck.slides?.length ?? 0) === 0) {
+        return 'Active Slide: none — deck is empty; create the first slide as requested.'
+      }
+      return 'Active Slide: none — do not modify slides; ask the user to select a slide first.'
+    }
     const s = deck.slides.find((sl) => sl.id === activeSlideId)
     if (!s) return `Active Slide: id="${activeSlideId}" (not found in deck)`
     return `Active Slide: Slide ${s.order + 1} (id="${s.id}", layout="${s.layout}")`
