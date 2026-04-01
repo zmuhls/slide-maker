@@ -2,9 +2,17 @@ import type { ArtifactController, ArtifactFactory } from './index'
 
 type AstarConfig = Partial<{
   cellSize: number
-  animSpeed: number
+  animSpeed: number | string
   mazeOnStart: boolean
 }>
+
+const SPEED_MAP: Record<string, number> = {
+  slow: 2, medium: 4, fast: 8, instant: 0,
+}
+function resolveSpeed(v: number | string | undefined): number {
+  if (typeof v === 'string') return SPEED_MAP[v] ?? 4
+  return typeof v === 'number' ? v : 4
+}
 
 const EMPTY = 0, WALL = 1, START = 2, END = 3
 
@@ -229,7 +237,8 @@ export const createAstar: ArtifactFactory = (root: HTMLElement, initialConfig: A
     const framesD = resultD ? resultD.frames : []
     const maxLen = Math.max(framesA.length, framesD.length)
     let idx = 0
-    const spd = config.animSpeed === 0 ? maxLen : config.animSpeed
+    const speed = resolveSpeed(config.animSpeed)
+    const spd = speed === 0 ? maxLen : speed
 
     function step() {
       for (let s = 0; s < spd && idx < maxLen; s++, idx++) {
@@ -288,7 +297,8 @@ export const createAstar: ArtifactFactory = (root: HTMLElement, initialConfig: A
     generateMaze()
     const rA = runSearch(true)
     animateSearch(rA, null)
-    const delay = Math.max(3000, (rA.frames.length / (config.animSpeed || 8)) * 16 + 3000)
+    const speed = resolveSpeed(config.animSpeed)
+    const delay = Math.max(3000, (rA.frames.length / (speed || 8)) * 16 + 3000)
     demoTimer = setTimeout(autoDemo, delay)
   }
 
@@ -349,15 +359,32 @@ export const createAstar: ArtifactFactory = (root: HTMLElement, initialConfig: A
   canvas.addEventListener('pointerup', onPointerUp)
   canvas.addEventListener('pointercancel', onPointerUp)
 
-  const ro = new ResizeObserver(() => { resize(); initGrid() })
+  let prevW = 0, prevH = 0, initialized = false
+  const ro = new ResizeObserver(() => {
+    const rect = root.getBoundingClientRect()
+    const nw = Math.floor(rect.width), nh = Math.floor(rect.height)
+    if (nw <= 0 || nh <= 0) return
+    if (nw === prevW && nh === prevH) return
+    prevW = nw; prevH = nh
+    resize()
+    if (!initialized) {
+      initialized = true
+      initGrid()
+      if (config.mazeOnStart) {
+        demoTimer = setTimeout(autoDemo, 300)
+      }
+    } else if (!animating && !demoTimer) {
+      // only reinit grid on resize if nothing is running
+      initGrid()
+      if (config.mazeOnStart) {
+        demoTimer = setTimeout(autoDemo, 300)
+      }
+    } else {
+      // just resize canvas, don't reset the active demo/animation
+      render()
+    }
+  })
   ro.observe(root)
-
-  // Initial layout + start
-  resize()
-  initGrid()
-  if (config.mazeOnStart) {
-    setTimeout(autoDemo, 400)
-  }
 
   const controller: ArtifactController = {
     update(next: AstarConfig) {
