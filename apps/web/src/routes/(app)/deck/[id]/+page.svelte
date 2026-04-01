@@ -25,6 +25,9 @@
   }
 
   function handleKeyboard(e: KeyboardEvent) {
+    if (e.defaultPrevented) return
+    const active = document.activeElement
+    if (active?.closest('[contenteditable]')) return
     const isMac = navigator.platform.includes('Mac')
     const mod = isMac ? e.metaKey : e.ctrlKey
     if (mod && e.key === 'z' && !e.shiftKey) {

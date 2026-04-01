@@ -5,8 +5,6 @@
   import SlideCanvas from '$lib/components/canvas/SlideCanvas.svelte'
   import ResourcePanel from '$lib/components/resources/ResourcePanel.svelte'
   import { base } from '$app/paths'
-  import { history } from '$lib/stores/history'
-  import { undo, redo } from '$lib/utils/mutations'
 
   let { editable = true }: { editable?: boolean } = $props()
 
@@ -102,7 +100,7 @@
     return () => window.removeEventListener('resize', handleResize)
   })
 
-  // Keyboard shortcuts for undo/redo remain available (Cmd/Ctrl+Z)
+
 </script>
 
 <div class="editor-wrapper">
