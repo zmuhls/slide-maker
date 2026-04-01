@@ -27,11 +27,11 @@
 
   let showAddMenu = $derived(text.trim() === '/add')
   let hasSlides = $derived(!!$currentDeck && ($currentDeck.slides?.length ?? 0) > 0)
-  let placeholderText = $derived(() => {
+  let placeholderText = $derived.by(() => {
     if (!hasSlides) return 'Describe your first slide — AI will create it'
     return $activeSlideId ? 'Ask AI to edit slides + resources' : 'Select a slide to enable AI edits (or type /search)'
   })
-  let canSend = $derived(() => {
+  let canSend = $derived.by(() => {
     const trimmed = text.trim()
     if (!trimmed || $chatStreaming || uploading) return false
     if (trimmed.startsWith('/search ')) return true
