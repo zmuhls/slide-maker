@@ -5,7 +5,7 @@
   import { get } from 'svelte/store'
   import { API_URL } from '$lib/api'
   import { chatDraft } from '$lib/stores/chat'
-  import { getResolvedConfig, buildAtRef, type ArtifactConfigField } from '$lib/utils/artifact-config'
+  import { getResolvedConfig, buildAtRef, buildSourceWithConfig, type ArtifactConfigField } from '$lib/utils/artifact-config'
 
   interface Artifact {
     id: string
@@ -121,29 +121,6 @@
     }
   }
 
-  function buildSourceWithConfig(artifact: Artifact, configData: Record<string, unknown>): string {
-    const configStr = JSON.stringify(configData).replace(/"/g, '&quot;')
-    let source = artifact.source
-    if (source.includes('<body>')) {
-      source = source.replace('<body>', `<body data-config="${configStr}">`)
-    } else if (source.includes('<body ')) {
-      source = source.replace('<body ', `<body data-config="${configStr}" `)
-    }
-    return source
-  }
-
-  function getZoneForActiveSlide(): string {
-    const deck = get(currentDeck)
-    const slideId = get(activeSlideId)
-    if (!deck || !slideId) return 'stage'
-    const slide = deck.slides.find((s: any) => s.id === slideId)
-    if (!slide) return 'stage'
-    const layout = slide.layout
-    if (layout === 'title-slide' || layout === 'layout-divider' || layout === 'closing-slide') return 'hero'
-    if (layout === 'layout-split') return 'stage'
-    return 'main'
-  }
-
   async function insertArtifact(artifact: Artifact, useConfig: boolean = false) {
     const slideId = get(activeSlideId)
     if (!slideId || inserting) return
@@ -152,17 +129,20 @@
     configError = null
 
     try {
-      let finalSource = artifact.source
+      let resolvedConfig = getResolvedConfig(artifact)
       if (useConfig && configJson.trim()) {
         try {
-          const parsed = JSON.parse(configJson)
-          finalSource = buildSourceWithConfig(artifact, parsed)
+          resolvedConfig = { ...resolvedConfig, ...JSON.parse(configJson) }
         } catch {
           configError = 'Invalid JSON. Please fix and try again.'
           inserting = null
           return
         }
       }
+
+      let finalSource = Object.keys(resolvedConfig).length > 0
+        ? buildSourceWithConfig(artifact.source, resolvedConfig)
+        : artifact.source
 
       const sourceIsUrl = isUrl(finalSource)
       const src = sourceIsUrl
@@ -175,11 +155,14 @@
           slideId,
           block: {
             type: 'artifact',
-            zone: getZoneForActiveSlide(),
+            zone: 'stage',
             data: {
               src,
               ...(sourceIsUrl ? {} : { rawSource: finalSource }),
               alt: displayName(artifact.name),
+              artifactId: artifact.id,
+              artifactName: artifact.name,
+              config: resolvedConfig,
               width: '100%',
               height: '400px',
             },
@@ -333,6 +316,7 @@
 <style>
   .artifacts-tab {
     padding: 6px;
+    overflow-x: hidden;
   }
 
   .center-msg {

@@ -14,6 +14,7 @@
   import ArtifactModule from './ArtifactModule.svelte'
 
   import type { Editor } from '@tiptap/core'
+  import { activeModuleControls } from '$lib/stores/ui'
 
   let { module, editable = false, onchange, oneditorready, ondelete, onmoveup, onmovedown, onstepchange, isFirst = false, isLast = false }: {
     module: { id: string; type: string; data: Record<string, unknown>; stepOrder?: number | null };
@@ -34,6 +35,47 @@
     onstepchange?.(step)
   }
 
+  // Popover controls state
+  let triggerEl: HTMLButtonElement | undefined = $state()
+  let popX = $state(0)
+  let popY = $state(0)
+  let isActive = $derived($activeModuleControls === module.id)
+
+  function toggleControls(e: MouseEvent) {
+    e.stopPropagation()
+    if (isActive) {
+      activeModuleControls.set(null)
+    } else {
+      const rect = (e.currentTarget as HTMLElement).getBoundingClientRect()
+      popX = rect.right + 4
+      popY = rect.top
+      // Clamp so popover doesn't go off-screen
+      if (popX + 160 > window.innerWidth) popX = rect.left - 164
+      if (popY + 140 > window.innerHeight) popY = window.innerHeight - 144
+      activeModuleControls.set(module.id)
+    }
+  }
+
+  // Close on Escape or outside click
+  $effect(() => {
+    if (!isActive) return
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') activeModuleControls.set(null)
+    }
+    function onClick(e: MouseEvent) {
+      const target = e.target as HTMLElement
+      if (!target.closest('.module-popover') && !target.closest('.module-trigger')) {
+        activeModuleControls.set(null)
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    window.addEventListener('click', onClick, true)
+    return () => {
+      window.removeEventListener('keydown', onKey)
+      window.removeEventListener('click', onClick, true)
+    }
+  })
+
   const rendererMap: Record<string, any> = {
     heading: HeadingModule,
     text: TextModule,
@@ -51,9 +93,6 @@
   }
 
   let Renderer = $derived(rendererMap[module.type] ?? null)
-
-  // Artifact edit trigger
-  let artifactEditTrigger = $state(0)
 
   // Delete
   let confirmDelete = $state(false)
@@ -74,6 +113,9 @@
   let resizing = $state(false)
   let scaleFactor = $state(1)
 
+  // Resize dimension tooltip
+  let resizeLabel = $state('')
+
   function startResize(e: MouseEvent) {
     e.preventDefault()
     e.stopPropagation()
@@ -87,17 +129,19 @@
     const naturalH = wrapperEl!.scrollHeight
 
     function onMove(ev: MouseEvent) {
-      const newW = Math.max(60, startW + (ev.clientX - startX))
-      const newH = Math.max(30, startH + (ev.clientY - startY))
+      const newW = Math.max(160, startW + (ev.clientX - startX))
+      const newH = Math.max(60, startH + (ev.clientY - startY))
       customW = newW
       customH = newH
-      // Scale content proportionally — both up and down
+      resizeLabel = `${Math.round(newW)} × ${Math.round(newH)}`
+      // Scale content down only — enlarging gives more reflow space instead of zooming
       const scaleX = newW / Math.max(naturalW, 1)
       const scaleY = newH / Math.max(naturalH, 1)
-      scaleFactor = Math.min(scaleX, scaleY)
+      scaleFactor = Math.min(scaleX, scaleY, 1)
     }
     function onUp() {
       resizing = false
+      resizeLabel = ''
       window.removeEventListener('mousemove', onMove)
       window.removeEventListener('mouseup', onUp)
       // Persist resize for artifact/image modules
@@ -120,39 +164,60 @@
   style:height={customH ? `${customH}px` : undefined}
 >
   {#if editable}
-    <div class="module-controls">
-      <div class="ctrl-group">
-        {#if !isFirst}
-          <button class="ctrl-btn" onclick={() => onmoveup?.()} title="Move up" aria-label="Move module up">▲</button>
-        {/if}
-        {#if !isLast}
-          <button class="ctrl-btn" onclick={() => onmovedown?.()} title="Move down" aria-label="Move module down">▼</button>
-        {/if}
+    <button
+      class="module-trigger"
+      class:active={isActive}
+      bind:this={triggerEl}
+      onclick={toggleControls}
+      title="Module actions"
+      aria-label="Module actions"
+      aria-expanded={isActive}
+    >⋯</button>
+  {/if}
+
+  {#if isActive}
+    <div class="module-popover" role="toolbar" aria-label="Module controls" style="left: {popX}px; top: {popY}px;">
+      <div class="pop-section">
+        <span class="pop-label">Move</span>
+        <div class="pop-row">
+          <button class="pop-btn" aria-label="Move up" onclick={() => onmoveup?.()} disabled={isFirst} title="Move up">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="18 15 12 9 6 15"/></svg>
+          </button>
+          <button class="pop-btn" aria-label="Move down" onclick={() => onmovedown?.()} disabled={isLast} title="Move down">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+          </button>
+        </div>
       </div>
-      {#if module.type === 'artifact'}
-        <button class="ctrl-btn edit-src-btn" onclick={() => artifactEditTrigger++} title="Edit source" aria-label="Edit artifact source">Edit</button>
-      {/if}
-      <select
-        class="step-select"
-        value={module.stepOrder != null ? String(module.stepOrder) : ''}
-        onchange={handleStepChange}
-        title="Step reveal order"
-      >
-        <option value="">Step</option>
-        <option value="0">1</option>
-        <option value="1">2</option>
-        <option value="2">3</option>
-        <option value="3">4</option>
-        <option value="4">5</option>
-      </select>
+      <div class="pop-divider"></div>
+      <div class="pop-section">
+        <span class="pop-label">Step reveal</span>
+        <select
+          class="pop-select"
+          value={module.stepOrder != null ? String(module.stepOrder) : ''}
+          onchange={handleStepChange}
+          aria-label="Step reveal order"
+        >
+          <option value="">None</option>
+          <option value="0">1</option>
+          <option value="1">2</option>
+          <option value="2">3</option>
+          <option value="3">4</option>
+          <option value="4">5</option>
+          <option value="5">6</option>
+          <option value="6">7</option>
+          <option value="7">8</option>
+          <option value="8">9</option>
+        </select>
+      </div>
+      <div class="pop-divider"></div>
       <button
-        class="ctrl-btn delete-btn"
+        class="pop-btn pop-delete"
         class:confirming={confirmDelete}
         onclick={handleDelete}
         title={confirmDelete ? 'Click again to confirm' : 'Delete module'}
-        aria-label="Delete module"
+        aria-label={confirmDelete ? 'Confirm delete' : 'Delete module'}
       >
-        {confirmDelete ? 'Delete?' : '✕'}
+        {confirmDelete ? 'Confirm delete' : 'Delete'}
       </button>
     </div>
   {/if}
@@ -163,7 +228,7 @@
 
   <div class="module-content" style:transform={scaleFactor !== 1 ? `scale(${scaleFactor})` : undefined} style:transform-origin={scaleFactor !== 1 ? 'top center' : undefined}>
     {#if Renderer}
-      <Renderer data={module.data} {editable} {onchange} oneditorready={module.type === 'text' ? oneditorready : undefined} editTrigger={module.type === 'artifact' ? artifactEditTrigger : undefined} />
+      <Renderer data={module.data} {editable} {onchange} oneditorready={module.type === 'text' ? oneditorready : undefined} />
     {:else}
       <div class="unknown-module">Unknown: {module.type}</div>
     {/if}
@@ -172,6 +237,9 @@
   {#if editable}
     <!-- svelte-ignore a11y_no_static_element_interactions -->
     <div class="corner-resize" onmousedown={startResize}></div>
+    {#if resizeLabel}
+      <div class="resize-tooltip">{resizeLabel}</div>
+    {/if}
   {/if}
 </div>
 
@@ -181,10 +249,13 @@
     width: 100%;
     overflow: hidden;
   }
+  .module-wrapper.editable {
+    border-radius: var(--radius-sm, 6px);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+    transition: box-shadow 0.15s ease;
+  }
   .module-wrapper.editable:hover {
-    outline: 1px dashed rgba(59, 115, 230, 0.4);
-    outline-offset: 2px;
-    border-radius: var(--radius-sm);
+    box-shadow: inset 0 0 0 1px rgba(59, 115, 230, 0.35);
   }
   .module-wrapper.resizing {
     user-select: none;
@@ -197,119 +268,175 @@
   }
   .step-badge {
     position: absolute;
-    top: -10px;
-    right: 50px;
+    top: -8px;
+    left: -3px;
     background: var(--teal, #2FB8D6);
     color: white;
-    font-size: 10px;
-    padding: 1px 8px;
-    border-radius: 10px;
-    font-weight: 600;
+    font-size: 9px;
+    padding: 1px 7px;
+    border-radius: 0 8px 8px 0;
+    font-weight: 700;
+    letter-spacing: 0.03em;
     z-index: 5;
+    text-transform: uppercase;
   }
 
   .module-content {
     width: 100%;
   }
 
-  /* Controls */
-  .module-controls {
+  /* Trigger dot — top-right, appears on hover */
+  .module-trigger {
     position: absolute;
     top: 4px;
     right: 4px;
-    display: none;
-    align-items: center;
-    gap: 2px;
-    z-index: 10;
-    background: rgba(255, 255, 255, 0.95);
-    border: 1px solid var(--color-border, #e5e7eb);
-    border-radius: var(--radius-sm, 6px);
-    padding: 2px 3px;
-    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
-    backdrop-filter: blur(4px);
-  }
-  .module-wrapper.editable:hover .module-controls,
-  .module-wrapper.editable:focus-within .module-controls {
-    display: flex;
-  }
-
-  .ctrl-group {
-    display: flex;
-    gap: 1px;
-  }
-
-  .ctrl-btn {
-    width: 26px;
-    height: 26px;
+    width: 22px;
+    height: 22px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 11px;
+    font-size: 14px;
+    line-height: 1;
+    letter-spacing: 1px;
+    background: rgba(20, 30, 50, 0.85);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 5px;
+    color: rgba(255, 255, 255, 0.6);
+    cursor: pointer;
+    z-index: 10;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.12s, background 0.12s, color 0.12s;
+    padding: 0;
+    backdrop-filter: blur(6px);
+  }
+  .module-trigger.active {
+    opacity: 1;
+    pointer-events: auto;
+    background: rgba(59, 115, 230, 0.9);
+    color: white;
+    border-color: rgba(59, 115, 230, 0.6);
+  }
+  .module-wrapper.editable:hover .module-trigger {
+    opacity: 1;
+    pointer-events: auto;
+  }
+  .module-trigger:hover:not(.active) {
+    background: rgba(40, 55, 85, 0.95);
+    color: rgba(255, 255, 255, 0.9);
+  }
+
+  /* Popover — fixed, escapes all overflow */
+  .module-popover {
+    position: fixed;
+    z-index: 1000;
+    background: rgba(18, 25, 42, 0.97);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    padding: 6px;
+    min-width: 140px;
+    box-shadow: 0 8px 28px rgba(0, 0, 0, 0.45);
+    backdrop-filter: blur(12px);
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .pop-section {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+    padding: 2px 4px;
+  }
+
+  .pop-label {
+    font-size: 10px;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.4);
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+  }
+
+  .pop-row {
+    display: flex;
+    gap: 2px;
+  }
+
+  .pop-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
     background: transparent;
     border: none;
-    border-radius: 4px;
+    border-radius: 5px;
+    color: rgba(255, 255, 255, 0.7);
     cursor: pointer;
-    color: var(--color-text-muted, #6b7280);
     padding: 0;
-    font-family: var(--font-body);
-    line-height: 1;
     transition: background 0.1s, color 0.1s;
   }
-  .ctrl-btn:hover {
-    background: var(--color-ghost-bg, rgba(59, 115, 230, 0.08));
-    color: var(--color-primary, #3B73E6);
+  .pop-btn:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
   }
-  .step-select {
+  .pop-btn:disabled {
+    opacity: 0.25;
+    cursor: default;
+  }
+
+  .pop-select {
     height: 26px;
-    font-size: 10px;
-    border: none;
-    border-radius: 4px;
-    background: transparent;
-    color: var(--color-text-muted, #6b7280);
-    padding: 0 2px 0 6px;
+    font-size: 11px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 5px;
+    background: rgba(255, 255, 255, 0.06);
+    color: rgba(255, 255, 255, 0.8);
+    padding: 0 6px;
     cursor: pointer;
     font-family: var(--font-body);
     outline: none;
-    transition: background 0.1s;
   }
-  .step-select:hover {
-    background: var(--color-ghost-bg, rgba(59, 115, 230, 0.08));
-  }
-  .step-select:focus {
-    background: var(--color-ghost-bg, rgba(59, 115, 230, 0.08));
-    color: var(--color-primary, #3B73E6);
-  }
-  .edit-src-btn {
-    width: auto !important;
-    padding: 0 6px;
-    font-size: 10px;
-    font-weight: 500;
-    color: var(--color-primary, #3B73E6);
-  }
-  .delete-btn:hover {
-    color: #dc2626;
-    background: rgba(220, 38, 38, 0.06);
-  }
-  .delete-btn.confirming {
-    color: white;
-    background: #dc2626;
-    font-weight: 600;
-    border-radius: 4px;
-    width: auto;
-    padding: 0 8px;
-    font-size: 10px;
+  .pop-select:hover { border-color: rgba(255, 255, 255, 0.25); }
+  .pop-select:focus-visible { border-color: rgba(59, 115, 230, 0.6); }
+
+  .pop-divider {
+    height: 1px;
+    background: rgba(255, 255, 255, 0.08);
+    margin: 2px 0;
   }
 
-  /* Corner resize */
+  .pop-delete {
+    width: 100%;
+    height: auto;
+    padding: 5px 8px;
+    font-size: 11px;
+    font-weight: 500;
+    color: rgba(255, 120, 120, 0.85);
+    justify-content: center;
+  }
+  .pop-delete:hover:not(:disabled) {
+    background: rgba(239, 68, 68, 0.15);
+    color: #ff6b6b;
+  }
+  .pop-delete.confirming {
+    background: #ef4444;
+    color: white;
+    font-weight: 600;
+  }
+
+  /* Corner resize — fade in on hover */
   .corner-resize {
     position: absolute;
     bottom: 0;
     right: 0;
-    width: 14px;
-    height: 14px;
+    width: 16px;
+    height: 16px;
     cursor: nwse-resize;
     z-index: 10;
-    display: none;
+    opacity: 0;
+    transition: opacity 0.15s ease;
   }
   .corner-resize::after {
     content: '';
@@ -321,12 +448,29 @@
     border-right: 2px solid var(--color-primary);
     border-bottom: 2px solid var(--color-primary);
     opacity: 0.5;
+    transition: opacity 0.1s;
   }
   .module-wrapper.editable:hover .corner-resize {
-    display: block;
+    opacity: 1;
   }
   .corner-resize:hover::after {
     opacity: 1;
+  }
+
+  /* Resize dimension tooltip */
+  .resize-tooltip {
+    position: absolute;
+    bottom: -22px;
+    right: 0;
+    background: rgba(0, 0, 0, 0.75);
+    color: #fff;
+    font-size: 10px;
+    font-family: ui-monospace, monospace;
+    padding: 2px 6px;
+    border-radius: 3px;
+    white-space: nowrap;
+    z-index: 20;
+    pointer-events: none;
   }
 
   .unknown-module {

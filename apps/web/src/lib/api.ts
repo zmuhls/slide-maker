@@ -79,6 +79,11 @@ export const api = {
   // Chat
   getChatHistory: (deckId: string) =>
     request<{ messages: any[] }>(`/api/chat/${deckId}/history`),
+  resetChatHistory: (deckId: string) =>
+    request<{ ok: true }>(`/api/chat/${deckId}/history`, {
+      method: 'DELETE',
+      body: JSON.stringify({ confirm: deckId }),
+    }),
 
   // Files
   uploadFile: async (deckId: string, file: File) => {

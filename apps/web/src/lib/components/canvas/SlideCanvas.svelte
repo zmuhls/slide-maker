@@ -1,14 +1,12 @@
 <script lang="ts">
-  import { untrack, onMount, onDestroy } from 'svelte'
+  import { untrack } from 'svelte'
   import '$lib/framework-preview.css'
-  import { api, API_URL } from '$lib/api'
+  import { API_URL } from '$lib/api'
   import { currentDeck } from '$lib/stores/deck'
-  import { activeSlideId } from '$lib/stores/ui'
+  import { activeSlideId, activeModuleControls } from '$lib/stores/ui'
   import { activeTheme, ensureThemesLoaded, isDark } from '$lib/stores/themes'
-  import { renderSlideHtml } from '$lib/utils/slide-html'
   import CanvasToolbar from './CanvasToolbar.svelte'
   import FormatToolbar from './FormatToolbar.svelte'
-  import PresenceBar from './PresenceBar.svelte'
   import SlideRenderer from './SlideRenderer.svelte'
   import type { Editor } from '@tiptap/core'
 
@@ -40,12 +38,6 @@
   // Derive theme
   let theme = $derived($activeTheme)
 
-  // Build iframe srcdoc from slide + theme
-  let slideHtml = $derived.by(() => {
-    if (!activeSlide) return ''
-    return renderSlideHtml(activeSlide, theme)
-  })
-
   function openPreview() {
     if (!$currentDeck) return
     window.open(`${API_URL}/api/decks/${$currentDeck.id}/preview`, '_blank')
@@ -57,6 +49,7 @@
     $activeSlideId
     untrack(() => {
       activeEditor = null
+      activeModuleControls.set(null)
     })
   })
 
@@ -109,69 +102,11 @@
       `--layout-grid-bg: ${gridBg}`,
     ].join('; ')
   })
-
-  // ── Presence ──
-  type PresenceUser = {
-    userId: string
-    userName: string
-    activeSlideId: string | null
-    slideNumber?: number
-  }
-
-  let otherUsers: PresenceUser[] = $state([])
-  let presenceInterval: ReturnType<typeof setInterval> | undefined
-  let currentUserId: string | null = $state(null)
-
-  async function sendPresenceHeartbeat() {
-    const deck = $currentDeck
-    if (!deck) return
-    try {
-      const res = await api.updatePresence(deck.id, $activeSlideId)
-      if (res?.presences) {
-        const slides = [...(deck.slides ?? [])].sort((a, b) => a.order - b.order)
-        otherUsers = res.presences
-          .filter((p: any) => p.userId !== currentUserId)
-          .map((p: any) => ({
-            userId: p.userId,
-            userName: p.userName,
-            activeSlideId: p.activeSlideId,
-            slideNumber: p.activeSlideId
-              ? slides.findIndex((s) => s.id === p.activeSlideId) + 1
-              : undefined,
-          }))
-      }
-    } catch {
-      // Non-critical
-    }
-  }
-
-  // Send heartbeat on activeSlideId change
-  $effect(() => {
-    // eslint-disable-next-line @typescript-eslint/no-unused-expressions
-    $activeSlideId
-    sendPresenceHeartbeat()
-  })
-
-  onMount(async () => {
-    try {
-      const me = await api.me()
-      currentUserId = me?.user?.id ?? null
-    } catch {
-      // best effort
-    }
-    sendPresenceHeartbeat()
-    presenceInterval = setInterval(sendPresenceHeartbeat, 30_000)
-  })
-
-  onDestroy(() => {
-    if (presenceInterval) clearInterval(presenceInterval)
-  })
 </script>
 
 <!-- svelte-ignore a11y_no_static_element_interactions -->
-<div class="slide-canvas" onkeydown={handleCanvasKeydown} role="region" aria-label="Slide editor">
+<div class="slide-canvas" onkeydown={handleCanvasKeydown}>
   <CanvasToolbar {canvasMode} onSetMode={setMode} onPreview={openPreview} />
-  <PresenceBar {otherUsers} />
   {#if editable && canvasMode === 'edit'}
     <FormatToolbar editor={activeEditor} />
   {/if}
@@ -182,18 +117,11 @@
           <SlideRenderer slide={activeSlide} {editable} onEditorReady={handleEditorReady} />
         </div>
       {:else}
-        <div class="preview-container">
-          {#key slideHtml}
-          <iframe
-            class="slide-preview-frame"
-            srcdoc={slideHtml}
-            sandbox="allow-scripts"
-            title="Slide preview"
-          ></iframe>
-          {/key}
+        <div class="slide-frame view-mode" style={themeStyle}>
+          <SlideRenderer slide={activeSlide} editable={false} />
           {#if editable}
             <!-- svelte-ignore a11y_no_static_element_interactions -->
-            <div class="click-overlay" onclick={() => setMode('edit')} tabindex="0" role="button" aria-label="Edit slide" onkeydown={(e) => (e.key === 'Enter' || e.key === ' ') && setMode('edit')}></div>
+            <div class="click-overlay" onclick={() => setMode('edit')}></div>
             <div class="edit-hint">Click to edit</div>
           {/if}
         </div>
@@ -218,24 +146,12 @@
     justify-content: center;
     padding: 1rem;
     overflow: auto;
+    /* Keep a sensible edit viewport: never too small, never exceed 100vh minus header/toolbars */
+    min-height: clamp(420px, calc(100vh - 220px), 800px);
   }
-  .preview-container {
-    width: 100%;
-    height: 100%;
-    max-height: 100%;
-    aspect-ratio: 16 / 9;
-    position: relative;
-    border-radius: var(--radius-md);
-    overflow: hidden;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  .slide-frame.view-mode {
     cursor: pointer;
-  }
-  .slide-preview-frame {
-    width: 100%;
-    height: 100%;
-    border: none;
-    border-radius: var(--radius-md);
-    background: white;
+    position: relative;
   }
   .click-overlay {
     position: absolute;
@@ -258,18 +174,18 @@
     opacity: 0;
     transition: opacity 0.2s;
   }
-  .preview-container:hover .edit-hint {
+  .slide-frame.view-mode:hover .edit-hint {
     opacity: 1;
   }
   .slide-frame {
     width: 100%;
-    height: 100%;
+    height: auto;
     max-height: 100%;
     aspect-ratio: 16 / 9;
     background: white;
     border-radius: var(--radius-md);
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-    overflow-y: auto;
+    overflow: hidden;
   }
   .no-slide {
     color: var(--color-text-muted);

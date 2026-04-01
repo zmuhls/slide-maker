@@ -199,14 +199,34 @@ figure img { max-width: 100%; max-height: 60vh; border-radius: 6px; object-fit: 
 figcaption { margin-top: 8px; font-size: 0.85rem; color: var(--text-muted); }
 
 /* ── Module: Artifact ─────────────────────────────────────────────── */
+/* Match editor behavior: artifacts are fluid by default, fill container width,
+   and use a square aspect ratio unless an explicit height is provided. */
 .artifact-wrapper {
-  max-width: 280px; border-radius: 4px; overflow: hidden;
+  display: flex; flex-direction: column;
+  width: 100%; border-radius: 4px; overflow: hidden;
+  margin: 0 auto; /* center horizontally when a custom width is applied */
   border: 1px solid var(--border-subtle);
   background: rgba(0,0,0,0.15);
 }
-.artifact-wrapper iframe { display: block; width: 100%; aspect-ratio: 1; max-height: 280px; border: none; }
-.layout-split > .stage .artifact-wrapper { max-width: 240px; }
-.layout-split > .stage .artifact-wrapper iframe { max-height: 240px; }
+.artifact-card {
+  display: flex; flex-direction: column;
+  width: 100%; border-radius: 4px; overflow: hidden;
+  margin: 0 auto;
+  border: 1px solid var(--border-subtle);
+  background: rgba(0,0,0,0.15);
+}
+.artifact-wrapper iframe {
+  display: block; width: 100%; flex: 1; min-height: 0;
+  aspect-ratio: 1; border: none;
+}
+.artifact-card iframe {
+  display: block; width: 100%; flex: 1; min-height: 0;
+  aspect-ratio: 1; border: none;
+}
+/* When a height is specified inline (e.g., style="height: 240px"),
+   drop the default square aspect ratio and allow natural sizing. */
+.artifact-wrapper[style*="height"] iframe { aspect-ratio: auto; }
+.artifact-card[style*="height"] iframe { aspect-ratio: auto; }
 
 /* ── Blockquote ──────────────────────────────────────────────────── */
 blockquote {

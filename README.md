@@ -2,6 +2,10 @@
 
 Chat-driven slide builder for the CUNY AI Lab. Create presentation decks through AI conversation and direct on-canvas editing.
 
+## Contributor Guide
+
+See Repository Guidelines in `AGENTS.md` for project structure, local dev commands, coding style, testing, and commit conventions.
+
 ## Prerequisites
 
 - Node.js 18+

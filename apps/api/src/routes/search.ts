@@ -1,14 +1,11 @@
 import { Hono } from 'hono'
 import { eq, and } from 'drizzle-orm'
-import fs from 'node:fs'
-import path from 'node:path'
-import { fileURLToPath } from 'node:url'
-import { createId } from '@paralleldrive/cuid2'
 import type { Session, User } from 'lucia'
 import { authMiddleware } from '../middleware/auth.js'
 import { env } from '../env.js'
 import { db } from '../db/index.js'
-import { deckAccess, uploadedFiles } from '../db/schema.js'
+import { deckAccess } from '../db/schema.js'
+import { validateUrlForSsrf } from '../utils/ssrf-guard.js'
 
 type AuthEnv = {
   Variables: {
@@ -106,22 +103,25 @@ search.post('/download-image', async (c) => {
     return c.json({ error: 'This source is not allowed' }, 403)
   }
 
-  // Block non-HTTPS and private/internal URLs
-  const parsedUrl = new URL(url)
-  if (parsedUrl.protocol !== 'https:') {
-    return c.json({ error: 'Only HTTPS URLs are allowed' }, 400)
-  }
-  const hostname = parsedUrl.hostname
-  const isPrivate = /^(127\.|10\.|172\.(1[6-9]|2\d|3[01])\.|192\.168\.|169\.254\.|100\.(6[4-9]|[7-9]\d|1[01]\d|12[0-7])\.|0\.|localhost|::1|\[::1\])/i.test(hostname)
-  if (isPrivate) {
-    return c.json({ error: 'Internal URLs are not allowed' }, 400)
+  // SSRF protection: validate URL resolves to a public IP
+  try {
+    await validateUrlForSsrf(url)
+  } catch {
+    return c.json({ error: 'URL is not allowed' }, 400)
   }
 
   try {
-    // Fetch the image
+    // Fetch the image with timeout and no redirect following
     const imgRes = await fetch(url, {
       headers: { 'User-Agent': 'CUNY-AI-Lab-SlideMaker/1.0' },
+      redirect: 'manual',
+      signal: AbortSignal.timeout(10_000),
     })
+
+    // Reject redirects (could bypass SSRF validation)
+    if (imgRes.status >= 300 && imgRes.status < 400) {
+      return c.json({ error: 'Redirects are not followed for security' }, 400)
+    }
 
     if (!imgRes.ok) {
       return c.json({ error: `Failed to fetch image: ${imgRes.status}` }, 502)
@@ -139,6 +139,13 @@ search.post('/download-image', async (c) => {
     }
 
     // Save to uploads
+    const { createId } = await import('@paralleldrive/cuid2')
+    const fs = await import('node:fs')
+    const path = await import('node:path')
+    const { fileURLToPath } = await import('node:url')
+    const { db } = await import('../db/index.js')
+    const { uploadedFiles } = await import('../db/schema.js')
+
     const __dirname = path.dirname(fileURLToPath(import.meta.url))
     const UPLOADS_DIR = path.resolve(__dirname, '../../uploads')
 
@@ -150,6 +157,7 @@ search.post('/download-image', async (c) => {
     fs.mkdirSync(deckDir, { recursive: true })
     fs.writeFileSync(path.join(deckDir, diskFilename), buffer)
 
+    const user = c.get('user')
     const savedFilename = filename ?? `web-image${ext}`
 
     await db.insert(uploadedFiles).values({

@@ -8,6 +8,8 @@
     slideId?: string
   } = $props()
 
+  let deleting = $state(false)
+
   const typeLabels: Record<string, string> = {
     heading: 'Heading',
     text: 'Text',
@@ -58,30 +60,73 @@
     persistData({ [field]: field === 'level' ? Number(val) : val })
   }
 
+  /** Strip markdown syntax for plain-text preview */
+  function stripMd(s: string): string {
+    return s.replace(/\*\*(.+?)\*\*/g, '$1').replace(/\*(.+?)\*/g, '$1').replace(/`(.+?)`/g, '$1').replace(/\[([^\]]+)\]\([^)]+\)/g, '$1').replace(/^#+\s*/gm, '').replace(/<[^>]+>/g, '')
+  }
+
   // Derive a preview string from the data
   let preview = $derived.by(() => {
     const d = block.data
     if (block.type === 'heading') return String(d.text || '').slice(0, 40) || 'Untitled'
     if (block.type === 'label') return String(d.text || '').slice(0, 30) || 'Label'
-    if (block.type === 'text') return String(d.markdown || d.text || d.html || '').slice(0, 40) || 'Empty text'
+    if (block.type === 'text') return stripMd(String(d.html || d.markdown || d.text || '')).slice(0, 40) || 'Empty text'
     if (block.type === 'image') return String(d.alt || d.src || '').slice(0, 30) || 'Image'
-    if (block.type === 'card') return String(d.title || '').slice(0, 30) || 'Card'
+    if (block.type === 'card') return stripMd(String(d.content || d.title || '')).slice(0, 30) || 'Card'
     if (block.type === 'artifact') return String(d.alt || d.name || '').slice(0, 30) || 'Visualization'
     return ''
   })
 
   const LABEL_COLORS = ['cyan', 'blue', 'navy', 'red', 'amber', 'green']
+
+  async function handleDelete(e: MouseEvent) {
+    e.stopPropagation()
+    if (deleting) return
+    deleting = true
+
+    const sid = slideId ?? block.slideId
+    if (!sid) { deleting = false; return }
+    const deck = get(currentDeck)
+    if (!deck) { deleting = false; return }
+
+    try {
+      const res = await fetch(`${API_URL}/api/decks/${deck.id}/slides/${sid}/blocks/${block.id}`, {
+        method: 'DELETE',
+        credentials: 'include',
+      })
+      if (res.ok) {
+        updateSlideInDeck(sid, (s) => ({
+          ...s,
+          blocks: s.blocks.filter((b) => b.id !== block.id),
+        }))
+      }
+    } catch (err) {
+      console.error('Failed to delete block:', err)
+    }
+    deleting = false
+  }
 </script>
 
 <div class="block-item">
-  <button class="block-header" onclick={() => expanded = !expanded}>
+  <!-- svelte-ignore a11y_no_static_element_interactions -->
+  <div class="block-header" onclick={() => expanded = !expanded} onkeydown={(e) => e.key === 'Enter' && (expanded = !expanded)} role="button" tabindex="0">
     <span class="drag-handle">{'\u283F'}</span>
     <span class="block-label">{label}</span>
     {#if preview}
       <span class="block-preview">{preview}</span>
     {/if}
     <span class="expand-arrow">{expanded ? '\u25BC' : '\u25B6'}</span>
-  </button>
+    <button
+      class="delete-block-btn"
+      type="button"
+      onclick={handleDelete}
+      disabled={deleting}
+      aria-label="Delete module"
+      title="Delete module"
+    >
+      {'\u2715'}
+    </button>
+  </div>
 
   {#if expanded}
     <div class="block-fields" onclick={(e) => e.stopPropagation()}>
@@ -125,8 +170,8 @@
       {:else if block.type === 'text'}
         <textarea
           class="field-textarea"
-          value={String(block.data.markdown ?? block.data.text ?? '')}
-          placeholder="Text content (Markdown)"
+          value={stripMd(String(block.data.html || block.data.markdown || block.data.text || ''))}
+          placeholder="Text content"
           oninput={(e) => handleTextInput('markdown', e)}
           rows="3"
         ></textarea>
@@ -157,10 +202,10 @@
   .block-item {
     display: flex;
     flex-direction: column;
-    padding: 0 8px 0 20px;
-    font-size: 13px;
+    padding: 0 8px 0 16px;
+    font-size: 12px;
     color: var(--color-text-muted, #6b7280);
-    line-height: 1.4;
+    line-height: 1.35;
   }
 
   .block-header {
@@ -170,7 +215,7 @@
     background: none;
     border: none;
     cursor: pointer;
-    padding: 2px 0;
+    padding: 1px 0;
     text-align: left;
     width: 100%;
     color: inherit;
@@ -188,32 +233,17 @@
     flex-shrink: 0;
   }
 
-  .block-label {
-    white-space: nowrap;
-    font-weight: 600;
-    flex-shrink: 0;
-  }
+  .block-label { white-space: nowrap; font-weight: 600; flex-shrink: 0; font-size: 12px; }
 
-  .block-preview {
-    flex: 1;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    color: var(--color-text-muted, #9ca3af);
-    font-size: 11px;
-  }
+  .block-preview { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--color-text-muted, #9ca3af); font-size: 10px; }
 
-  .expand-arrow {
-    font-size: 9px;
-    color: var(--color-text-muted, #9ca3af);
-    flex-shrink: 0;
-  }
+  .expand-arrow { font-size: 9px; color: var(--color-text-muted, #9ca3af); flex-shrink: 0; }
 
   .block-fields {
     display: flex;
     flex-direction: column;
     gap: 4px;
-    padding: 4px 0 6px 18px;
+    padding: 2px 0 4px 14px;
   }
 
   .field-input,
@@ -252,4 +282,22 @@
     color: var(--color-text-muted, #9ca3af);
     font-style: italic;
   }
+
+  .delete-block-btn {
+    background: none; border: none; cursor: pointer;
+    color: var(--color-text-muted, #9ca3af);
+    font-size: 12px; padding: 4px; line-height: 1; flex-shrink: 0;
+    border-radius: 4px;
+    min-width: 20px; min-height: 20px;
+    display: inline-flex; align-items: center; justify-content: center;
+    transition: color 0.12s ease, transform 0.06s ease;
+  }
+
+  .block-header:hover .delete-block-btn { color: #6b7280; }
+
+  .delete-block-btn:hover { color: #ef4444; background: rgba(239, 68, 68, 0.1); }
+  .delete-block-btn:active { transform: translateY(1px); }
+
+  .delete-block-btn.confirming { color: #fff; background: #ef4444; }
+  .delete-block-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 </style>

@@ -4,11 +4,14 @@ import { eq, and, inArray, gte, sql } from 'drizzle-orm'
 import { createId } from '@paralleldrive/cuid2'
 import type { Session, User } from 'lucia'
 import { db } from '../db/index.js'
-import { decks, deckAccess, slides, contentBlocks, chatMessages, templates, themes, uploadedFiles, users, tokenUsage } from '../db/schema.js'
+import { decks, deckAccess, slides, contentBlocks, chatMessages, templates, themes, uploadedFiles, users, tokenUsage, artifacts } from '../db/schema.js'
 import { authMiddleware } from '../middleware/auth.js'
 import { chatRateLimit } from '../middleware/rate-limit.js'
 import { getModelStream } from '../providers/index.js'
 import { buildSystemPrompt } from '../prompts/system.js'
+import fs from 'node:fs'
+import path from 'node:path'
+import { fileURLToPath } from 'node:url'
 
 type AuthEnv = {
   Variables: {
@@ -86,12 +89,52 @@ chat.post('/', chatRateLimit, async (c) => {
 
   // Load uploaded files for context
   const deckFiles = await db.select().from(uploadedFiles).where(eq(uploadedFiles.deckId, deckId))
-  const filesList = deckFiles.map((f) => ({
-    id: f.id,
-    filename: f.filename,
-    mimeType: f.mimeType,
-    url: `/api/decks/${deckId}/files/${f.id}`,
-  }))
+  // Attempt to attach short Markdown excerpts for PDFs/DOCX if present
+  const filesList = (() => {
+    const list = deckFiles.map((f) => ({
+      id: f.id,
+      filename: f.filename,
+      mimeType: f.mimeType,
+      url: `/api/decks/${deckId}/files/${f.id}`,
+      path: f.path as string,
+    }))
+
+    // Compute sidecar .md path and load excerpts
+    const MAX_TOTAL = 4000
+    const candidates = list.filter((f) => {
+      const mt = (f.mimeType || '').toLowerCase()
+      return mt.includes('pdf') || mt.includes('word') || mt.includes('markdown') || mt === 'text/plain'
+    })
+    let perDoc = candidates.length > 0 ? Math.floor(MAX_TOTAL / candidates.length) : 0
+    if (perDoc < 1200) perDoc = 1200
+
+    try {
+      const __dirname = path.dirname(fileURLToPath(import.meta.url))
+      const UPLOADS_DIR = path.resolve(__dirname, '../../uploads')
+
+      for (const f of list) {
+        const mt = (f.mimeType || '').toLowerCase()
+        if (!(mt.includes('pdf') || mt.includes('word') || mt.includes('markdown') || mt === 'text/plain')) continue
+        let mdPath: string
+        if (f.path && path.isAbsolute(f.path)) {
+          mdPath = path.join(path.dirname(f.path), `${f.id}.md`)
+        } else if (f.path) {
+          mdPath = path.join(UPLOADS_DIR, path.dirname(f.path), `${f.id}.md`)
+        } else {
+          mdPath = path.join(UPLOADS_DIR, deckId, `${f.id}.md`)
+        }
+        try {
+          if (fs.existsSync(mdPath)) {
+            const md = fs.readFileSync(mdPath, 'utf8').trim()
+            ;(f as any).excerpt = md.length > perDoc ? md.slice(0, perDoc) + '\n\n…' : md
+          }
+        } catch {}
+      }
+    } catch {}
+
+    // Strip internal path before returning
+    return list.map(({ path: _p, ...rest }) => rest)
+  })()
 
   // Load templates
   const allTemplates = await db.select().from(templates)
@@ -116,6 +159,50 @@ chat.post('/', chatRateLimit, async (c) => {
     }
   }
 
+  const allThemesList = await db.select({ id: themes.id, name: themes.name }).from(themes)
+
+  // Load available artifacts (include config for tiered prompt)
+  const allArtifacts = await db.select().from(artifacts)
+  const artifactsList = allArtifacts.map((a) => {
+    const cfg = (a.config ?? {}) as Record<string, unknown>
+    const paramCount = Object.values(cfg).filter(
+      (v) => v && typeof v === 'object' && 'default' in (v as Record<string, unknown>),
+    ).length
+    return {
+      id: a.id,
+      name: a.name,
+      description: a.description,
+      type: a.type,
+      config: cfg,
+      paramCount,
+    }
+  })
+
+  // Compute active artifacts (those placed in deck slides)
+  const activeArtifactsMap = new Map<string, { name: string; slidePositions: number[]; config: Record<string, unknown> }>()
+  for (const slide of slidesWithBlocks) {
+    for (const block of slide.blocks) {
+      if (block.type !== 'artifact') continue
+      const d = block.data as Record<string, unknown>
+      const name = String(d.artifactName || d.alt || '').trim()
+      if (!name) continue
+      const existing = activeArtifactsMap.get(name.toLowerCase())
+      if (existing) {
+        existing.slidePositions.push(slide.order)
+      } else {
+        activeArtifactsMap.set(name.toLowerCase(), {
+          name,
+          slidePositions: [slide.order],
+          config: (d.config as Record<string, unknown>) || {},
+        })
+      }
+    }
+  }
+  const activeArtifactsList = Array.from(activeArtifactsMap.values())
+
+  // Detect @artifact: references in user message for focused tier
+  const atRefs = [...message.matchAll(/@artifact:([^\n@]+)/gi)].map((m) => m[1].trim())
+
   // Build system prompt
   const systemPrompt = buildSystemPrompt({
     deck: {
@@ -128,6 +215,10 @@ chat.post('/', chatRateLimit, async (c) => {
     templates: templatesList,
     theme: activeTheme,
     files: filesList,
+    artifacts: artifactsList,
+    activeArtifacts: activeArtifactsList,
+    focusedArtifactNames: atRefs.length > 0 ? atRefs : undefined,
+    allThemes: allThemesList,
   })
 
   // Prepare messages for the LLM
@@ -258,6 +349,41 @@ chat.get('/:deckId/history', async (c) => {
     .orderBy(chatMessages.createdAt)
 
   return c.json({ messages })
+})
+
+// DELETE /:deckId/history — Clear chat history for a deck
+chat.delete('/:deckId/history', async (c) => {
+  const user = c.get('user')
+  const deckId = c.req.param('deckId')
+
+  // Check access
+  const access = await db
+    .select()
+    .from(deckAccess)
+    .where(and(eq(deckAccess.deckId, deckId), eq(deckAccess.userId, user.id)))
+    .get()
+
+  if (!access) {
+    return c.json({ error: 'Not found or no access' }, 404)
+  }
+  if (access.role === 'viewer') {
+    return c.json({ error: 'Forbidden: viewers cannot clear chat' }, 403)
+  }
+
+  // Require a confirmation token in request body (deckId) to reduce accidental clears
+  let confirm = ''
+  try {
+    const body = await c.req.json()
+    confirm = body?.confirm ?? ''
+  } catch {
+    // ignore — body may be empty
+  }
+  if (confirm !== deckId) {
+    return c.json({ error: 'Confirmation required' }, 400)
+  }
+
+  await db.delete(chatMessages).where(eq(chatMessages.deckId, deckId))
+  return c.json({ ok: true })
 })
 
 export default chat

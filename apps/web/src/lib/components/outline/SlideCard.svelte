@@ -1,5 +1,7 @@
 <script lang="ts">
+  import { untrack } from 'svelte'
   import { get } from 'svelte/store'
+  import { flip } from 'svelte/animate'
   import { dndzone } from 'svelte-dnd-action'
   import BlockItem from './BlockItem.svelte'
   import { activeSlideId } from '$lib/stores/ui'
@@ -16,6 +18,8 @@
     'closing-slide': 'Closing',
   }
 
+  const flipDurationMs = 200
+
   let { slide, active, index }: {
     slide: {
       id: string
@@ -31,19 +35,30 @@
   let layoutLabel = $derived(layoutLabels[slide.layout] ?? slide.layout)
 
   let deleting = $state(false)
+  let expanded = $state(false)
   let blockItems = $state(slide.blocks)
+  let draggingBlocks = false  // plain boolean — invisible to reactive system
 
   $effect(() => {
-    blockItems = slide.blocks
+    const blocks = slide.blocks
+    if (untrack(() => !draggingBlocks)) {
+      blockItems = blocks
+    }
   })
 
   function handleDndConsider(e: CustomEvent<{ items: typeof blockItems }>) {
+    draggingBlocks = true
     blockItems = e.detail.items
   }
 
   function handleDndFinalize(e: CustomEvent<{ items: typeof blockItems }>) {
     blockItems = e.detail.items.map((b, i) => ({ ...b, order: i }))
+
+    // Update store FIRST while draggingBlocks is still true
     updateSlideInDeck(slide.id, (s) => ({ ...s, blocks: blockItems }))
+
+    // NOW allow syncing again
+    draggingBlocks = false
 
     // Persist new order to API
     for (const item of blockItems) {
@@ -56,8 +71,17 @@
     }
   }
 
+  // Auto-expand when this slide becomes active
+  $effect(() => {
+    if (active) expanded = true
+  })
+
   function handleClick() {
-    activeSlideId.set(slide.id)
+    if (active) {
+      expanded = !expanded
+    } else {
+      activeSlideId.set(slide.id)
+    }
   }
 
   async function handleDelete(e: MouseEvent) {
@@ -91,10 +115,10 @@
   }
 </script>
 
-<div class="slide-card" class:active data-slide-id={slide.id} onclick={handleClick} onkeydown={(e) => e.key === 'Enter' && handleClick()} role="button" tabindex="0">
-  <div class="card-header">
+<div class="slide-card" class:active data-slide-id={slide.id}>
+  <div class="card-header" onclick={handleClick} onkeydown={(e) => e.key === 'Enter' && handleClick()} role="button" tabindex="0">
     <span class="drag-handle" title="Drag to reorder">{'\u2807'}</span>
-    <span class="arrow">{active ? '\u25BC' : '\u25B6'}</span>
+    <span class="arrow">{expanded ? '\u25BC' : '\u25B6'}</span>
     <span class="slide-label">{index + 1}. {layoutLabel}</span>
     {#if active}
       <span class="active-badge">ACTIVE</span>
@@ -109,10 +133,10 @@
     </button>
   </div>
 
-  {#if active && blockItems.length > 0}
-    <div class="blocks-list" use:dndzone={{ items: blockItems, flipDurationMs: 200, dropTargetStyle: {} }} onconsider={handleDndConsider} onfinalize={handleDndFinalize}>
+  {#if expanded && blockItems.length > 0}
+    <div class="blocks-list" use:dndzone={{ items: blockItems, flipDurationMs, dropTargetStyle: {}, dropFromOthersDisabled: true, dragHandleSelector: '.drag-handle' }} onconsider={handleDndConsider} onfinalize={handleDndFinalize}>
       {#each blockItems as block (block.id)}
-        <div>
+        <div animate:flip={{ duration: flipDurationMs }}>
           <BlockItem {block} slideId={slide.id} />
         </div>
       {/each}
@@ -124,7 +148,7 @@
   .slide-card {
     border: 1px solid var(--color-border, #e5e7eb);
     border-radius: 4px;
-    margin: 0 6px 4px;
+    margin: 0 6px 2px;
     background: var(--color-bg);
     cursor: pointer;
     transition: border-color 0.15s, background-color 0.15s;
@@ -139,7 +163,7 @@
     display: flex;
     align-items: center;
     gap: 4px;
-    padding: 6px 8px;
+    padding: 4px 8px;
     font-size: 13px;
     font-weight: 500;
     user-select: none;
@@ -191,10 +215,11 @@
     cursor: pointer;
     color: var(--color-text-muted, #9ca3af);
     font-size: 12px;
-    padding: 0 2px;
+    padding: 2px 4px;
     line-height: 1;
     flex-shrink: 0;
     opacity: 0;
+    border-radius: 4px;
     transition: opacity 0.15s, color 0.15s;
   }
 
@@ -204,6 +229,7 @@
 
   .delete-btn:hover {
     color: #ef4444;
+    background: rgba(239, 68, 68, 0.1);
   }
 
   .delete-btn:disabled {

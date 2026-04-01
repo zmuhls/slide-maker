@@ -71,7 +71,9 @@ function markdownToHtml(md: string): string {
 function inlineMd(text: string): string {
   let html = esc(text)
   html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+  html = html.replace(/__(.+?)__/g, '<strong>$1</strong>')
   html = html.replace(/\*(.+?)\*/g, '<em>$1</em>')
+  html = html.replace(/(?<!\w)_(.+?)_(?!\w)/g, '<em>$1</em>')
   html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (_m, label, url) => {
     const safe = /^https?:\/\//i.test(url) ? url : '#'
     return `<a href="${safe}" target="_blank" rel="noopener">${label}</a>`
@@ -124,7 +126,25 @@ function rewriteSrc(src: string, files?: ExportFile[]): string {
   return src
 }
 
-function renderModule(mod: Module, files?: ExportFile[]): string {
+interface RenderOptions {
+  extractArtifacts?: boolean
+  externalJs?: boolean // when true, reference js/engine.js instead of inlining
+  // When provided, inline artifact HTML will be served via this endpoint as
+  // `/path?b64=<base64(html)>`, which preserves a proper Referer header.
+  artifactEndpoint?: string
+}
+
+const extractedArtifacts: Map<string, string> = new Map()
+
+export function getExtractedArtifacts(): Map<string, string> {
+  return new Map(extractedArtifacts)
+}
+
+export function clearExtractedArtifacts(): void {
+  extractedArtifacts.clear()
+}
+
+function renderModule(mod: Module, files?: ExportFile[], opts?: RenderOptions): string {
   const d = mod.data || {}
   const step = stepAttrs(mod)
 
@@ -170,12 +190,12 @@ function renderModule(mod: Module, files?: ExportFile[]): string {
 
     case 'prompt-block': {
       const quality = d.quality ? ` prompt-${esc(String(d.quality))}` : ''
-      return `<div class="prompt-block${quality}"${step} role="region" aria-label="Code example"><pre>${esc(String(d.content || d.text || ''))}</pre></div>`
+      return `<div class="prompt-block${quality}"${step}><pre>${esc(String(d.content || d.text || ''))}</pre></div>`
     }
 
     case 'image': {
       const src = rewriteSrc(String(d.src || d.url || ''), files)
-      const alt = esc(String(d.alt || d.caption || 'Slide image'))
+      const alt = esc(String(d.alt || ''))
       const caption = String(d.caption || '')
       let html = `<figure${step}><img src="${esc(src)}" alt="${alt}" loading="lazy">`
       if (caption) html += `<figcaption>${esc(caption)}</figcaption>`
@@ -190,12 +210,11 @@ function renderModule(mod: Module, files?: ExportFile[]): string {
       let html = `<div class="carousel"${syncAttr}${intervalAttr}${step}>`
       html += `<button class="carousel-prev" aria-label="Previous">&lsaquo;</button>`
       html += `<div class="carousel-track">`
-      items.forEach((item: unknown, idx: number) => {
-        const it = item as Record<string, unknown>
-        const src = rewriteSrc(String(it.src || ''), files)
-        const alt = esc(String(it.alt || it.caption || ('Image ' + (idx + 1))))
+      for (const item of items) {
+        const src = rewriteSrc(String((item as Record<string, unknown>).src || ''), files)
+        const alt = esc(String((item as Record<string, unknown>).alt || ''))
         html += `<div class="carousel-item"><img src="${esc(src)}" alt="${alt}"></div>`
-      })
+      }
       html += `</div>`
       html += `<button class="carousel-next" aria-label="Next">&rsaquo;</button>`
       html += `<div class="carousel-dots">`
@@ -238,7 +257,7 @@ function renderModule(mod: Module, files?: ExportFile[]): string {
       const nodes = Array.isArray(d.nodes) ? d.nodes : []
       let html = `<div class="flow"${step}>`
       nodes.forEach((node: unknown, i: number) => {
-        if (i > 0) html += `<div class="flow-arrow" aria-hidden="true">\u2192</div>`
+        if (i > 0) html += `<div class="flow-arrow">→</div>`
         html += `<div class="flow-node">${esc(String((node as Record<string, unknown>).label || node))}</div>`
       })
       html += `</div>`
@@ -260,11 +279,28 @@ function renderModule(mod: Module, files?: ExportFile[]): string {
       const rawSource = d.rawSource ? String(d.rawSource) : ''
       const isUrl = /^https?:\/\//i.test(rawSrc)
       const alt = esc(String(d.alt || 'Interactive visualization'))
+      const aw = d.width ? String(d.width) : ''
+      const ah = d.height ? String(d.height) : ''
+      const align = typeof d.align === 'string' ? String(d.align) : 'center'
+      const alignCss = align === 'left' ? 'margin-right:auto;' : align === 'right' ? 'margin-left:auto;' : 'margin:0 auto;'
+      const sizeStyle = ` style="${aw ? `width:${esc(aw)};` : ''}${ah ? `height:${esc(ah)};aspect-ratio:auto;` : ''}${alignCss}"`
+      const iframeTag = (content: string) => `<div class="artifact-wrapper"${step}${sizeStyle}>${content}</div>`
       if (isUrl) {
-        return `<div class="artifact-wrapper"${step}><iframe src="${esc(rawSrc)}" sandbox="allow-scripts" loading="lazy" title="${alt}">${alt} (interactive content)</iframe></div>`
+        return iframeTag(`<iframe src="${esc(rawSrc)}" sandbox="allow-scripts" loading="lazy" title="${alt}" referrerpolicy="origin-when-cross-origin"></iframe>`)
+      }
+      if (rawSource && opts?.extractArtifacts) {
+        const hash = Buffer.from(rawSource).toString('base64url').slice(0, 12)
+        const filename = `artifact-${hash}.html`
+        extractedArtifacts.set(filename, rawSource)
+        return iframeTag(`<iframe src="artifacts/${filename}" sandbox="allow-scripts" loading="lazy" title="${alt}" referrerpolicy="origin-when-cross-origin"></iframe>`)
+      }
+      if (rawSource && opts?.artifactEndpoint) {
+        const b64 = Buffer.from(rawSource, 'utf8').toString('base64')
+        const ep = opts.artifactEndpoint.endsWith('/') ? opts.artifactEndpoint.slice(0, -1) : opts.artifactEndpoint
+        return iframeTag(`<iframe src="${esc(ep)}?b64=${esc(encodeURIComponent(b64))}" sandbox="allow-scripts" loading="lazy" title="${alt}" referrerpolicy="origin-when-cross-origin"></iframe>`)
       }
       if (rawSource) {
-        return `<div class="artifact-wrapper"${step}><iframe srcdoc="${esc(rawSource)}" sandbox="allow-scripts" loading="lazy" title="${alt}">${alt} (interactive content)</iframe></div>`
+        return iframeTag(`<iframe srcdoc="${esc(rawSource)}" sandbox="allow-scripts" loading="lazy" title="${alt}" referrerpolicy="origin-when-cross-origin"></iframe>`)
       }
       return `<div class="artifact-wrapper"${step} style="aspect-ratio:1;display:flex;align-items:center;justify-content:center;color:#94a3b8;font-size:13px;">${alt}</div>`
     }
@@ -272,7 +308,7 @@ function renderModule(mod: Module, files?: ExportFile[]): string {
     case 'code': {
       const code = String(d.code || d.content || '')
       const lang = String(d.language || '')
-      return `<div class="code-wrapper"${step} role="region" aria-label="${lang ? esc(lang) + ' code' : 'Code block'}"><pre><code class="language-${esc(lang)}">${esc(code)}</code></pre></div>`
+      return `<div class="code-wrapper"${step}><pre><code class="language-${esc(lang)}">${esc(code)}</code></pre></div>`
     }
 
     case 'quote': {
@@ -292,7 +328,7 @@ function renderModule(mod: Module, files?: ExportFile[]): string {
 
 // ── Slide Rendering ─────────────────────────────────────────────────
 
-function renderSlide(slide: Slide, index: number, files?: ExportFile[]): string {
+function renderSlide(slide: Slide, index: number, files?: ExportFile[], opts?: RenderOptions): string {
   const layout = slide.layout || 'layout-content'
   const modules = [...slide.modules].sort((a, b) => a.order - b.order)
   const title = modules.find(m => m.type === 'heading')
@@ -303,8 +339,8 @@ function renderSlide(slide: Slide, index: number, files?: ExportFile[]): string 
   if (layout === 'layout-split') {
     const contentMods = modules.filter(m => m.zone === 'content')
     const stageMods = modules.filter(m => m.zone === 'stage')
-    const contentHtml = contentMods.map(m => renderModule(m, files)).join('\n      ')
-    const stageHtml = stageMods.map(m => renderModule(m, files)).join('\n      ')
+    const contentHtml = contentMods.map(m => renderModule(m, files, opts)).join('\n      ')
+    const stageHtml = stageMods.map(m => renderModule(m, files, opts)).join('\n      ')
 
     return `  <div ${attrs}>
     <div class="content">
@@ -317,7 +353,7 @@ function renderSlide(slide: Slide, index: number, files?: ExportFile[]): string 
   }
 
   // All other layouts: render modules in order (ignore zone distinction)
-  const body = modules.map(m => renderModule(m, files)).join('\n    ')
+  const body = modules.map(m => renderModule(m, files, opts)).join('\n    ')
   return `  <div ${attrs}>
     ${body}
   </div>`
@@ -330,9 +366,10 @@ export function renderDeckHtml(
   slideList: Slide[],
   theme: any,
   files?: ExportFile[],
+  opts?: RenderOptions,
 ): string {
   const sorted = [...slideList].sort((a, b) => a.order - b.order)
-  const slidesHtml = sorted.map((s, i) => renderSlide(s, i, files)).join('\n\n')
+  const slidesHtml = sorted.map((s, i) => renderSlide(s, i, files, opts)).join('\n\n')
   const slideCount = sorted.length
   const title = esc(deckName)
 
@@ -366,7 +403,7 @@ export function renderDeckHtml(
   const isDarkBg = lum(bg) < 128
   const isDarkPrimary = lum(primary) < 128
   const text = isDarkBg ? '#f0f0f0' : '#1a1a2e'
-  const textMuted = isDarkBg ? 'rgba(240,240,240,0.80)' : 'rgba(26,26,46,0.75)'
+  const textMuted = isDarkBg ? 'rgba(240,240,240,0.65)' : 'rgba(26,26,46,0.65)'
   const primaryText = isDarkPrimary ? '#ffffff' : '#1a1a2e'
   const cardBg = isDarkBg ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)'
   const border = isDarkBg ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.08)'
@@ -415,6 +452,10 @@ export function renderDeckHtml(
   // Include fonts from theme
   const fontUrl = `https://fonts.googleapis.com/css2?family=${encodeURIComponent(bodyFont)}:wght@400;500;600;700&family=${encodeURIComponent(headingFont)}:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap`
 
+  const engineScripts = opts?.externalJs
+    ? '<script src="js/engine.js"></script>'
+    : `<script>\n${NAVIGATION_JS}\n  </script>\n  <script>\n${CAROUSEL_JS}\n  </script>`
+
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -429,23 +470,20 @@ export function renderDeckHtml(
   <a href="#deck" class="skip-link">Skip to slides</a>
   <div aria-live="polite" class="sr-only" id="announcer"></div>
 
-  <div id="deck" tabindex="-1" role="region" aria-label="${title}">
+  <div id="deck">
 ${slidesHtml}
   </div>
 
   <nav id="nav-bar">
     <button id="prev-btn" aria-label="Previous">&larr;</button>
-    <input type="range" id="scrubber" min="0" max="${slideCount - 1}" value="0" aria-label="Slide position" aria-valuetext="Slide 1 of ${slideCount}">
+    <input type="range" id="scrubber" min="0" max="${slideCount - 1}" value="0" aria-label="Slide progress">
     <span id="slide-counter">1 / ${slideCount}</span>
     <button id="next-btn" aria-label="Next">&rarr;</button>
   </nav>
 
-  <script>
-${NAVIGATION_JS}
-  </script>
-  <script>
-${CAROUSEL_JS}
-  </script>
+  ${engineScripts}
 </body>
 </html>`
 }
+
+export { renderModule }

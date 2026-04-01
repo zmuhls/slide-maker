@@ -12,15 +12,26 @@
   let rightWidth = $state(260)
   let leftCollapsed = $state(false)
   let rightCollapsed = $state(false)
+  let chatCollapsed = $state(false)
+  let outlineCollapsed = $state(false)
+
+  function collapseChat() {
+    if (!outlineCollapsed) chatCollapsed = true
+  }
+  function collapseOutline() {
+    if (!chatCollapsed) outlineCollapsed = true
+  }
   let draggingLeft = $state(false)
   let draggingRight = $state(false)
 
   // Canvas mode — bound to SlideCanvas
-  let canvasMode = $state<'edit' | 'view'>('view')
+  let canvasMode = $state<'edit' | 'view'>('edit')
 
   // Saved panel state for view/edit toggle
   let savedLeft = false
   let savedRight = false
+  let savedChat = false
+  let savedOutline = false
 
   // Only react to canvasMode changes, not panel state
   $effect(() => {
@@ -29,11 +40,15 @@
       if (mode === 'view') {
         savedLeft = leftCollapsed
         savedRight = rightCollapsed
+        savedChat = chatCollapsed
+        savedOutline = outlineCollapsed
         leftCollapsed = true
         rightCollapsed = true
       } else {
         leftCollapsed = savedLeft
         rightCollapsed = savedRight
+        chatCollapsed = savedChat
+        outlineCollapsed = savedOutline
       }
     })
   })
@@ -78,62 +93,121 @@
     window.addEventListener('mousemove', onMove)
     window.addEventListener('mouseup', onUp)
   }
+
+  // Ensure slides (center) remain visible on narrow viewports
+  // Auto-collapse side panels below a breakpoint and restore above
+  const NARROW_BP = 1024
+  function handleResize() {
+    const narrow = window.innerWidth < NARROW_BP
+    if (narrow) {
+      leftCollapsed = true
+      rightCollapsed = true
+    } else {
+      // restore previously saved states when exiting narrow mode
+      leftCollapsed = savedLeft
+      rightCollapsed = savedRight
+    }
+  }
+
+  $effect(() => {
+    handleResize()
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  })
+
+
 </script>
 
-<div class="editor-wrapper">
-<div class="editor-shell" class:resizing={draggingLeft || draggingRight}>
-  {#if !leftCollapsed}
-    <div class="left-panel" style:width="{leftWidth}px" style:min-width="{leftWidth}px" role="complementary" aria-label="Chat and outline">
-      <div class="chat-section">
-        <ChatPanel />
-      </div>
-      <div class="outline-section">
-        <SlideOutline />
-      </div>
-    </div>
-    <div class="resize-handle left-handle" onmousedown={startLeftResize}>
-      <div class="handle-line"></div>
-    </div>
-  {/if}
+{#snippet collapseIcon()}
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 14 10 14 10 20"></polyline><polyline points="20 10 14 10 14 4"></polyline><line x1="14" y1="10" x2="21" y2="3"></line><line x1="3" y1="21" x2="10" y2="14"></line></svg>
+{/snippet}
 
-  <button class="collapse-btn left-collapse" onclick={() => { if (canvasMode === 'view') { canvasMode = 'edit' } else { leftCollapsed = !leftCollapsed } }} title={leftCollapsed ? 'Show panels & edit' : 'Hide left panel'}>
-    {leftCollapsed ? '▶' : '◀'}
-  </button>
+{#snippet expandIcon()}
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 3 21 3 21 9"></polyline><polyline points="9 21 3 21 3 15"></polyline><line x1="21" y1="3" x2="14" y2="10"></line><line x1="3" y1="21" x2="10" y2="14"></line></svg>
+{/snippet}
 
-  <div class="center-panel" role="main" aria-label="Slide editor">
-    <SlideCanvas {editable} bind:canvasMode />
+<div class="editor-outer">
+  <div class="editor-wrapper">
+    {#if !leftCollapsed}
+      <div class="left-panel" style:width="{leftWidth}px" style:min-width="{leftWidth}px">
+        <div class="app-title-bar">
+          <span class="brand-slide">Slide</span> <span class="brand-wiz">Wiz</span>
+          <a href="https://ailab.gc.cuny.edu" target="_blank" rel="noopener" class="title-logo-link">
+            <img src="{base}/cuny-ai-lab-logo.png" alt="CUNY AI Lab" class="title-logo" />
+          </a>
+        </div>
+        {#if !chatCollapsed && !outlineCollapsed}
+          <div class="chat-section">
+            <ChatPanel onCollapse={collapseChat} />
+          </div>
+          <div class="outline-section">
+            <SlideOutline onCollapse={collapseOutline} />
+          </div>
+        {:else if chatCollapsed}
+          <div class="collapsed-tab top">
+            <button class="tab-restore" onclick={() => chatCollapsed = false} title="Expand chat" aria-label="Expand chat">
+              {@render expandIcon()}
+              <span>Chat</span>
+            </button>
+          </div>
+          <div class="outline-section full">
+            <SlideOutline onCollapse={collapseOutline} />
+          </div>
+        {:else if outlineCollapsed}
+          <div class="chat-section full">
+            <ChatPanel onCollapse={collapseChat} />
+          </div>
+          <div class="collapsed-tab bottom">
+            <button class="tab-restore" onclick={() => outlineCollapsed = false} title="Expand outline" aria-label="Expand outline">
+              {@render expandIcon()}
+              <span>Slides</span>
+            </button>
+          </div>
+        {/if}
+      </div>
+      <div class="resize-handle left-handle" onmousedown={startLeftResize}>
+        <div class="handle-line"></div>
+      </div>
+    {/if}
+
+    <div class="editor-shell" class:resizing={draggingLeft || draggingRight}>
+      <button class="collapse-btn left-collapse" onclick={() => { if (canvasMode === 'view') { canvasMode = 'edit' } else { leftCollapsed = !leftCollapsed } }} title={leftCollapsed ? 'Show panels & edit' : 'Hide left panel'}>
+        {leftCollapsed ? '▶' : '◀'}
+      </button>
+
+      <div class="center-panel">
+        <SlideCanvas {editable} bind:canvasMode />
+      </div>
+
+      <button class="collapse-btn right-collapse" onclick={() => { if (canvasMode === 'view') { canvasMode = 'edit' } else { rightCollapsed = !rightCollapsed } }} title={rightCollapsed ? 'Show panels & edit' : 'Hide right panel'}>
+        {rightCollapsed ? '◀' : '▶'}
+      </button>
+    </div>
+
+    {#if !rightCollapsed}
+      <div class="resize-handle right-handle" onmousedown={startRightResize}>
+        <div class="handle-line"></div>
+      </div>
+      <div class="right-panel" style:width="{rightWidth}px" style:min-width="{rightWidth}px">
+        <ResourcePanel />
+      </div>
+    {/if}
   </div>
 
-  <button class="collapse-btn right-collapse" onclick={() => { if (canvasMode === 'view') { canvasMode = 'edit' } else { rightCollapsed = !rightCollapsed } }} title={rightCollapsed ? 'Show panels & edit' : 'Hide right panel'}>
-    {rightCollapsed ? '◀' : '▶'}
-  </button>
-
-  {#if !rightCollapsed}
-    <div class="resize-handle right-handle" onmousedown={startRightResize}>
-      <div class="handle-line"></div>
-    </div>
-    <div class="right-panel" style:width="{rightWidth}px" style:min-width="{rightWidth}px" role="complementary" aria-label="Resources">
-      <ResourcePanel />
-    </div>
-  {/if}
-</div>
-<footer class="app-footer">
-  <div class="footer-divider"></div>
-  <div class="footer-content">
-    <div class="footer-left">
-      <img src="{base}/cuny-ai-lab-logo.png" alt="CUNY AI Lab" class="footer-logo" />
-      <a href="https://tools.ailab.gc.cuny.edu" target="_blank" rel="noopener" class="footer-link">tools.ailab.gc.cuny.edu</a>
-    </div>
-    <a href="https://ailab.gc.cuny.edu" target="_blank" rel="noopener" class="footer-link-main">ailab.gc.cuny.edu</a>
-  </div>
-</footer>
+  <footer class="app-footer"></footer>
 </div>
 
 <style>
-  .editor-wrapper {
+  .editor-outer {
     display: flex;
     flex-direction: column;
     height: 100vh;
+  }
+
+  .editor-wrapper {
+    display: flex;
+    flex: 1;
+    min-height: 0;
   }
 
   .editor-shell {
@@ -141,6 +215,7 @@
     flex: 1;
     overflow: hidden;
     position: relative;
+    min-width: 0;
   }
 
   .editor-shell.resizing {
@@ -154,20 +229,108 @@
     flex-direction: column;
     background: var(--color-bg);
     overflow: hidden;
+    flex-shrink: 0;
+  }
+
+  .app-title-bar {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 6px 12px;
+    border-bottom: 1px solid var(--color-border);
+    flex-shrink: 0;
+    min-height: 38px;
+    font-family: var(--font-display);
+    font-size: 18px;
+    font-weight: 700;
+  }
+
+  .brand-slide {
+    color: #1a1a2e;
+  }
+
+  .brand-wiz {
+    color: #5a8fd4;
+  }
+
+  .title-logo-link {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    opacity: 0.55;
+    transition: opacity 0.15s;
+  }
+
+  .title-logo-link:hover {
+    opacity: 1;
+  }
+
+  .title-logo {
+    height: 26px;
+    width: auto;
+    object-fit: contain;
   }
 
   .chat-section {
-    flex: 1;
+    flex: 3;
     display: flex;
     flex-direction: column;
-    border-bottom: 2px solid var(--color-border);
     min-height: 0;
+    overflow: hidden;
+  }
+
+  .chat-section.full {
+    flex: 1;
+    height: 0;
   }
 
   .outline-section {
-    height: 260px;
-    min-height: 200px;
+    flex: 1;
+    min-height: 120px;
     overflow-y: auto;
+    border-top: 1px solid var(--color-border);
+  }
+
+  .outline-section.full {
+    flex: 1;
+    height: 0;
+    min-height: 0;
+    border-top: none;
+    overflow-y: hidden;
+  }
+
+  .collapsed-tab {
+    flex-shrink: 0;
+  }
+
+  .collapsed-tab.top {
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .collapsed-tab.bottom {
+    border-top: 1px solid var(--color-border);
+  }
+
+  .tab-restore {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    width: 100%;
+    padding: 8px 10px;
+    background: transparent;
+    border: none;
+    color: var(--color-text-muted);
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    transition: color 0.15s, background 0.15s;
+  }
+
+  .tab-restore:hover {
+    color: var(--color-primary);
+    background: var(--color-ghost-bg);
   }
 
   .center-panel {
@@ -264,58 +427,18 @@
   /* App footer */
   .app-footer {
     flex-shrink: 0;
-    padding: 0 28px 12px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     background: var(--color-bg);
+    border-top: 1px solid var(--color-border);
   }
 
-  .footer-divider {
-    height: 1px;
-    background: var(--color-border, #e5e7eb);
-    opacity: 0.3;
-    margin-bottom: 10px;
-  }
 
-  .footer-content {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-  }
-
-  .footer-left {
-    display: flex;
-    align-items: center;
-    gap: 24px;
-  }
-
-  .footer-logo {
-    width: 36px;
-    height: 36px;
-    object-fit: contain;
-    flex-shrink: 0;
-  }
-
-  .footer-link {
-    font-size: 13px;
-    color: var(--color-text-muted, #9ca3af);
-    text-decoration: none;
-    transition: color 0.15s;
-  }
-
-  .footer-link:hover {
-    color: var(--color-primary, #3B73E6);
-  }
-
-  .footer-link-main {
-    font-size: 14px;
-    font-weight: 600;
-    color: var(--color-text-muted, #6b7280);
-    text-decoration: none;
-    letter-spacing: 0.02em;
-    transition: color 0.15s;
-  }
-
-  .footer-link-main:hover {
-    color: var(--color-primary, #3B73E6);
+  /* Smooth section transitions */
+  .chat-section, .outline-section, .collapsed-tab {
+    transition: flex 0.2s ease, height 0.2s ease;
   }
 
   /* Responsive: auto-collapse panels on narrow viewports */
@@ -325,6 +448,9 @@
     }
     .right-panel {
       max-width: 220px;
+    }
+    .outline-section:not(.full) {
+      min-height: 100px;
     }
   }
 

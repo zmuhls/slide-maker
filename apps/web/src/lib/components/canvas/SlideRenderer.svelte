@@ -1,7 +1,8 @@
 <script lang="ts">
   import ZoneDrop from './ZoneDrop.svelte'
   import SplitHandle from './SplitHandle.svelte'
-  import { currentDeck, updateSlideInDeck } from '$lib/stores/deck'
+import { currentDeck, updateSlideInDeck } from '$lib/stores/deck'
+import { applyMutation } from '$lib/utils/mutations'
   import { get } from 'svelte/store'
   import type { Editor } from '@tiptap/core'
   import { API_URL } from '$lib/api'
@@ -38,27 +39,23 @@
   })
 
   let sorted = $derived([...slide.blocks].sort((a, b) => a.order - b.order))
-  let heroModules = $derived(sorted.filter((m) => m.zone === 'hero'))
-  let contentModules = $derived(sorted.filter((m) => m.zone === 'content'))
-  let stageModules = $derived(sorted.filter((m) => m.zone === 'stage'))
-  let mainModules = $derived(sorted.filter((m) => m.zone === 'main'))
-
   let layoutType = $derived(slide.layout ?? 'layout-content')
 
-  // Modules whose zone doesn't match any rendered zone for this layout
-  let orphanModules = $derived.by(() => {
-    const layout = layoutType
-    const renderedZones = new Set<string>()
-    if (layout === 'title-slide' || layout === 'layout-divider' || layout === 'closing-slide') {
-      renderedZones.add('hero')
-    } else if (layout === 'layout-split') {
-      renderedZones.add('content')
-      renderedZones.add('stage')
-    } else {
-      renderedZones.add('main')
-    }
-    return sorted.filter((m) => !renderedZones.has(m.zone))
-  })
+  // For split layouts, filter by zone. For single-zone layouts, render ALL modules
+  // regardless of zone (matches export behavior — prevents modules from disappearing
+  // when inserted with a mismatched zone like 'stage' on a title-slide).
+  let heroModules = $derived(
+    ['title-slide', 'layout-divider', 'closing-slide'].includes(layoutType)
+      ? sorted
+      : sorted.filter((m) => m.zone === 'hero')
+  )
+  let contentModules = $derived(sorted.filter((m) => m.zone === 'content'))
+  let stageModules = $derived(sorted.filter((m) => m.zone === 'stage'))
+  let mainModules = $derived(
+    ['layout-content', 'layout-grid', 'layout-full-dark'].includes(layoutType)
+      ? sorted
+      : sorted.filter((m) => m.zone === 'main')
+  )
 
   // Branding from deck metadata
   let branding = $derived.by(() => {
@@ -70,24 +67,9 @@
     return b
   })
 
-  function handleReorder(zone: string, items: Module[]) {
-    const reordered = items.map((item, i) => ({ ...item, order: i, zone }))
-    updateSlideInDeck(slide.id, (s) => ({
-      ...s,
-      blocks: [
-        ...s.blocks.filter((b) => b.zone !== zone),
-        ...reordered,
-      ] as typeof s.blocks,
-    }))
-    // Persist order to API
-    for (const item of reordered) {
-      fetch(`${API_URL}/api/decks/${slide.deckId}/slides/${slide.id}/blocks/${item.id}`, {
-        method: 'PATCH',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ order: item.order }),
-      }).catch(console.error)
-    }
+  async function handleReorder(zone: string, items: Module[]) {
+    const order = items.map((m) => m.id)
+    await applyMutation({ action: 'reorderBlocks', payload: { slideId: slide.id, zone, order } })
   }
 
   function handleModuleDataChange(moduleId: string, newData: Record<string, unknown>) {
@@ -105,30 +87,18 @@
     }).catch(console.error)
   }
 
-  function handleModuleStepChange(moduleId: string, stepOrder: number | null) {
-    updateSlideInDeck(slide.id, (s) => ({
-      ...s,
-      blocks: s.blocks.map((b) =>
-        b.id === moduleId ? { ...b, stepOrder } : b
-      ),
-    }))
-    fetch(`${API_URL}/api/decks/${slide.deckId}/slides/${slide.id}/blocks/${moduleId}`, {
-      method: 'PATCH',
-      credentials: 'include',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ stepOrder }),
-    }).catch(console.error)
+  async function handleModuleStepChange(moduleId: string, stepOrder: number | null) {
+    // Harden: clamp step values to a safe range [0, 8]
+    const MAX_STEP = 8
+    const normalized = stepOrder == null ? null : Math.max(0, Math.min(MAX_STEP, Number(stepOrder)))
+    await applyMutation({
+      action: 'updateBlockStep',
+      payload: { slideId: slide.id, blockId: moduleId, stepOrder: normalized },
+    })
   }
 
-  function handleModuleDelete(moduleId: string) {
-    updateSlideInDeck(slide.id, (s) => ({
-      ...s,
-      blocks: s.blocks.filter((b) => b.id !== moduleId),
-    }))
-    fetch(`${API_URL}/api/decks/${slide.deckId}/slides/${slide.id}/blocks/${moduleId}`, {
-      method: 'DELETE',
-      credentials: 'include',
-    }).catch(console.error)
+  async function handleModuleDelete(moduleId: string) {
+    await applyMutation({ action: 'removeBlock', payload: { slideId: slide.id, blockId: moduleId } })
   }
 
   function handleRatioChange(newRatio: number) {
@@ -217,34 +187,19 @@
       />
     </div>
   {/if}
-  {#if editable && orphanModules.length > 0}
-    <div class="orphan-zone">
-      <div class="orphan-label">Wrong zone for this layout — move or delete:</div>
-      <ZoneDrop
-        modules={orphanModules}
-        zone={orphanModules[0]?.zone ?? 'main'}
-        {editable}
-        deckId={slide.deckId}
-        slideId={slide.id}
-        onReorder={handleReorder}
-        onModuleDataChange={handleModuleDataChange}
-        onModuleDelete={handleModuleDelete}
-        onModuleStepChange={handleModuleStepChange}
-        {onEditorReady}
-      />
-    </div>
-  {/if}
 </div>
 
 <style>
   .slide {
     width: 100%;
-    min-height: 100%;
+    height: 100%;
     display: flex;
     flex-direction: column;
+    overflow: auto;
     font-family: var(--font-body);
     box-sizing: border-box;
     position: relative;
+    container-type: inline-size;
   }
 
   /* ── Padding: scaled for the ~700px edit canvas ── */
@@ -255,7 +210,7 @@
   .slide[data-layout="layout-content"],
   .slide[data-layout="layout-grid"],
   .slide[data-layout="layout-full-dark"] {
-    padding: clamp(1rem, 3vw, 32px) clamp(1.25rem, 4vw, 40px);
+    padding: clamp(1rem, 3cqi, 32px) clamp(1.25rem, 4cqi, 40px);
   }
 
   /* ── Zone containers ── */
@@ -264,18 +219,16 @@
     display: flex;
     flex-direction: column;
     align-items: center;
+    justify-content: center;
     text-align: center;
-    gap: clamp(1rem, 2.5vw, 2rem);
-    /* Use auto margins to center when content fits, but align top when it overflows (scrollable) */
-    justify-content: flex-start;
-    padding-top: clamp(1rem, 3vw, 3rem);
+    gap: clamp(1rem, 2.5cqi, 2rem);
   }
 
   .zone-split {
     flex: 1;
     display: flex;
     flex-direction: row;
-    gap: clamp(0.75rem, 2vw, 20px);
+    gap: clamp(0.75rem, 2cqi, 20px);
     position: relative;
     min-height: 0;
     align-items: stretch;
@@ -305,25 +258,8 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: flex-start;
-    gap: clamp(1rem, 2vw, 24px);
-    padding-top: clamp(0.5rem, 2vw, 2rem);
-  }
-
-  /* ── Orphan modules (wrong zone) ── */
-  .orphan-zone {
-    border-top: 2px dashed rgba(248, 113, 113, 0.4);
-    padding: clamp(0.5rem, 1.5vw, 1rem) clamp(1rem, 3vw, 2rem);
-    background: rgba(248, 113, 113, 0.05);
-  }
-  .orphan-label {
-    font-size: 0.7rem;
-    color: #f87171;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-    margin-bottom: 8px;
-    text-align: center;
+    justify-content: center;
+    gap: clamp(1rem, 2cqi, 24px);
   }
 
   /* ── Branding logo ── */
@@ -334,8 +270,9 @@
     max-height: 40px;
     object-fit: contain;
     opacity: 0.85;
+    pointer-events: none; /* don't block interactions or selection */
   }
-  .branding-logo.top-left { top: 8px; left: 12px; }
-  .branding-logo.top-right { top: 8px; right: 12px; }
-  .branding-logo.bottom-left { bottom: 8px; left: 12px; }
+  .branding-logo.top-left { top: 10px; left: 14px; }
+  .branding-logo.top-right { top: 10px; right: 14px; }
+  .branding-logo.bottom-left { bottom: 12px; left: 14px; }
 </style>

@@ -3,6 +3,7 @@
   import { currentDeck } from '$lib/stores/deck'
   import { api } from '$lib/api'
   import { get } from 'svelte/store'
+  import { activeSlideId } from '$lib/stores/ui'
 
   interface Props {
     onsend: (text: string) => void
@@ -25,6 +26,18 @@
   })
 
   let showAddMenu = $derived(text.trim() === '/add')
+  let hasSlides = $derived(!!$currentDeck && ($currentDeck.slides?.length ?? 0) > 0)
+  let placeholderText = $derived.by(() => {
+    if (!hasSlides) return 'Describe your first slide — AI will create it'
+    return $activeSlideId ? 'Ask AI to edit slides + resources' : 'Select a slide to enable AI edits (or type /search)'
+  })
+  let canSend = $derived.by(() => {
+    const trimmed = text.trim()
+    if (!trimmed || $chatStreaming || uploading) return false
+    if (trimmed.startsWith('/search ')) return true
+    // Allow creation when the deck has no slides yet; otherwise require an active slide
+    return !hasSlides || !!$activeSlideId
+  })
 
   const moduleShortcuts = [
     { type: 'heading', label: 'Heading' },
@@ -49,6 +62,8 @@
   function handleSubmit() {
     const trimmed = text.trim()
     if (!trimmed || $chatStreaming) return
+    // Allow /search without an active slide; allow normal prompts if deck is empty
+    if (!trimmed.startsWith('/search ') && hasSlides && !$activeSlideId) return
     onsend(trimmed)
     text = ''
   }
@@ -119,17 +134,21 @@
   <textarea
     bind:this={textarea}
     bind:value={text}
-    placeholder="Ask AI, /add module, /search images..."
+    placeholder={placeholderText}
     onkeydown={handleKeydown}
     disabled={$chatStreaming || uploading}
     rows={2}
-    aria-label="Message to AI assistant"
   ></textarea>
-  <button onclick={handleSubmit} disabled={$chatStreaming || uploading || !text.trim()} aria-label="Send message">
+  <button
+    class="send-btn"
+    onclick={handleSubmit}
+    disabled={!canSend}
+    title={canSend ? 'Send (Enter)' : ($activeSlideId ? 'Type a message' : 'Select a slide first (or use /search)')}
+  >
     {#if $chatStreaming || uploading}
       <span class="spinner"></span>
     {:else}
-      Send
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
     {/if}
   </button>
 </div>
@@ -138,7 +157,7 @@
   .chat-input {
     display: flex;
     gap: 6px;
-    padding: 8px;
+    padding: 10px;
     border-top: 1px solid var(--color-border);
     background: var(--color-bg);
     position: relative;
@@ -146,7 +165,7 @@
 
   .chat-input.drag-over {
     border-color: var(--color-primary);
-    background: rgba(59, 115, 230, 0.05);
+    background: rgba(59, 115, 230, 0.04);
   }
 
   .drop-overlay {
@@ -155,10 +174,10 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    background: rgba(59, 115, 230, 0.1);
+    background: rgba(59, 115, 230, 0.08);
     border: 2px dashed var(--color-primary);
     border-radius: 4px;
-    font-size: 13px;
+    font-size: 12px;
     font-weight: 600;
     color: var(--color-primary);
     z-index: 5;
@@ -168,15 +187,16 @@
   textarea {
     flex: 1;
     resize: none;
-    padding: 6px 8px;
-    font-size: 14px;
+    padding: 10px 12px;
+    font-size: 12px;
     font-family: inherit;
     border: 1px solid var(--color-border);
-    border-radius: 4px;
+    border-radius: var(--radius-sm);
     background: var(--color-bg);
     color: var(--color-text);
     outline: none;
     line-height: 1.4;
+    transition: border-color 0.15s;
   }
 
   textarea:focus {
@@ -187,28 +207,28 @@
     opacity: 0.5;
   }
 
-  button {
-    padding: 6px 14px;
-    font-size: 14px;
-    font-weight: 500;
-    border: 1px solid var(--color-primary);
+  .send-btn {
+    padding: 0 12px;
+    border: 1px solid transparent;
     border-radius: var(--radius-sm);
     background: transparent;
-    color: var(--color-primary);
+    color: var(--color-text-secondary);
     cursor: pointer;
-    align-self: flex-end;
-    min-width: 48px;
-    display: flex;
+    align-self: stretch;
+    min-width: 40px;
+    display: inline-flex;
     align-items: center;
     justify-content: center;
-    transition: background 0.15s;
+    transition: background 0.15s, color 0.15s, border-color 0.15s;
   }
 
-  button:hover:not(:disabled) {
+  .send-btn:hover:not(:disabled) {
     background: var(--color-ghost-bg);
+    color: var(--color-primary);
+    border-color: var(--color-primary);
   }
 
-  button:disabled {
+  .send-btn:disabled {
     opacity: 0.5;
     cursor: not-allowed;
   }
@@ -232,23 +252,23 @@
   .add-menu {
     position: absolute;
     bottom: 100%;
-    left: 8px;
-    right: 8px;
+    left: 10px;
+    right: 10px;
     margin-bottom: 4px;
-    background: var(--color-bg, #1e1e2e);
+    background: var(--color-bg);
     border: 1px solid var(--color-border);
-    border-radius: 6px;
+    border-radius: var(--radius-sm);
     padding: 4px;
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 2px;
     z-index: 10;
-    box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.08);
   }
 
   .add-menu-item {
     padding: 6px 8px;
-    font-size: 13px;
+    font-size: 12px;
     text-align: left;
     background: transparent;
     border: none;
@@ -256,10 +276,11 @@
     color: var(--color-text);
     cursor: pointer;
     white-space: nowrap;
+    transition: background 0.15s, color 0.15s;
   }
 
   .add-menu-item:hover {
-    background: rgba(59, 115, 230, 0.15);
-    color: var(--color-primary, #3b73e6);
+    background: var(--color-ghost-bg);
+    color: var(--color-primary);
   }
 </style>

@@ -66,8 +66,8 @@ Matching the CUNY AI Lab deck framework:
 - `layout-divider` — Section break. Zone: `hero` (centered)
 - `closing-slide` — Final slide. Zone: `hero` (centered)
 
-### Module Types (13 types)
-Do NOT invent new ones. Each module MUST specify a `zone` matching the layout. The API validates `type` against a whitelist — invalid types return 400.
+### Module Types (12 types)
+Do NOT invent new ones. Each module MUST specify a `zone` matching the layout.
 
 | Module | Data Shape | Use |
 |--------|-----------|-----|
@@ -87,9 +87,6 @@ Do NOT invent new ones. Each module MUST specify a `zone` matching the layout. T
 
 Renderers: `apps/web/src/lib/components/renderers/`. Dispatched by `ModuleRenderer.svelte`.
 Artifact config utilities: `apps/web/src/lib/utils/artifact-config.ts` (resolves defaults, builds `@artifact:` chat refs).
-
-### Zone Mismatch Handling
-Modules placed in the wrong zone for a layout (e.g., `zone: "stage"` on a `title-slide`) are invisible in the rendered slide. The editor shows these as "orphan modules" in a red-dashed section at the bottom with a warning. The ArtifactsTab auto-detects the correct zone based on the active slide's layout when inserting. The ModulePicker always uses the zone of the ZoneDrop it was opened from.
 
 ### Zone Model
 Modules flow vertically within zones. No absolute x/y positioning.
@@ -198,7 +195,7 @@ Push schema changes: `pnpm db:push` (runs `drizzle-kit push` from `apps/api/`).
 - Email/password with `*.cuny.edu` domain gating
 - Registration → email verification → admin approval → login
 - Lucia v3 sessions (HTTP-only cookies)
-- Admins: Stefano Morello (smorello@gc.cuny.edu), Zach Muhlbauer (zmuhlbauer@gc.cuny.edu), Stephen Zweibel (szweibel@gc.cuny.edu)
+- Admins: Stefano Morello (smorello@gc.cuny.edu), Zach Muhlbauer (zmuhlbauer@gc.cuny.edu)
 
 ## Admin Dashboard
 
@@ -215,17 +212,9 @@ Full admin panel at `/admin` with:
 
 - **Dev:** `pnpm dev` (localhost:5173 + localhost:3001)
 - **Staging:** `tools.cuny.qzz.io/slide-maker` — Debian server (Tailscale IP 100.111.252.53), Nginx reverse proxy, PM2 processes (`slide-maker-api` on port 3004, `slide-maker-web` on port 4173)
-- **Deploy via SSH:** `sshpass -p '<password>' ssh smorello.adm@gc.cuny.edu@100.111.252.53 "echo '<password>' | sudo -S bash -c 'cd /data/slide-maker && git pull && pnpm install && pnpm build && pm2 restart slide-maker-api slide-maker-web'"`
-- **Deploy script:** `./deploy-staging.sh` (alternative, requires Tailscale/CUNY VPN)
-- **Nginx config:** `/etc/nginx/sites-enabled/alt-text.conf` — slide-maker routes at bottom of server block
-
-### CRITICAL: Staging Build Rules
-
-1. **NEVER set `PUBLIC_URL` to include `/slide-maker`** during build. The `.env` on the server has `PUBLIC_URL=https://tools.cuny.qzz.io` (no path). Nginx strips `/slide-maker/` before proxying to vite preview at `localhost:4173/`, so the build must NOT have a SvelteKit base path. If you set `PUBLIC_URL=.../slide-maker`, vite preview will expect `/slide-maker/` prefix but nginx already stripped it → 404 on all assets.
-2. **NEVER delete `apps/web/.svelte-kit` without also clearing `.turbo`, `apps/web/.turbo`, `apps/api/.turbo`** — Turborepo will replay a cached build that references old file hashes → 404 on JS/CSS chunks.
-3. **To force a clean rebuild:** `rm -rf apps/web/.svelte-kit .turbo apps/web/.turbo apps/api/.turbo && pnpm build`
-4. **`better-sqlite3` Node version mismatch:** If the server's Node version changes, `better-sqlite3` native module must be rebuilt: `rm -rf node_modules/.pnpm/better-sqlite3@* && pnpm install`. Without this, the API crash-loops with `ERR_DLOPEN_FAILED`.
-5. **Admin seeding:** `ADMIN_SEED_PASSWORD="Gremlins2025!" pnpm seed:admin` — seeds all admin accounts listed in `apps/api/src/db/seed.ts`.
+- **Deploy:** `./deploy-staging.sh` from a machine on Tailscale/CUNY VPN. GitHub Actions can't reach the server (Tailscale-only IP).
+- **Server deploy script:** `/data/slide-maker/deploy.sh` — git pull, pnpm install, build, db push, seed, pm2 restart
+- **Nginx config:** Added to `/etc/nginx/sites-enabled/alt-text.conf` on the server (slide-maker routes at bottom of server block)
 
 ## Docs
 
@@ -251,26 +240,18 @@ Full admin panel at `/admin` with:
 - sanitize-html on API export renderer
 - CSRF middleware on API (`hono/csrf`)
 - Body limit: 11MB for file upload routes, 2MB for everything else
-- Artifact iframes use `sandbox="allow-scripts"` only (NO `allow-same-origin` — that negates the sandbox)
-- SSRF protection on image download: HTTPS-only, private/reserved IP ranges blocked
-- Block type validated against whitelist on creation (13 allowed types)
-- Slide insertion wrapped in DB transaction to prevent order race conditions
-- Chat history capped at 30 messages sent to LLM (prevents context window overflow and token cap bypass)
-- Token estimation includes full chat history length (not just current message)
 - Rate limiting via `rate-limiter-flexible` (`apps/api/src/middleware/rate-limit.ts`):
   - Login: 5 attempts per 15 minutes
   - Registration: 3 per hour
   - Chat: 30 messages per minute
-  - Presence/lock heartbeat: 30 per minute
-- All resource endpoints (templates, themes, artifacts, providers) require authentication
 - Admin role check is client-side only (server-side guard removed — it broke on staging due to SvelteKit server not proxying to API)
 - Block ownership verification on CRUD endpoints
-- Export path traversal guard (handles both absolute and relative file paths, uses `fileId+ext` for asset names)
+- Export path traversal guard (`path.basename()`)
 - Link URL validation (https only)
 - Content filtering on web search (blocked domains)
 - Security audit: `docs/security-audit-2026-03-28.md`
 
-**Do not revert security changes in:** `decks.ts`, `files.ts`, `chat.ts`, `auth.ts`, `index.ts`, `export/index.ts`, `export/html-renderer.ts`, `lucia.ts`, `search.ts`, `sharing.ts`, `resources.ts`, `providers.ts`
+**Do not revert security changes in:** `decks.ts`, `files.ts`, `chat.ts`, `auth.ts`, `index.ts`, `export/index.ts`, `export/html-renderer.ts`, `lucia.ts`
 
 ### UI Design System
 Editor chrome uses CSS custom properties defined in `apps/web/src/app.css`. Key tokens:
@@ -290,14 +271,13 @@ Vitest at root level. Config: `vitest.config.ts`. Tests: `tests/**/*.test.ts`.
 
 Tests import directly from `packages/shared/src/` and `apps/web/src/lib/utils/`. SvelteKit aliases (`$lib/`) don't resolve in vitest — test only pure TS utilities, not Svelte components.
 
-## Resources API (all require auth)
+## Resources API
 
 - `GET /api/templates` — all seeded slide templates
 - `GET /api/themes` — all themes (built-in + user-created)
-- `POST /api/themes` — create custom theme (validates hex colors and font names to prevent CSS injection)
+- `POST /api/themes` — create custom theme (auth required, validates hex colors and font names to prevent CSS injection)
 - `DELETE /api/themes/:id` — delete custom theme (owner only, not built-in)
 - `GET /api/artifacts` — all artifact definitions
-- `GET /api/providers` — available AI model providers
 
 ## Known Issues / Tech Debt
 
@@ -310,7 +290,8 @@ Tests import directly from `packages/shared/src/` and `apps/web/src/lib/utils/`.
 - `adapter-auto` warning on build — could switch to `adapter-node` for production.
 - Email verification (SMTP) not configured on staging — admin must manually approve users.
 - `.env` symlink (`apps/api/.env -> ../../.env`) must exist or the API won't load any API keys. If chat shows "No models available", recreate the symlink and restart `pnpm dev`.
-- Theme CSS generation is duplicated across `slide-html.ts`, `html-renderer.ts`, and `SlideCanvas.svelte` with subtle differences (e.g., textMuted opacity). Should extract to `packages/shared/`.
-- `markdownToHtml` / `inlineMarkdown` duplicated across `slide-html.ts`, `html-renderer.ts`, and `TextModule.svelte`. Should extract to `packages/shared/`.
-- CSP uses `'unsafe-inline'` for scripts (needed for SvelteKit hydration). Known trade-off.
-- Editor blur timeout (300ms in `SlideCanvas.svelte`) for toolbar clicks is fragile on slow machines.
+- Undo for `applyTemplate` replace path uses a pre-template snapshot (`_restoreSlide`). If the user edits the slide after applying a template and then undoes, the intermediate edits are lost. Standard undo behavior, but a richer approach (e.g. per-block diffing or undo stack per slide) may be warranted if users report data loss.
+
+## Session Hand-Off Prompts
+
+When completing a significant session of work, ask the user whether they'd like a hand-off prompt logged to `docs/prompts/`. These are structured markdown briefs with checkboxes that contextualize progress, audit needs, and next steps for the next Claude Code instance or human collaborator picking up the work. See `docs/prompts/` for examples.

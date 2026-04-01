@@ -29,6 +29,11 @@ const ALLOWED_TYPES = new Set([
   'image/svg+xml',
   'image/webp',
   'application/pdf',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'application/msword',
+  'text/plain',
+  'text/markdown',
+  'text/x-markdown',
   'text/csv',
   'application/json',
   'application/geo+json',
@@ -41,9 +46,27 @@ const MIME_TO_EXT: Record<string, string> = {
   'image/svg+xml': '.svg',
   'image/webp': '.webp',
   'application/pdf': '.pdf',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document': '.docx',
+  'application/msword': '.doc',
+  'text/plain': '.txt',
+  'text/markdown': '.md',
+  'text/x-markdown': '.md',
   'text/csv': '.csv',
   'application/json': '.json',
   'application/geo+json': '.geojson',
+}
+
+function guessMimeFromFilename(name: string): string | null {
+  const lower = name.toLowerCase()
+  if (lower.endsWith('.md') || lower.endsWith('.markdown')) return 'text/markdown'
+  if (lower.endsWith('.txt')) return 'text/plain'
+  if (lower.endsWith('.csv')) return 'text/csv'
+  if (lower.endsWith('.json')) return 'application/json'
+  if (lower.endsWith('.geojson')) return 'application/geo+json'
+  if (lower.endsWith('.pdf')) return 'application/pdf'
+  if (lower.endsWith('.docx')) return 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+  if (lower.endsWith('.doc')) return 'application/msword'
+  return null
 }
 
 const filesRouter = new Hono<AuthEnv>()
@@ -90,12 +113,15 @@ filesRouter.post('/:deckId/files', authMiddleware, async (c) => {
     return c.json({ error: `Upload limit reached (${usedMB}MB / 50MB used). Delete some files first.` }, 400)
   }
 
-  if (!ALLOWED_TYPES.has(file.type)) {
-    return c.json({ error: `File type not allowed: ${file.type}` }, 400)
+  // Derive a sensible MIME type
+  const detectedType = file.type || guessMimeFromFilename(file.name) || 'application/octet-stream'
+  const allowedByExt = ['.md', '.markdown', '.txt'].some((ext) => file.name.toLowerCase().endsWith(ext))
+  if (!ALLOWED_TYPES.has(detectedType) && !allowedByExt) {
+    return c.json({ error: `File type not allowed: ${file.type || 'unknown'}` }, 400)
   }
 
   const fileId = createId()
-  const ext = MIME_TO_EXT[file.type] ?? ''
+  const ext = MIME_TO_EXT[detectedType] ?? path.extname(file.name) ?? ''
   const diskFilename = `${fileId}${ext}`
   const filePath = path.join(deckDir, diskFilename)
 
@@ -106,12 +132,27 @@ filesRouter.post('/:deckId/files', authMiddleware, async (c) => {
   const buffer = Buffer.from(await file.arrayBuffer())
   fs.writeFileSync(filePath, buffer)
 
+  // For PDFs and Word docs, extract Markdown sidecar for LLM context
+  let extractedMarkdown: string | null = null
+  try {
+    if (file.type === 'application/pdf' || file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' || file.type === 'application/msword') {
+      const { extractMarkdownFromFile } = await import('../utils/file-text.js')
+      extractedMarkdown = await extractMarkdownFromFile(filePath, file.type)
+      if (extractedMarkdown && extractedMarkdown.trim()) {
+        const mdPath = path.join(deckDir, `${fileId}.md`)
+        fs.writeFileSync(mdPath, extractedMarkdown, 'utf8')
+      }
+    }
+  } catch (err) {
+    console.warn('Failed to extract text from upload:', (err as Error)?.message)
+  }
+
   // Record in DB
   await db.insert(uploadedFiles).values({
     id: fileId,
     deckId,
     filename: file.name,
-    mimeType: file.type,
+    mimeType: detectedType,
     path: filePath,
     uploadedBy: user.id,
     createdAt: new Date(),
@@ -121,8 +162,9 @@ filesRouter.post('/:deckId/files', authMiddleware, async (c) => {
     file: {
       id: fileId,
       filename: file.name,
-      mimeType: file.type,
+      mimeType: detectedType,
       url: `/api/decks/${deckId}/files/${fileId}`,
+      textExtracted: Boolean(extractedMarkdown && extractedMarkdown.trim()),
     },
   })
 })

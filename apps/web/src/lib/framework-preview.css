@@ -102,15 +102,15 @@
 
 /* Edit-mode typography: scaled for the ~700px canvas, not the full viewport.
    View/export use vw-based clamp() at 100vw; here we use smaller fixed ranges. */
-.slide-frame h1, .slide-frame .heading-1 { font-size: clamp(1.6rem, 3.5vw, 2.4rem) !important; font-weight: 600 !important; }
-.slide-frame h2, .slide-frame .heading-2 { font-size: clamp(1.3rem, 2.8vw, 1.9rem) !important; font-weight: 500 !important; }
-.slide-frame h3, .slide-frame .heading-3 { font-size: clamp(1.1rem, 2.2vw, 1.5rem) !important; font-weight: 500 !important; }
-.slide-frame h4, .slide-frame .heading-4 { font-size: clamp(0.95rem, 1.6vw, 1.2rem) !important; font-weight: 500 !important; }
+.slide-frame h1, .slide-frame .heading-1 { font-size: clamp(1.6rem, 3.5cqi, 2.4rem) !important; font-weight: 600 !important; }
+.slide-frame h2, .slide-frame .heading-2 { font-size: clamp(1.3rem, 2.8cqi, 1.9rem) !important; font-weight: 500 !important; }
+.slide-frame h3, .slide-frame .heading-3 { font-size: clamp(1.1rem, 2.2cqi, 1.5rem) !important; font-weight: 500 !important; }
+.slide-frame h4, .slide-frame .heading-4 { font-size: clamp(0.95rem, 1.6cqi, 1.2rem) !important; font-weight: 500 !important; }
 
 .slide-frame .text-block,
 .slide-frame .text-body,
 .slide-frame p {
-  font-size: clamp(0.85rem, 1.6vw, 1.1rem) !important;
+  font-size: clamp(0.85rem, 1.6cqi, 1.1rem) !important;
   line-height: 1.6 !important;
   color: var(--theme-text-muted, rgba(240,240,240,0.65)) !important;
 }
@@ -129,13 +129,14 @@
 .slide-frame .card {
   background: var(--theme-card-bg, rgba(255,255,255,0.03)) !important;
   border: 1px solid var(--theme-border, rgba(255,255,255,0.06)) !important;
-  border-radius: 8px !important;
-  padding: 14px 16px !important;
-  border-left-width: 1px !important;
-  color: var(--theme-text-muted, rgba(240,240,240,0.65)) !important;
+  border-radius: 10px !important;
+  padding: clamp(16px, 2.2cqi, 24px) clamp(18px, 2.6cqi, 28px) !important;
+  border-left-width: 3px !important;
+  color: var(--theme-text-muted, rgba(240,240,240,0.75)) !important;
+  min-height: clamp(120px, 16cqi, 220px) !important;
 }
-.slide-frame .card h3 { font-size: 1rem !important; margin-bottom: 6px !important; }
-.slide-frame .card p { font-size: 0.9rem !important; color: var(--theme-text-muted, rgba(240,240,240,0.65)) !important; line-height: 1.5 !important; }
+.slide-frame .card h3 { font-size: clamp(1.05rem, 1.7cqi, 1.25rem) !important; margin-bottom: 8px !important; }
+.slide-frame .card p { font-size: clamp(0.95rem, 1.5cqi, 1.05rem) !important; color: var(--theme-text-muted, rgba(240,240,240,0.75)) !important; line-height: 1.6 !important; }
 .slide-frame .card-cyan,
 .slide-frame .card[class*="cyan"] {
   border-left: 3px solid var(--theme-accent, #64b5f6) !important;
