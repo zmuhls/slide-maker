@@ -196,6 +196,7 @@ figcaption { margin-top: 8px; font-size: 0.85rem; color: var(--text-muted); }
 .artifact-wrapper {
   display: flex; flex-direction: column;
   width: 100%; border-radius: 4px; overflow: hidden;
+  margin: 0 auto; /* center horizontally when a custom width is applied */
   border: 1px solid var(--border-subtle);
   background: rgba(0,0,0,0.15);
 }

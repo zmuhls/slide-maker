@@ -15,12 +15,13 @@
     editable?: boolean
   }>()
 
-  const CSP_META = '<meta http-equiv="Content-Security-Policy" content="default-src \'self\' \'unsafe-inline\' blob: data:; script-src \'unsafe-inline\'; connect-src \'none\'; frame-src \'none\';">'
+  const CSP_META = '<meta http-equiv="Content-Security-Policy" content="default-src \'self\' \'unsafe-inline\' blob: data:; script-src \'unsafe-inline\'; img-src https: data: blob:; style-src \'unsafe-inline\'; connect-src \'none\'; frame-src \'none\';">'
 
   const width = $derived(data.width || '100%')
   const height = $derived(data.height || '100%')
   const hasCustomSize = $derived(!!data.width || !!data.height)
   const alt = $derived(data.alt || 'Interactive visualization')
+  const align = $derived((data.align as string) || 'center')
 
   // Build iframe src: prefer rawSource with CSP injected, fallback to src/url
   let iframeSrc = $derived.by(() => {
@@ -55,7 +56,11 @@
   })
 </script>
 
-<div class="artifact-card" class:custom-sized={hasCustomSize} style="width: {width};{hasCustomSize ? ` height: ${height};` : ''}">
+<div
+  class="artifact-card"
+  class:custom-sized={hasCustomSize}
+  style="width: {width};{hasCustomSize ? ` height: ${height};` : ''} {align === 'left' ? 'margin-right: auto;' : align === 'right' ? 'margin-left: auto;' : 'margin: 0 auto;'}"
+>
   {#if editable}
     <div class="artifact-header">
       <span class="artifact-label">{alt}</span>
