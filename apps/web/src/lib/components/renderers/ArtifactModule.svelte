@@ -1,21 +1,23 @@
 <script lang="ts">
-  import { untrack } from 'svelte'
-  import { buildSourceWithConfig } from '$lib/utils/artifact-config'
+  import { onMount } from 'svelte'
+  import { getArtifact, type ArtifactController } from '$lib/modules/artifacts'
+  // Ensure built-ins are registered
+  import '$lib/modules/artifacts/boids'
 
   let { data, editable = false } = $props<{
     data: {
-      src?: string
-      url?: string
-      rawSource?: string
+      artifactName?: string
+      src?: string // legacy
+      url?: string // legacy
+      rawSource?: string // legacy
       config?: Record<string, unknown>
       width?: string
       height?: string
       alt?: string
+      align?: 'left' | 'center' | 'right'
     }
     editable?: boolean
   }>()
-
-  const CSP_META = '<meta http-equiv="Content-Security-Policy" content="default-src \'self\' \'unsafe-inline\' blob: data:; script-src \'unsafe-inline\'; img-src https: data: blob:; style-src \'unsafe-inline\'; connect-src \'none\'; frame-src \'none\';">'
 
   const width = $derived(data.width || '100%')
   const height = $derived(data.height || '')
@@ -23,40 +25,47 @@
   const alt = $derived(data.alt || 'Interactive visualization')
   const align = $derived((data.align as string) || 'center')
 
-  // Prefer srcdoc for inline HTML to preserve a valid referrer for subresources (e.g., OSM tiles)
-  // Build iframe params: { src, srcdoc }
-  const iframe = $derived.by(() => {
-    if (data.rawSource) {
-      // If rawSource looks like an absolute URL, use it directly via src
-      if (/^https?:\/\//i.test(data.rawSource)) return { src: data.rawSource, srcdoc: '' }
-      // Otherwise, treat as inline HTML and inject config + CSP, served via srcdoc
-      let html = data.config && Object.keys(data.config).length > 0
-        ? buildSourceWithConfig(data.rawSource, data.config)
-        : data.rawSource
-      if (html.includes('<head>')) {
-        html = html.replace('<head>', '<head>' + CSP_META)
-      } else if (html.includes('<html>')) {
-        html = html.replace('<html>', '<html><head>' + CSP_META + '</head>')
-      } else {
-        html = CSP_META + html
-      }
-      // Serve via same-origin endpoint so subresources (e.g., OSM tiles) get a proper Referer
-      // Base64-encode to pass safely in the query string
-      const b64 = btoa(unescape(encodeURIComponent(html)))
-      return { src: `/artifact?b64=${encodeURIComponent(b64)}`, srcdoc: '' }
+  let container: HTMLDivElement | null = null
+  let controller: ArtifactController | null = null
+  let error: string | null = null
+
+  function start() {
+    cleanup()
+    error = null
+    const factory = getArtifact(data.artifactName)
+    if (!factory) {
+      error = 'Unknown artifact'
+      return
     }
-    const src = data.src || data.url || ''
-    // Only allow http(s) and blob URLs to prevent javascript: and data: injection
-    const safe = /^(https?:\/\/|blob:)/i.test(src) ? src : ''
-    return { src: safe, srcdoc: '' }
+    if (!container) return
+    try {
+      controller = factory(container, data.config ?? {})
+    } catch (e) {
+      console.error('Artifact init failed:', e)
+      error = 'Failed to initialize artifact'
+    }
+  }
+
+  function cleanup() {
+    try { controller?.destroy?.() } catch {}
+    controller = null
+    if (container) container.replaceChildren() // clear DOM
+  }
+
+  onMount(() => {
+    start()
+    return () => cleanup()
   })
 
-  // Revoke blob URLs on cleanup
   $effect(() => {
-    const url = iframe.src
-    return () => {
-      if (url?.startsWith('blob:')) URL.revokeObjectURL(url)
-    }
+    // Restart if the artifact type changes
+    data.artifactName
+    start()
+  })
+
+  $effect(() => {
+    // Propagate config updates
+    controller?.update?.(data.config ?? {})
   })
 </script>
 
@@ -70,22 +79,13 @@
       <span class="artifact-label">{alt}</span>
     </div>
   {/if}
-  {#if iframe.src || iframe.srcdoc}
-    <iframe
-      src={iframe.src || undefined}
-      srcdoc={iframe.srcdoc || undefined}
-      class="artifact-iframe"
-      class:no-interact={editable}
-      sandbox="allow-scripts"
-      title={alt}
-      loading="lazy"
-      referrerpolicy="origin-when-cross-origin"
-    ></iframe>
-  {:else}
+  {#if error}
     <div class="artifact-placeholder">
-      <span class="artifact-icon">?</span>
-      <p>No artifact source configured</p>
+      <span class="artifact-icon">!</span>
+      <p>{error}</p>
     </div>
+  {:else}
+    <div bind:this={container} class="artifact-native" class:no-interact={editable}></div>
   {/if}
 </div>
 
@@ -116,7 +116,7 @@
     text-overflow: ellipsis;
     white-space: nowrap;
   }
-  .artifact-iframe {
+  .artifact-native {
     display: block;
     border: none;
     width: 100%;
@@ -126,8 +126,8 @@
     aspect-ratio: 1;
   }
   /* When an explicit height is provided on the wrapper, drop square aspect */
-  .artifact-wrapper.custom-sized .artifact-iframe { aspect-ratio: auto; }
-  .artifact-iframe.no-interact {
+  .artifact-wrapper.custom-sized .artifact-native { aspect-ratio: auto; }
+  .artifact-native.no-interact {
     pointer-events: none;
   }
   .artifact-placeholder {

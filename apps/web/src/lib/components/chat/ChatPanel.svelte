@@ -153,6 +153,7 @@
       deck.id,
       slideId,
       modelId,
+      [],
       (chunk) => {
         if (firstChunk) {
           // Replace "Thinking..." with first real content
