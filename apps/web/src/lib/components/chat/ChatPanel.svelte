@@ -148,11 +148,17 @@
     let firstChunk = true
     let appliedMutationCount = 0
 
+    // Build history from existing messages (exclude the current user message and placeholder)
+    const history = get(chatMessages)
+      .filter((m) => m.id !== visibleId && m.id !== assistantId && !m.streaming)
+      .map((m) => ({ role: m.role as 'user' | 'assistant', content: m.content }))
+
     await streamChat(
       text,
       deck.id,
       slideId,
       modelId,
+      history,
       (chunk) => {
         if (firstChunk) {
           // Replace "Thinking..." with first real content
