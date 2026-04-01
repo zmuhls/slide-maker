@@ -3,6 +3,8 @@ import path from 'node:path'
 import fs from 'node:fs'
 import { PassThrough } from 'stream'
 import { renderDeckHtml, getExtractedArtifacts, clearExtractedArtifacts } from './html-renderer.js'
+import { NAVIGATION_JS } from './navigation.js'
+import { CAROUSEL_JS } from './carousel.js'
 import { FRAMEWORK_CSS } from './framework-css.js'
 
 const UPLOAD_DIR = path.resolve(import.meta.dirname ?? '.', '..', '..', 'uploads')
@@ -53,7 +55,7 @@ export async function exportDeckAsZip(
 
   // Reset any prior artifact state and render with extraction enabled
   clearExtractedArtifacts()
-  const html = renderDeckHtml(deckName, normalized, theme, files, { extractArtifacts: true })
+  const html = renderDeckHtml(deckName, normalized, theme, files, { extractArtifacts: true, externalJs: true })
   const artifacts = getExtractedArtifacts()
 
   const manifest = JSON.stringify({
@@ -79,6 +81,9 @@ export async function exportDeckAsZip(
 
     archive.append(html, { name: `${slug}/index.html` })
     archive.append(FRAMEWORK_CSS, { name: `${slug}/css/styles.css` })
+    // Bundle deck engine JS
+    const ENGINE_JS = `${NAVIGATION_JS}\n${CAROUSEL_JS}`
+    archive.append(ENGINE_JS, { name: `${slug}/js/engine.js` })
     archive.append(manifest, { name: `${slug}/manifest.json` })
 
     // Include extracted artifact files, if any
