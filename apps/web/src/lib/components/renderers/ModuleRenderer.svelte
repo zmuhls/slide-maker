@@ -269,7 +269,7 @@
   .step-badge {
     position: absolute;
     top: -8px;
-    left: -3px;
+    left: 0;
     background: var(--teal, #2FB8D6);
     color: white;
     font-size: 9px;

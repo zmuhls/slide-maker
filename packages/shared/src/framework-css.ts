@@ -357,10 +357,10 @@ export const FRAMEWORK_CSS_PREVIEW = FRAMEWORK_CSS_BASE + `
 .step-hidden { opacity: 1; transform: none; position: relative; }
 .step-hidden::after {
   content: 'Step ' attr(data-step);
-  position: absolute; top: 4px; right: 4px;
+  position: absolute; top: 4px; left: 0;
   background: rgba(47,184,214,0.85); color: #fff;
   font-size: 10px; font-weight: 600;
-  padding: 1px 8px; border-radius: 10px;
+  padding: 1px 8px; border-radius: 0 10px 10px 0;
   pointer-events: none; z-index: 5;
 }
 .step-visible { opacity: 1; transform: none; }
