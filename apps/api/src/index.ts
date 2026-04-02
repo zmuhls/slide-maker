@@ -73,8 +73,8 @@ app.route('/api', resources)
 app.route('/api', artifactRouter)
 app.route('/api/search', search)
 
-// Mount debug routes only in non-production environments to avoid production overhead
-if (process.env.NODE_ENV !== 'production') {
+// Mount debug routes only when explicitly enabled (requires admin auth)
+if (process.env.ENABLE_DEBUG_ROUTES === 'true') {
   app.route('/api/debug', debugRouter)
 }
 

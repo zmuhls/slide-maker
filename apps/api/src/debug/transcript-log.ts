@@ -27,7 +27,7 @@ function resolveLogFile() {
   const override = process.env.DEBUG_TRANSCRIPT_LOG
   if (override) return override
   const __dirname = path.dirname(fileURLToPath(import.meta.url))
-  return path.resolve(__dirname, '../../data/debug-logs/transcripts.json')
+  return path.resolve(__dirname, '../../data/debug-logs/transcripts.ndjson')
 }
 
 async function ensureDir(filePath: string) {
@@ -38,19 +38,20 @@ async function ensureDir(filePath: string) {
 export async function appendTranscript(entry: TranscriptEntry): Promise<void> {
   const file = resolveLogFile()
   await ensureDir(file)
-  let arr: TranscriptEntry[] = []
-  try {
-    const raw = await fs.readFile(file, 'utf8')
-    arr = JSON.parse(raw)
-    if (!Array.isArray(arr)) arr = []
-  } catch {
-    arr = []
-  }
+  // Append-only NDJSON — no read-modify-write race condition
+  await fs.appendFile(file, JSON.stringify(entry) + '\n', 'utf8')
 
-  arr.push(entry)
-  // Cap at 500 entries, keep newest
-  if (arr.length > 500) arr = arr.slice(-500)
-  await fs.writeFile(file, JSON.stringify(arr, null, 2), 'utf8')
+  // Truncate if file exceeds ~500 entries (check periodically, not every write)
+  if (Math.random() < 0.05) {
+    try {
+      const raw = await fs.readFile(file, 'utf8')
+      const lines = raw.trim().split('\n')
+      if (lines.length > 500) {
+        const kept = lines.slice(-500).join('\n') + '\n'
+        await fs.writeFile(file, kept, 'utf8')
+      }
+    } catch { /* ignore truncation errors */ }
+  }
 }
 
 export async function readTranscripts(opts: ReadOpts = {}): Promise<TranscriptEntry[]> {
@@ -59,10 +60,12 @@ export async function readTranscripts(opts: ReadOpts = {}): Promise<TranscriptEn
   try {
     const raw = await fs.readFile(file, 'utf8')
     let arr: TranscriptEntry[] = []
-    try { arr = JSON.parse(raw) } catch { arr = [] }
-    if (!Array.isArray(arr)) arr = []
+    for (const line of raw.trim().split('\n')) {
+      if (!line) continue
+      try { arr.push(JSON.parse(line)) } catch { /* skip malformed lines */ }
+    }
     // Newest first
-    arr = arr.slice().reverse()
+    arr.reverse()
     if (deck) arr = arr.filter((e) => e.deckId === deck)
     if (model) arr = arr.filter((e) => e.model === model)
     return arr.slice(0, Math.max(1, Math.min(500, limit)))
@@ -74,6 +77,5 @@ export async function readTranscripts(opts: ReadOpts = {}): Promise<TranscriptEn
 export async function clearTranscripts(): Promise<void> {
   const file = resolveLogFile()
   await ensureDir(file)
-  await fs.writeFile(file, JSON.stringify([], null, 2), 'utf8')
+  await fs.writeFile(file, '', 'utf8')
 }
-

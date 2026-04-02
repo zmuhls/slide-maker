@@ -262,6 +262,10 @@ Full admin panel at `/admin` with:
 - Content filtering on web search (blocked domains)
 - Security audit: `docs/security-audit-2026-03-28.md`
 
+- Native artifacts (JS primitives) run unsandboxed in the main page DOM — no iframe isolation. This is safe because only hardcoded first-party factory functions in `apps/web/src/lib/modules/artifacts/` are registered. Do NOT open the artifact registry to user-supplied code without adding a sandbox boundary.
+- Debug routes (`/api/debug/*`) require `ENABLE_DEBUG_ROUTES=true` env var AND admin auth. Never enable on production.
+- Slide insertion uses raw better-sqlite3 sync transaction (not Drizzle's async wrapper) to prevent order race conditions.
+
 **Do not revert security changes in:** `decks.ts`, `files.ts`, `chat.ts`, `auth.ts`, `index.ts`, `export/index.ts`, `export/html-renderer.ts`, `lucia.ts`
 
 ### UI Design System

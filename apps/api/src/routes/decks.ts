@@ -236,67 +236,73 @@ decksRouter.post('/:id/slides', async (c) => {
   const now = new Date()
   const createdBlocks: (typeof contentBlocks.$inferSelect)[] = []
 
-  // Sequential queries (no transaction — better-sqlite3 rejects async tx callbacks)
-  let order: number
+  // Use raw better-sqlite3 sync transaction to prevent slide order race conditions.
+  // Drizzle's db.transaction() rejects sync callbacks that contain Drizzle query builders
+  // (they return thenables), so we use the raw sqlite .transaction() wrapper instead.
+  const { sqlite } = await import('../db/index.js')
 
-  if (insertAfter) {
-    const afterSlide = await db
-      .select()
-      .from(slides)
-      .where(and(eq(slides.id, insertAfter), eq(slides.deckId, deckId)))
-      .get()
+  const insertSlide = sqlite.transaction(() => {
+    let order: number
 
-    if (!afterSlide) {
-      return c.json({ error: 'insertAfter slide not found' }, 400)
+    if (insertAfter) {
+      const afterSlide = sqlite.prepare(
+        'SELECT * FROM slides WHERE id = ? AND deck_id = ?'
+      ).get(insertAfter, deckId) as { order: number } | undefined
+
+      if (!afterSlide) {
+        throw new Error('insertAfter slide not found')
+      }
+
+      order = afterSlide.order + 1
+
+      sqlite.prepare(
+        'UPDATE slides SET "order" = "order" + 1 WHERE deck_id = ? AND "order" >= ?'
+      ).run(deckId, order)
+    } else {
+      const row = sqlite.prepare(
+        'SELECT COALESCE(MAX("order"), -1) as max_order FROM slides WHERE deck_id = ?'
+      ).get(deckId) as { max_order: number }
+
+      order = (row?.max_order ?? -1) + 1
     }
 
-    order = afterSlide.order + 1
+    sqlite.prepare(
+      'INSERT INTO slides (id, deck_id, layout, split_ratio, "order", notes, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
+    ).run(slideId, deckId, slideLayout, splitRatio || '0.45', order, null, now.getTime(), now.getTime())
 
-    await db
-      .update(slides)
-      .set({ order: sql`${slides.order} + 1` })
-      .where(and(eq(slides.deckId, deckId), sql`${slides.order} >= ${order}`))
-  } else {
-    const lastSlide = await db
-      .select({ maxOrder: sql<number>`COALESCE(MAX(${slides.order}), -1)` })
-      .from(slides)
-      .where(eq(slides.deckId, deckId))
-      .get()
+    if (moduleDefs && Array.isArray(moduleDefs)) {
+      for (let i = 0; i < moduleDefs.length; i++) {
+        const mod = moduleDefs[i]
+        const blockId = createId()
+        const blockRow = {
+          id: blockId,
+          slideId,
+          type: mod.type,
+          zone: mod.zone || 'content',
+          data: mod.data || {},
+          order: i,
+          stepOrder: mod.stepOrder ?? null,
+        }
+        sqlite.prepare(
+          'INSERT INTO content_blocks (id, slide_id, type, zone, data, "order", step_order) VALUES (?, ?, ?, ?, ?, ?, ?)'
+        ).run(blockId, slideId, mod.type, mod.zone || 'content', JSON.stringify(mod.data || {}), i, mod.stepOrder ?? null)
+        createdBlocks.push(blockRow)
+      }
+    }
 
-    order = (lastSlide?.maxOrder ?? -1) + 1
-  }
-
-  await db.insert(slides).values({
-    id: slideId,
-    deckId,
-    layout: slideLayout,
-    splitRatio: splitRatio || '0.45',
-    order,
-    notes: null,
-    createdAt: now,
-    updatedAt: now,
+    sqlite.prepare(
+      'UPDATE decks SET updated_at = ? WHERE id = ?'
+    ).run(now.getTime(), deckId)
   })
 
-  // Create content blocks (modules) if provided
-  if (moduleDefs && Array.isArray(moduleDefs)) {
-    for (let i = 0; i < moduleDefs.length; i++) {
-      const mod = moduleDefs[i]
-      const blockId = createId()
-      const blockRow = {
-        id: blockId,
-        slideId,
-        type: mod.type,
-        zone: mod.zone || 'content',
-        data: mod.data || {},
-        order: i,
-        stepOrder: mod.stepOrder ?? null,
-      }
-      await db.insert(contentBlocks).values(blockRow)
-      createdBlocks.push(blockRow)
+  try {
+    insertSlide()
+  } catch (err) {
+    if (err instanceof Error && err.message === 'insertAfter slide not found') {
+      return c.json({ error: 'insertAfter slide not found' }, 400)
     }
+    throw err
   }
-
-  await db.update(decks).set({ updatedAt: now }).where(eq(decks.id, deckId))
 
   const newSlide = await db.select().from(slides).where(eq(slides.id, slideId)).get()
   return c.json({ ...newSlide, blocks: createdBlocks }, 201)
