@@ -5,6 +5,7 @@ import { db } from '../db/index.js'
 import { decks, deckAccess, slides, contentBlocks, themes, uploadedFiles } from '../db/schema.js'
 import { authMiddleware } from '../middleware/auth.js'
 import { exportDeckAsZip } from '../export/index.js'
+import { resolveArtifactSources } from '../utils/resolve-artifacts.js'
 
 type AuthEnv = {
   Variables: {
@@ -74,6 +75,9 @@ exportRouter.post('/:id/export', async (c) => {
       stepOrder: b.stepOrder ?? null,
     })),
   }))
+
+  // Resolve artifact sources from catalog for blocks missing rawSource
+  await resolveArtifactSources(slidesWithBlocks.flatMap(s => (s.blocks || [])))
 
   // Load theme
   let theme = null
