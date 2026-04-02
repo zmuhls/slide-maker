@@ -225,7 +225,16 @@ Full admin panel at `/admin` with:
 - **Staging:** `tools.cuny.qzz.io/slide-maker` — Debian server (Tailscale IP 100.111.252.53), Nginx reverse proxy, PM2 processes (`slide-maker-api` on port 3004, `slide-maker-web` on port 4173)
 - **Deploy:** `./deploy-staging.sh` from a machine on Tailscale/CUNY VPN. GitHub Actions can't reach the server (Tailscale-only IP).
 - **Server deploy script:** `/data/slide-maker/deploy.sh` — git pull, pnpm install, build, db push, seed, pm2 restart
-- **Nginx config:** Added to `/etc/nginx/sites-enabled/alt-text.conf` on the server (slide-maker routes at bottom of server block)
+- **SSH:** `sshpass -p "<password>" ssh -o StrictHostKeyChecking=no smorello.adm@gc.cuny.edu@100.111.252.53`
+- **Traffic flow:** Browser → Cloudflare (`tools.cuny.qzz.io`) → Caddy (TLS on 146.96.128.38) → Nginx (:80) → PM2 apps
+- **PM2 API start:** `pm2 start "pnpm --filter @slide-maker/api dev" --name slide-maker-api` (must use tsx/dev, not compiled dist — shared package exports raw .ts)
+- **PM2 Web start:** `pm2 start /usr/bin/node --name slide-maker-web -- <vite-bin-path> preview --host 0.0.0.0 --port 4173` (run from `apps/web/`, `npx` not available in sudo env)
+- **Nginx config:** `/etc/nginx/sites-enabled/alt-text.conf` contains routes for ALL apps (alt-text, asr, ocr, site-studio, agent-studio, hm-review, slide-maker). Never use `sed` on it — edit manually or append carefully. Always `nginx -t` before `systemctl reload nginx`.
+- **Root disk is only 8.9GB** — `/var/log` symlinked to `/data/var-log` to prevent disk-full crashes. Monitor with `df -h /`.
+- **Debug routes:** Require `ENABLE_DEBUG_ROUTES=true` in `.env` (explicit opt-in). Exposes transcript viewer at `/api/debug/transcripts`.
+
+### Other Apps on the Server
+- **HM Review:** `/home/smorello.adm/hm-review`, Flask + gunicorn on port 8010, PM2 name `hm-review`. Must use `wsgi:app` (not `app:create_app()`) — `wsgi.py` applies `PrefixMiddleware` for `/hm` path prefix. Nginx passes full `/hm/` path to app.
 
 ## Docs
 
@@ -306,6 +315,7 @@ Tests import directly from `packages/shared/src/` and `apps/web/src/lib/utils/`.
 - Email verification (SMTP) not configured on staging — admin must manually approve users.
 - `.env` symlink (`apps/api/.env -> ../../.env`) must exist or the API won't load any API keys. If chat shows "No models available", recreate the symlink and restart `pnpm dev`.
 - Undo for `applyTemplate` replace path uses a pre-template snapshot (`_restoreSlide`). If the user edits the slide after applying a template and then undoes, the intermediate edits are lost. Standard undo behavior, but a richer approach (e.g. per-block diffing or undo stack per slide) may be warranted if users report data loss.
+- **Drizzle + better-sqlite3 transactions:** `db.transaction()` rejects async callbacks AND sync callbacks containing Drizzle query builders (they return thenables). Use raw `sqlite.transaction()` from `apps/api/src/db/index.ts` for atomic operations. See `decks.ts` addSlide for the pattern.
 
 ## Session Hand-Off Prompts
 
