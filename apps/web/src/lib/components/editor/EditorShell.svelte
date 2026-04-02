@@ -12,15 +12,8 @@
   let rightWidth = $state(260)
   let leftCollapsed = $state(false)
   let rightCollapsed = $state(false)
-  let chatCollapsed = $state(false)
-  let outlineCollapsed = $state(false)
+  let leftTab = $state<'chat' | 'slides'>('chat')
 
-  function collapseChat() {
-    if (!outlineCollapsed) chatCollapsed = true
-  }
-  function collapseOutline() {
-    if (!chatCollapsed) outlineCollapsed = true
-  }
   let draggingLeft = $state(false)
   let draggingRight = $state(false)
 
@@ -30,8 +23,6 @@
   // Saved panel state for view/edit toggle
   let savedLeft = false
   let savedRight = false
-  let savedChat = false
-  let savedOutline = false
 
   // Only react to canvasMode changes, not panel state
   $effect(() => {
@@ -40,15 +31,11 @@
       if (mode === 'view') {
         savedLeft = leftCollapsed
         savedRight = rightCollapsed
-        savedChat = chatCollapsed
-        savedOutline = outlineCollapsed
         leftCollapsed = true
         rightCollapsed = true
       } else {
         leftCollapsed = savedLeft
         rightCollapsed = savedRight
-        chatCollapsed = savedChat
-        outlineCollapsed = savedOutline
       }
     })
   })
@@ -95,7 +82,6 @@
   }
 
   // Ensure slides (center) remain visible on narrow viewports
-  // Auto-collapse side panels below a breakpoint and restore above
   const NARROW_BP = 1024
   function handleResize() {
     const narrow = window.innerWidth < NARROW_BP
@@ -103,7 +89,6 @@
       leftCollapsed = true
       rightCollapsed = true
     } else {
-      // restore previously saved states when exiting narrow mode
       leftCollapsed = savedLeft
       rightCollapsed = savedRight
     }
@@ -118,14 +103,6 @@
 
 </script>
 
-{#snippet collapseIcon()}
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 14 10 14 10 20"></polyline><polyline points="20 10 14 10 14 4"></polyline><line x1="14" y1="10" x2="21" y2="3"></line><line x1="3" y1="21" x2="10" y2="14"></line></svg>
-{/snippet}
-
-{#snippet expandIcon()}
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 3 21 3 21 9"></polyline><polyline points="9 21 3 21 3 15"></polyline><line x1="21" y1="3" x2="14" y2="10"></line><line x1="3" y1="21" x2="10" y2="14"></line></svg>
-{/snippet}
-
 <div class="editor-outer">
   <div class="editor-wrapper">
     {#if !leftCollapsed}
@@ -136,34 +113,29 @@
             <img src="{base}/cuny-ai-lab-logo.png" alt="CUNY AI Lab" class="title-logo" />
           </a>
         </div>
-        {#if !chatCollapsed && !outlineCollapsed}
-          <div class="chat-section">
-            <ChatPanel onCollapse={collapseChat} />
-          </div>
-          <div class="outline-section">
-            <SlideOutline onCollapse={collapseOutline} />
-          </div>
-        {:else if chatCollapsed}
-          <div class="collapsed-tab top">
-            <button class="tab-restore" onclick={() => chatCollapsed = false} title="Expand chat" aria-label="Expand chat">
-              {@render expandIcon()}
-              <span>Chat</span>
-            </button>
-          </div>
-          <div class="outline-section full">
-            <SlideOutline onCollapse={collapseOutline} />
-          </div>
-        {:else if outlineCollapsed}
-          <div class="chat-section full">
-            <ChatPanel onCollapse={collapseChat} />
-          </div>
-          <div class="collapsed-tab bottom">
-            <button class="tab-restore" onclick={() => outlineCollapsed = false} title="Expand outline" aria-label="Expand outline">
-              {@render expandIcon()}
-              <span>Slides</span>
-            </button>
-          </div>
-        {/if}
+        <div class="left-tab-bar" role="tablist" aria-label="Left panel">
+          <button
+            class="left-tab-btn"
+            class:active={leftTab === 'chat'}
+            role="tab"
+            aria-selected={leftTab === 'chat'}
+            onclick={() => leftTab = 'chat'}
+          >Chat</button>
+          <button
+            class="left-tab-btn"
+            class:active={leftTab === 'slides'}
+            role="tab"
+            aria-selected={leftTab === 'slides'}
+            onclick={() => leftTab = 'slides'}
+          >Slides</button>
+        </div>
+        <div class="left-tab-content">
+          {#if leftTab === 'chat'}
+            <ChatPanel />
+          {:else}
+            <SlideOutline />
+          {/if}
+        </div>
       </div>
       <div class="resize-handle left-handle" onmousedown={startLeftResize}>
         <div class="handle-line"></div>
@@ -271,66 +243,56 @@
     object-fit: contain;
   }
 
-  .chat-section {
-    flex: 3;
-    display: flex;
-    flex-direction: column;
-    min-height: 0;
-    overflow: hidden;
-  }
-
-  .chat-section.full {
-    flex: 1;
-    height: 0;
-  }
-
-  .outline-section {
-    flex: 1;
-    min-height: 120px;
-    overflow-y: auto;
-    border-top: 1px solid var(--color-border);
-  }
-
-  .outline-section.full {
-    flex: 1;
-    height: 0;
-    min-height: 0;
-    border-top: none;
-    overflow-y: hidden;
-  }
-
-  .collapsed-tab {
+  /* Left panel tab bar — mirrors ResourcePanel tab styling */
+  .left-tab-bar {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: 1fr;
+    align-items: end;
+    gap: 6px;
+    padding: 0 8px;
+    border-bottom: 1px solid var(--color-bg-tertiary, #f1f5f9);
     flex-shrink: 0;
   }
 
-  .collapsed-tab.top {
-    border-bottom: 1px solid var(--color-border);
-  }
-
-  .collapsed-tab.bottom {
-    border-top: 1px solid var(--color-border);
-  }
-
-  .tab-restore {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    width: 100%;
-    padding: 8px 10px;
-    background: transparent;
+  .left-tab-btn {
+    position: relative;
+    padding: 8px 8px;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--color-text-muted, #6b7280);
+    background: none;
     border: none;
-    color: var(--color-text-muted);
-    font-size: 11px;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
     cursor: pointer;
-    transition: color 0.15s, background 0.15s;
+    transition: color 0.15s;
+    text-align: center;
+    white-space: nowrap;
+    width: 100%;
   }
 
-  .tab-restore:hover {
-    color: var(--color-primary);
-    background: var(--color-ghost-bg);
+  .left-tab-btn:hover {
+    color: var(--color-text, #1f2937);
+  }
+
+  .left-tab-btn.active { color: var(--color-primary); }
+  .left-tab-btn.active::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: -1px;
+    height: 2px;
+    background: var(--color-primary);
+    border-radius: 1px;
+    pointer-events: none;
+  }
+
+  .left-tab-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    min-height: 0;
   }
 
   .center-panel {
@@ -436,11 +398,6 @@
   }
 
 
-  /* Smooth section transitions */
-  .chat-section, .outline-section, .collapsed-tab {
-    transition: flex 0.2s ease, height 0.2s ease;
-  }
-
   /* Responsive: auto-collapse panels on narrow viewports */
   @media (max-width: 1024px) {
     .left-panel {
@@ -448,9 +405,6 @@
     }
     .right-panel {
       max-width: 220px;
-    }
-    .outline-section:not(.full) {
-      min-height: 100px;
     }
   }
 
