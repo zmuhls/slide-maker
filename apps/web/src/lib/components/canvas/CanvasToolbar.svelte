@@ -2,7 +2,7 @@
   import { goto } from '$app/navigation'
   import { base } from '$app/paths'
   import { currentDeck } from '$lib/stores/deck'
-  import { activeSlideId } from '$lib/stores/ui'
+  import { activeSlideId, setActiveSlide } from '$lib/stores/ui'
   import { API_URL } from '$lib/api'
 
   type CanvasMode = 'edit' | 'view'
@@ -25,13 +25,13 @@
 
   function goToPrev() {
     if (currentIndex > 0) {
-      $activeSlideId = sortedSlides[currentIndex - 1].id
+      setActiveSlide(sortedSlides[currentIndex - 1].id, currentIndex)
     }
   }
 
   function goToNext() {
     if (currentIndex < total - 1) {
-      $activeSlideId = sortedSlides[currentIndex + 1].id
+      setActiveSlide(sortedSlides[currentIndex + 1].id, currentIndex + 2)
     }
   }
 

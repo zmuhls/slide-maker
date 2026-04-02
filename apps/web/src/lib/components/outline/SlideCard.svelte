@@ -4,7 +4,7 @@
   import { flip } from 'svelte/animate'
   import { dndzone } from 'svelte-dnd-action'
   import BlockItem from './BlockItem.svelte'
-  import { activeSlideId } from '$lib/stores/ui'
+  import { activeSlideId, setActiveSlide } from '$lib/stores/ui'
   import { currentDeck, removeSlideFromDeck, updateSlideInDeck } from '$lib/stores/deck'
   import { API_URL } from '$lib/api'
 
@@ -83,7 +83,7 @@
       expanded = !expanded
     } else {
       expanded = true
-      activeSlideId.set(slide.id)
+      setActiveSlide(slide.id, index + 1)
     }
   }
 

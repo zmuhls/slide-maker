@@ -30,7 +30,7 @@ chat.use('*', authMiddleware)
 chat.post('/', chatRateLimit, async (c) => {
   const user = c.get('user')
   const body = await c.req.json()
-  const { message, deckId, activeSlideId, modelId } = body
+  const { message, deckId, activeSlideId, modelId, recentActions, lastAgentSlideId } = body
 
   if (!message || !deckId || !modelId) {
     return c.json({ error: 'message, deckId, and modelId are required' }, 400)
@@ -205,6 +205,14 @@ chat.post('/', chatRateLimit, async (c) => {
   // Detect @artifact: references in user message for focused tier
   const atRefs = [...message.matchAll(/@artifact:([^\n@]+)/gi)].map((m) => m[1].trim())
 
+  // Detect slide references in user message for on-demand expansion
+  const slideRefs = [...message.matchAll(/(?:slide|page)\s*(\d+)/gi)]
+    .map((m) => {
+      const idx = parseInt(m[1], 10) - 1
+      return idx >= 0 && idx < slidesWithBlocks.length ? slidesWithBlocks[idx].id : null
+    })
+    .filter((id): id is string => id !== null)
+
   // Build system prompt
   const systemPrompt = buildSystemPrompt({
     deck: {
@@ -221,6 +229,13 @@ chat.post('/', chatRateLimit, async (c) => {
     activeArtifacts: activeArtifactsList,
     focusedArtifactNames: atRefs.length > 0 ? atRefs : undefined,
     allThemes: allThemesList,
+    expandSlideIds: slideRefs.length > 0 ? slideRefs : undefined,
+    recentActions: Array.isArray(recentActions)
+      ? recentActions.slice(0, 15).map((a: unknown) => String(a).slice(0, 120).replace(/[\n\r]/g, ' '))
+      : undefined,
+    lastAgentSlideId: typeof lastAgentSlideId === 'string' && slidesWithBlocks.some((s) => s.id === lastAgentSlideId)
+      ? lastAgentSlideId
+      : undefined,
   })
 
   // Prepare messages for the LLM

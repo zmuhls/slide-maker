@@ -1,7 +1,7 @@
 <script lang="ts">
   import { get } from 'svelte/store'
   import { currentDeck, addSlideToDeck } from '$lib/stores/deck'
-  import { activeSlideId } from '$lib/stores/ui'
+  import { setActiveSlide } from '$lib/stores/ui'
   import { API_URL } from '$lib/api'
 
   interface Template {
@@ -135,7 +135,7 @@
         const result = await res.json()
         const slide = { ...result, blocks: result.blocks || result.modules || [] }
         addSlideToDeck(slide)
-        activeSlideId.set(slide.id)
+        setActiveSlide(slide.id, (slide.order ?? 0) + 1)
       }
     } catch (err) {
       console.error('Failed to create slide from template:', err)

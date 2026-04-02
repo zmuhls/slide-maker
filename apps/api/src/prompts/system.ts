@@ -58,6 +58,9 @@ interface BuildPromptOptions {
   activeArtifacts?: ActiveArtifact[]
   focusedArtifactNames?: string[]
   allThemes?: { id: string; name: string }[]
+  expandSlideIds?: string[]
+  recentActions?: string[]
+  lastAgentSlideId?: string | null
 }
 
 const MAX_SLIDES = 60
@@ -104,19 +107,48 @@ function buildArtifactsSection(opts: BuildPromptOptions): string {
   return section
 }
 
+function serializeSlide(s: SlideWithModules, tier: 'full' | 'skeleton', activeSlideId: string | null): string {
+  const active = s.id === activeSlideId ? ' [ACTIVE]' : ''
+  if (tier === 'full') {
+    const blocksSummary = s.blocks
+      .map(
+        (b) =>
+          `      - Module "${b.id}" type="${b.type}" zone="${b.zone ?? 'unknown'}" data=${JSON.stringify(b.data)}`
+      )
+      .join('\n')
+    return `    Slide ${s.order + 1} (id="${s.id}", layout="${s.layout}")${active}\n${blocksSummary || '      (no modules)'}`
+  }
+  // Skeleton: one-liner with heading text and module type list
+  const heading = s.blocks.find((b) => b.type === 'heading')
+  const title = heading ? String((heading.data as Record<string, unknown>).text || '').slice(0, 60) : ''
+  const moduleList = s.blocks.map((b) => {
+    const zone = b.zone && b.zone !== 'content' ? `[${b.zone}]` : ''
+    return `${b.type}${zone}`
+  }).join(', ')
+  const titlePart = title ? `: "${title}"` : ''
+  return `    Slide ${s.order + 1} (id="${s.id}", layout="${s.layout}")${active}${titlePart} → ${moduleList || '(empty)'}`
+}
+
 export function buildSystemPrompt(opts: BuildPromptOptions): string {
   const { deck, activeSlideId, templates, theme, files } = opts
 
+  // Determine which slides get full detail vs skeleton
+  const activeOrder = deck.slides.find((s) => s.id === activeSlideId)?.order
+  const fullDetailIds = new Set<string>()
+  if (activeSlideId) fullDetailIds.add(activeSlideId)
+  if (opts.lastAgentSlideId) fullDetailIds.add(opts.lastAgentSlideId)
+  if (opts.expandSlideIds) opts.expandSlideIds.forEach((id) => fullDetailIds.add(id))
+  // Include ±1 neighbors of active slide
+  if (activeOrder !== undefined) {
+    for (const s of deck.slides) {
+      if (Math.abs(s.order - activeOrder) <= 1) fullDetailIds.add(s.id)
+    }
+  }
+
   const slidesSummary = deck.slides
     .map((s) => {
-      const active = s.id === activeSlideId ? ' [ACTIVE]' : ''
-      const blocksSummary = s.blocks
-        .map(
-          (b) =>
-            `      - Module "${b.id}" type="${b.type}" zone="${b.zone ?? 'unknown'}" data=${JSON.stringify(b.data)}`
-        )
-        .join('\n')
-      return `    Slide ${s.order + 1} (id="${s.id}", layout="${s.layout}")${active}\n${blocksSummary || '      (no modules)'}`
+      const tier = fullDetailIds.has(s.id) ? 'full' as const : 'skeleton' as const
+      return serializeSlide(s, tier, activeSlideId)
     })
     .join('\n')
 
@@ -391,10 +423,19 @@ ARTIFACT RULES:
 - When a user requests a visualization, look it up in Available Artifacts by name; if unclear, ask them to clarify or propose a close match.
 - The Deck Artifacts list shows which artifacts are already placed and their config. Use it to guide updates.
 
+${opts.recentActions?.length ? `## Recent User Actions\n${opts.recentActions.map((a) => `- ${a}`).join('\n')}\n` : ''}
+${opts.lastAgentSlideId ? (() => {
+  const agentSlide = deck.slides.find((s) => s.id === opts.lastAgentSlideId)
+  return agentSlide
+    ? `## Agent Memory\nLast slide you modified: Slide ${agentSlide.order + 1} (id="${agentSlide.id}", layout="${agentSlide.layout}")\n`
+    : ''
+})() : ''}
 ## Guidelines
 
 **Brevity:** Keep responses short — 1-2 sentences max. State what you did, not why or how. Never narrate your reasoning, restate the user's request, or ask rhetorical follow-ups. Only ask a question if you genuinely need clarification to proceed. Do not editorialize about aesthetic choices or explain what the user can already see.
 
+- Prefer editing existing slides and modules over creating new ones. Only add new slides when the user explicitly requests new content.
+- When the user describes changes, check if the active slide already has a suitable module to update before adding a new one.
 - Include a brief text response alongside mutations. Never respond with only mutation blocks.
 - Use ONLY the 13 module types listed above. Do not invent types like "bullets", "table", "divider", "subtitle", "code", or "quote".
 - Every module MUST have a \`zone\` field matching the layout's available zones.
@@ -447,5 +488,11 @@ User: "Make the boids faster and add more of them"
 \`\`\`mutation
 { "action": "updateArtifactConfig", "payload": { "artifactName": "Boids", "config": { "count": 200, "maxSpeed": 3.5 } } }
 \`\`\`
+
+## Suggestions
+After completing a request, optionally include 2-3 brief follow-up suggestions the user might want next. Format each on its own line:
+[suggest: Short action phrase]
+
+Place suggestions at the very end of your response, after all text and mutations. Keep each under 60 characters. Only include when contextually relevant — not every response needs suggestions.
 `
 }

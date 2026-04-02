@@ -1,19 +1,35 @@
 <script lang="ts">
   import DOMPurify from 'dompurify'
   import type { ChatMsg } from '$lib/stores/chat'
+  import type { PendingMutation } from '$lib/stores/pending-mutations'
+  import MutationCard from './MutationCard.svelte'
 
   interface Props {
     message: ChatMsg
+    onsuggest?: (text: string) => void
+    mutations?: PendingMutation[]
+    onaccept?: (id: string) => void
+    onreject?: (id: string) => void
+    isLatestAssistant?: boolean
   }
 
-  let { message }: Props = $props()
+  let { message, onsuggest, mutations = [], onaccept, onreject, isLatestAssistant = false }: Props = $props()
 
   const isUser = $derived(message.role === 'user')
+
+  // Extract suggestions from assistant messages (only after streaming completes)
+  const suggestions = $derived.by(() => {
+    if (isUser || message.streaming) return []
+    const matches = [...(message.content || '').matchAll(/\[suggest:\s*([^\]]+)\]/g)]
+    return matches.map((m) => m[1].trim())
+  })
 
   /** Markdown-like rendering for chat messages */
   function renderContent(text: string): string {
     // Strip mutation blocks — applied to canvas, not shown in chat
-    let cleaned = text.replace(/```mutation\s*\n[\s\S]*?```/g, '').trim()
+    let cleaned = text.replace(/```mutation\s*\n[\s\S]*?```/g, '')
+    // Strip suggestion tags — rendered as interactive chips below
+    cleaned = cleaned.replace(/\[suggest:\s*[^\]]+\]/g, '').trim()
 
     // Strip large HTML/artifact source blocks (>500 chars) — replace with compact indicator
     cleaned = cleaned.replace(/```(?:html?|xml)?\s*\n([\s\S]{500,}?)```/g, (_m, code) => {
@@ -82,6 +98,20 @@
       <span class="cursor-blink"></span>
     {/if}
   </div>
+  {#if mutations.length > 0 && !isUser}
+    <div class="mutation-cards">
+      {#each mutations as pm (pm.id)}
+        <MutationCard mutation={pm} onaccept={(id) => onaccept?.(id)} onreject={(id) => onreject?.(id)} />
+      {/each}
+    </div>
+  {/if}
+  {#if suggestions.length > 0 && isLatestAssistant}
+    <div class="suggestion-chips">
+      {#each suggestions as s}
+        <button class="chip" onclick={() => onsuggest?.(s)}>{s}</button>
+      {/each}
+    </div>
+  {/if}
 </div>
 
 <style>
@@ -193,6 +223,33 @@
     border: none;
     border-top: 1px solid var(--color-border, #e5e7eb);
     margin: 6px 0;
+  }
+
+  .mutation-cards {
+    margin-top: 6px;
+  }
+
+  .suggestion-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 8px;
+  }
+
+  .chip {
+    padding: 4px 10px;
+    font-size: 11px;
+    border: 1px solid var(--color-border, #e5e7eb);
+    border-radius: var(--radius-sm, 6px);
+    background: transparent;
+    color: var(--color-primary, #3B73E6);
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+  }
+
+  .chip:hover {
+    background: var(--color-ghost-bg, rgba(59, 115, 230, 0.08));
+    border-color: var(--color-primary, #3B73E6);
   }
 
   .cursor-blink {

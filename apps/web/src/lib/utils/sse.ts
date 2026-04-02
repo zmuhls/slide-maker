@@ -8,6 +8,8 @@ export async function streamChat(
   onDone: () => void,
   onError: (error: string) => void,
   signal?: AbortSignal,
+  recentActions?: string[],
+  lastAgentSlideId?: string | null,
 ): Promise<void> {
   const { API_URL } = await import('$lib/api')
   let response: Response
@@ -16,7 +18,7 @@ export async function streamChat(
       method: 'POST',
       credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message, deckId, activeSlideId, modelId, history }),
+      body: JSON.stringify({ message, deckId, activeSlideId, modelId, history, recentActions, lastAgentSlideId }),
       signal,
     })
   } catch (e: any) {

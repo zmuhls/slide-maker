@@ -16,6 +16,8 @@
   } from '$lib/stores/chat'
   import { currentDeck } from '$lib/stores/deck'
   import { activeSlideId } from '$lib/stores/ui'
+  import { consumeActions, lastAgentSlideId } from '$lib/stores/actions'
+  import { pendingMutations, autoApply, addPendingMutation, acceptMutation, rejectMutation } from '$lib/stores/pending-mutations'
   import { streamChat } from '$lib/utils/sse'
   import { extractMutations, applyMutation } from '$lib/utils/mutations'
 
@@ -23,6 +25,9 @@
 
   let messagesContainer: HTMLDivElement | undefined = $state()
   let messages = $state<ChatMsg[]>([])
+  const latestAssistantId = $derived(
+    [...messages].reverse().find((m) => m.role === 'assistant' && !m.streaming)?.id ?? null
+  )
   let clearing = $state(false)
   let controller: AbortController | null = $state(null)
   let currentAssistantId: string | null = $state(null)
@@ -148,6 +153,13 @@
     let firstChunk = true
     let appliedMutationCount = 0
 
+    // Snapshot autoApply at stream start — don't let mid-stream toggles split mutations
+    const liveApply = get(autoApply)
+
+    // Consume action buffer for AI context
+    const actions = consumeActions()
+    const agentSlideId = get(lastAgentSlideId)
+
     // Build history from existing messages (exclude the streaming placeholder)
     const history = get(chatMessages)
       .filter((m) => m.id !== assistantId && !m.streaming)
@@ -171,12 +183,17 @@
         }
         fullText += chunk
 
-        // Apply mutations live as they stream in
+        // Extract and handle mutations as they stream in
         const mutations = extractMutations(fullText)
         while (appliedMutationCount < mutations.length) {
-          applyMutation(mutations[appliedMutationCount]).catch((err) =>
-            console.error('Failed to apply mutation:', err, mutations[appliedMutationCount])
-          )
+          const mut = mutations[appliedMutationCount]
+          if (liveApply) {
+            applyMutation(mut).catch((err) =>
+              console.error('Failed to apply mutation:', err, mut)
+            )
+          } else {
+            addPendingMutation(assistantId, mut)
+          }
           appliedMutationCount++
         }
       },
@@ -196,6 +213,8 @@
         controller = null
       },
       abortSignal,
+      actions,
+      agentSlideId,
     )
   }
 
@@ -208,6 +227,37 @@
     controller = null
   }
 
+  async function handleAcceptMutation(id: string) {
+    const list = get(pendingMutations)
+    const pm = list.find((p) => p.id === id)
+    if (!pm || pm.status !== 'pending') return
+    try {
+      await applyMutation(pm.mutation)
+      acceptMutation(id)
+    } catch (err) {
+      console.error('Mutation apply failed, keeping as pending:', err)
+    }
+  }
+
+  function handleRejectMutation(id: string) {
+    rejectMutation(id)
+  }
+
+  async function handleAcceptAll() {
+    const list = get(pendingMutations).filter((p) => p.status === 'pending')
+    for (const pm of list) {
+      try {
+        await applyMutation(pm.mutation)
+        acceptMutation(pm.id)
+      } catch (err) {
+        console.error('Mutation apply failed during accept-all, stopping:', err)
+        break
+      }
+    }
+  }
+
+  const hasPending = $derived($pendingMutations.some((p) => p.status === 'pending'))
+
   async function resetChat() {
     if (clearing) return
     const deck = get(currentDeck)
@@ -217,6 +267,7 @@
       clearing = true
       await api.resetChatHistory(deck.id)
       chatMessages.set([])
+      pendingMutations.set([])
     } catch (err) {
       console.error('Failed to reset chat:', err)
     } finally {
@@ -231,6 +282,13 @@
       <ModelSelector />
       {#if $chatStreaming}
         <button class="stop-btn" title="Stop response" onclick={stopStreaming} aria-label="Stop streaming">Stop</button>
+      {/if}
+      <label class="auto-apply-toggle" title="Auto-apply mutations during streaming">
+        <input type="checkbox" bind:checked={$autoApply} />
+        <span>Auto</span>
+      </label>
+      {#if hasPending}
+        <button class="accept-all-btn" onclick={handleAcceptAll}>Accept All</button>
       {/if}
       <div class="reset-wrap" style="margin-left: auto;">
         <button
@@ -258,7 +316,14 @@
       </div>
     {:else}
       {#each messages as msg (msg.id)}
-        <ChatMessage message={msg} />
+        <ChatMessage
+          message={msg}
+          onsuggest={handleSend}
+          mutations={$pendingMutations.filter((pm) => pm.messageId === msg.id)}
+          onaccept={handleAcceptMutation}
+          onreject={handleRejectMutation}
+          isLatestAssistant={msg.id === latestAssistantId}
+        />
       {/each}
     {/if}
   </div>
@@ -339,6 +404,36 @@
     border-color: var(--color-primary);
   }
   .reset-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .auto-apply-toggle {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    font-size: 10px;
+    color: var(--color-text-muted);
+    cursor: pointer;
+    user-select: none;
+  }
+  .auto-apply-toggle input {
+    width: 12px;
+    height: 12px;
+    margin: 0;
+    accent-color: var(--color-primary, #3B73E6);
+  }
+
+  .accept-all-btn {
+    padding: 3px 8px;
+    font-size: 10px;
+    border: 1px solid #10b981;
+    border-radius: var(--radius-sm);
+    background: transparent;
+    color: #10b981;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .accept-all-btn:hover {
+    background: rgba(16, 185, 129, 0.1);
+  }
 
   /* Confirmation UI removed: reset is one-click by design */
 

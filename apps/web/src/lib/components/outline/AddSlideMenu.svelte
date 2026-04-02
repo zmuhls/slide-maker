@@ -1,6 +1,6 @@
 <script lang="ts">
   import { addSlideToDeck } from '$lib/stores/deck'
-  import { activeSlideId } from '$lib/stores/ui'
+  import { setActiveSlide } from '$lib/stores/ui'
   import { API_URL } from '$lib/api'
 
   let { deckId, onAdd }: { deckId: string; onAdd?: () => void } = $props()
@@ -54,7 +54,7 @@
         const result = await res.json()
         const slide = { ...result, blocks: result.blocks || result.modules || [] }
         addSlideToDeck(slide)
-        activeSlideId.set(slide.id)
+        setActiveSlide(slide.id, (slide.order ?? 0) + 1)
         onAdd?.()
       }
     } catch (err) {

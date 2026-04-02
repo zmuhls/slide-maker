@@ -1,6 +1,7 @@
 import { currentDeck, addSlideToDeck, removeSlideFromDeck, updateSlideInDeck } from '$lib/stores/deck'
 import { activeSlideId } from '$lib/stores/ui'
 import { history } from '$lib/stores/history'
+import { logAction, lastAgentSlideId } from '$lib/stores/actions'
 import { get } from 'svelte/store'
 import { API_URL } from '$lib/api'
 
@@ -125,6 +126,8 @@ export async function applyMutation(mutation: Record<string, unknown>): Promise<
         addSlideToDeck(slide)
         // Auto-select the new slide
         activeSlideId.set(slide.id)
+        lastAgentSlideId.set(slide.id)
+        logAction(`AI: added slide (${(payload.layout as string) || 'layout-split'})`)
 
         // Track reverse mutation
         history.pushMutation(mutation, {
@@ -178,6 +181,8 @@ export async function applyMutation(mutation: Record<string, unknown>): Promise<
           ...s,
           blocks: [...s.blocks, result.block],
         }))
+        lastAgentSlideId.set(slideId)
+        logAction(`AI: added ${blockDef.type} module`)
 
         history.pushMutation(mutation, {
           action: 'removeBlock',
@@ -231,6 +236,9 @@ export async function applyMutation(mutation: Record<string, unknown>): Promise<
         ),
       }))
 
+      lastAgentSlideId.set(slideId)
+      logAction(`AI: updated ${oldBlock?.type || 'module'}`)
+
       history.pushMutation(mutation, {
         action: 'updateBlock',
         payload: { slideId, blockId, data: oldData },
@@ -265,6 +273,7 @@ export async function applyMutation(mutation: Record<string, unknown>): Promise<
       const themeId = payload.themeId as string
       await apiCall(`/api/decks/${deck.id}`, 'PATCH', { themeId })
       currentDeck.update((d) => (d ? { ...d, themeId } : d))
+      logAction('AI: changed theme')
       break
     }
 
