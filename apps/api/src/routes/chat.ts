@@ -12,6 +12,8 @@ import { buildSystemPrompt } from '../prompts/system.js'
 import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { debugBus } from '../debug/event-bus.js'
+import { appendTranscript } from '../debug/transcript-log.js'
 
 type AuthEnv = {
   Variables: {
@@ -243,7 +245,7 @@ chat.post('/', chatRateLimit, async (c) => {
   chatHistory.push({ role: 'user', content: message })
 
   // Determine provider from model
-  const model = modelId.includes('/') ? 'openrouter' : 'anthropic'
+  const provider = modelId.includes('/') ? 'openrouter' : 'anthropic'
 
   // Check token cap
   const yearStart = new Date(new Date().getFullYear(), 0, 1)
@@ -266,7 +268,7 @@ chat.post('/', chatRateLimit, async (c) => {
     deckId,
     role: 'user',
     content: message,
-    provider: model,
+    provider,
     createdAt: now,
   })
 
@@ -274,14 +276,39 @@ chat.post('/', chatRateLimit, async (c) => {
   return streamSSE(c, async (stream) => {
     let fullResponse = ''
     const streamTimeout = setTimeout(() => { stream.close() }, 120_000) // 2 min hard cap
+    const streamId = createId()
+    const startedAt = Date.now()
+    let chunkIndex = 0
+    let totalChars = 0
 
     try {
       const gen = getModelStream(modelId, systemPrompt, chatHistory)
 
+      // Emit start event
+      debugBus.emit('stream:start', {
+        streamId,
+        userId: user.id,
+        userEmail: user.email,
+        deckId,
+        model: modelId,
+        provider,
+        systemPromptChars: systemPrompt.length,
+        historyLength: chatHistory.length,
+        timestamp: new Date(startedAt).toISOString(),
+      })
+
       for await (const text of gen) {
         fullResponse += text
+        totalChars += text.length
         await stream.writeSSE({
           data: JSON.stringify({ type: 'text', content: text }),
+        })
+        // Emit chunk event
+        debugBus.emit('stream:chunk', {
+          streamId,
+          text,
+          chunkIndex: chunkIndex++,
+          elapsedMs: Date.now() - startedAt,
         })
       }
 
@@ -296,7 +323,7 @@ chat.post('/', chatRateLimit, async (c) => {
         deckId,
         role: 'assistant',
         content: fullResponse,
-        provider: model,
+        provider,
         createdAt: new Date(),
       })
 
@@ -308,11 +335,51 @@ chat.post('/', chatRateLimit, async (c) => {
         id: createId(),
         userId: user.id,
         deckId,
-        provider: model,
+        provider,
         model: modelId,
         inputTokens,
         outputTokens,
         createdAt: new Date(),
+      })
+
+      // Extract mutation blocks from assistant response
+      const mutations = (() => {
+        const blocks: string[] = []
+        const re = /```\s*mutation\s*\n([\s\S]*?)```/gi
+        let m: RegExpExecArray | null
+        while ((m = re.exec(fullResponse)) !== null) {
+          blocks.push(m[1].trim())
+        }
+        return blocks
+      })()
+
+      // Emit done event
+      debugBus.emit('stream:done', {
+        streamId,
+        totalChars,
+        durationMs: Date.now() - startedAt,
+        inputTokens,
+        outputTokens,
+        mutations,
+      })
+
+      // Append transcript log
+      await appendTranscript({
+        id: streamId,
+        timestamp: new Date().toISOString(),
+        userEmail: user.email,
+        deckId,
+        model: modelId,
+        provider,
+        systemPromptChars: systemPrompt.length,
+        historyLength: chatHistory.length,
+        inputTokens,
+        outputTokens,
+        durationMs: Date.now() - startedAt,
+        userMessage: message,
+        assistantMessage: fullResponse,
+        mutations,
+        error: null,
       })
     } catch (err: unknown) {
       console.error('AI streaming error:', err)
@@ -320,6 +387,32 @@ chat.post('/', chatRateLimit, async (c) => {
       await stream.writeSSE({
         data: JSON.stringify({ type: 'error', message: errorMessage }),
       })
+      // Emit error event
+      debugBus.emit('stream:error', {
+        streamId,
+        error: (err as any)?.message ?? String(err),
+        elapsedMs: Date.now() - startedAt,
+      })
+      // Append transcript with error
+      try {
+        await appendTranscript({
+          id: streamId,
+          timestamp: new Date().toISOString(),
+          userEmail: user.email,
+          deckId,
+          model: modelId,
+          provider,
+          systemPromptChars: systemPrompt.length,
+          historyLength: chatHistory.length,
+          inputTokens: 0,
+          outputTokens: 0,
+          durationMs: Date.now() - startedAt,
+          userMessage: message,
+          assistantMessage: fullResponse,
+          mutations: [],
+          error: (err as any)?.message ?? String(err),
+        })
+      } catch {}
     } finally {
       clearTimeout(streamTimeout)
     }

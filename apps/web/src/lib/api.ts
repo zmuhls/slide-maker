@@ -117,4 +117,15 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({ url, deckId, filename }),
     }),
+
+  // Debug
+  listTranscripts: (params?: { limit?: number; deck?: string; model?: string }) => {
+    const q = new URLSearchParams()
+    if (params?.limit) q.set('limit', String(params.limit))
+    if (params?.deck) q.set('deck', params.deck)
+    if (params?.model) q.set('model', params.model)
+    const qs = q.toString()
+    return request<{ transcripts: any[] }>(`/api/debug/transcripts${qs ? `?${qs}` : ''}`)
+  },
+  clearTranscripts: () => request<{ ok: true }>(`/api/debug/transcripts`, { method: 'DELETE' }),
 }

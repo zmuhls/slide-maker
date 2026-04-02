@@ -16,6 +16,7 @@ import artifactRouter from './routes/artifact.js'
 import sharing from './routes/sharing.js'
 import filesRouter from './routes/files.js'
 import search from './routes/search.js'
+import debugRouter from './routes/debug.js'
 
 const app = new Hono()
 
@@ -71,6 +72,11 @@ app.route('/api/providers', providers)
 app.route('/api', resources)
 app.route('/api', artifactRouter)
 app.route('/api/search', search)
+
+// Mount debug routes only in non-production environments to avoid production overhead
+if (process.env.NODE_ENV !== 'production') {
+  app.route('/api/debug', debugRouter)
+}
 
 serve({
   fetch: app.fetch,
