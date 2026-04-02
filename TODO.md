@@ -1,6 +1,6 @@
 # TODO
 
-Working list of near-term fixes and enhancements. Grouped by area and written as small, verifiable tasks. Checked items indicate work landed in this branch/session.
+Working list of near-term fixes and enhancements. Grouped by area and written as small, verifiable tasks.
 
 ## Editor Interaction
 - [ ] Module drag & drop within zones (ZoneDrop)
@@ -13,60 +13,70 @@ Working list of near-term fixes and enhancements. Grouped by area and written as
 - [ ] Split handle a11y
   - [ ] Focusable handle with arrow-key resizing and value change announcements
 
+## LLM Debug Dashboard
+- [ ] Proof of concept — verify stream event capture and transcript logging work end-to-end
+- [ ] Confirm dev-only route gating is solid
+
+## Markdown → HTML Rendering
+- [ ] Thorough audit of markdown-to-HTML rendering in preview and zip export
+  - [ ] Check all module types that accept markdown (text, card, tip-box, prompt-block, comparison, card-grid, stream-list)
+  - [ ] Verify inline formatting (bold, italic, code, links, lists) renders correctly in preview iframe
+  - [ ] Verify same output in exported zip HTML
+  - [ ] Fix any discrepancies between editor, preview, and export
+
+## Artifacts — JS Primitives Standard
+- [ ] Establish native JS (canvas/DOM) as the standard path for all artifacts going forward
+- [ ] Audit remaining iframe-fallback artifacts and plan migration to native factories
+- [ ] Design artifact reusability: bind artifacts to user accounts so they can be saved and reused across decks
+  - [ ] DB schema for user-owned artifacts (extend `artifacts` table with `userId`, `isPublic`)
+  - [ ] UI for browsing/inserting saved artifacts from Resources panel
+- [ ] Document the native artifact authoring guide (factory pattern, registration, export parity)
+
+## System Prompt Optimization
+- [ ] Reduce verbosity in `apps/api/src/prompts/system.ts`
+- [ ] Ensure the model doesn't overproduce — tighten instructions around response length and mutation density
+- [ ] Trim redundant examples and repetitive framing
+- [ ] Test with multiple models to confirm behavior stays on track after edits
+
+## Chat Panel Features
+- [ ] Starter prompts — show contextual prompt chips when chat is empty or a new deck is created
+  - [ ] Design chip set (e.g. "Create a title slide", "Add a two-column layout", "Help me outline a presentation on...")
+  - [ ] Wire chips to send as user messages
+- [ ] Suggested next prompts — after assistant response, offer 2-3 follow-up chips based on current deck state
+  - [ ] Generate suggestions server-side (lightweight, no extra LLM call — rule-based on deck state)
+  - [ ] Render as clickable chips below the assistant message
+- [ ] Async mutation confirmation — Y/N approval before applying mutations
+  - [ ] Show mutation preview (what will be added/changed) with Accept / Reject controls
+  - [ ] Only apply mutations on user approval
+  - [ ] Option to toggle auto-apply for power users
+- [ ] Write design spec for these features under `docs/superpowers/specs/`
+
 ## Undo / Redo Hardening
 - [ ] Group/coalesce rapid mutations (typing, quick slider changes) into a single history entry
 - [ ] Ensure reverse mutations exist for all actions (slides, blocks, steps, theme, metadata, split ratio)
-- [ ] Preserve redo branch only when appropriate; clear on new divergent edits (current behavior is partial)
-- [ ] Optional: persist limited history to `sessionStorage` to survive accidental reloads within a session
+- [ ] Preserve redo branch only when appropriate; clear on new divergent edits
 - [ ] Add unit tests for history push/pop, grouped mutations, and failure paths
 
-## Chat-to-Editor Coverage
-- [ ] Expand mutations exposed to the assistant so every module’s key–value pairs are reachable
-  - [ ] Artifact: `artifactName`, `config` fields, `width`, `height`, `align`
-  - [ ] Heading: `text`, `level`
-  - [ ] Text: `markdown` or `html`
-  - [ ] Card: `content`, `variant`
-  - [ ] Label: `text`, `color`
-  - [ ] Tip Box: `content`, `title`
-  - [ ] Prompt Block: `content`, `quality`, `language`
-  - [ ] Image: `src`, `alt`, `caption`, `fit`
-  - [ ] Carousel: `items[]`, `syncSteps`, `interval`
-  - [ ] Comparison: `panels[]`
-  - [ ] Card Grid: `cards[]`, `columns`
-  - [ ] Flow: `nodes[]`
-  - [ ] Stream List: `items[]`
-  - [ ] Slide: `layout`, `splitRatio`
-  - [ ] Deck: `name`, `themeId`, branding metadata
-- [ ] System prompt: list features + examples as key–value JSON mutations (keeps fence format ```mutation)
-- [ ] E2E: chat can add a slide, add module, and set fields end‑to‑end
-
 ## Accessibility
-- [ ] Replace ad-hoc popovers/dialogs with an ARIA‑compliant pattern (or a small utility wrapper)
+- [ ] Replace ad-hoc popovers/dialogs with an ARIA-compliant pattern
 - [ ] Remove `a11y_*` suppressions across components and add axe checks in CI
 - [ ] Ensure all canvas controls are keyboard navigable (module move, delete, step select)
 
 ## Export/Preview Consistency
-- [x] Unify artifact sizing across editor/preview/export (wrapper + iframe aspect rules)
-- [ ] View mode WYSIWYG: render view mode via iframe srcdoc using FRAMEWORK_CSS_PREVIEW + client-side renderSlideHtml (mirrors API html-renderer) so canvas view matches preview/export exactly
-- [ ] Export: optional artifact size report (per‑artifact byte size and total) in `manifest.json`
-- [ ] Add checksum to extracted artifact filenames for cacheability
-- [ ] Integration test: unzip export and assert artifact files + iframe `src` references
-
-## Performance
-- [ ] Virtualize large template lists and long slide decks in outline
-- [ ] Defer non-critical editor work to rAF/time‑slicing (e.g., text fit)
+- [x] Unify artifact sizing across editor/preview/export
+- [ ] View mode WYSIWYG: render via iframe srcdoc using FRAMEWORK_CSS_PREVIEW + client-side renderSlideHtml
+- [ ] Integration test: unzip export and assert artifact files + iframe src references
 
 ## Testing
 - [ ] Unit: ZoneDrop reorder → `reorderBlocks` mapping (including keyboard path)
 - [ ] Unit: History store coalescing and redo branch behavior
 - [ ] E2E: drag from Resources to canvas creates expected module
-- [ ] Expand framework CSS tests for future modules (e.g., charts)
+- [ ] E2E: chat can add a slide, add module, and set fields end-to-end
 
 ## Security
-- [ ] Re‑verify CSP in artifact HTML when user‑provided `rawSource` is injected
+- [ ] Re-verify CSP in artifact HTML when user-provided `rawSource` is injected
 - [ ] Keep iframe sandbox minimal; consider `allow-same-origin` only when required and safe
 
-## Documentation
-- [ ] Update JS_SLIDE_MAKER_BLOCKS.md with finalized DnD/undo semantics and keyboard shortcuts
-- [ ] Add short “Chat Mutations Cheatsheet” under `docs/prompts/`
-
+## Repo Cleanup
+- [ ] Remove stray files from root (conversation transcripts, debug screenshots, scratch docs)
+- [ ] Add `test-results/` to .gitignore
