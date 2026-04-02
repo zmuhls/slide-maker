@@ -186,8 +186,8 @@ function renderModule(mod: Module, files?: ExportFile[], opts?: RenderOptions): 
       const variant = d.variant ? ` card-${esc(String(d.variant))}` : ''
       const title = d.title ? `<h3>${esc(String(d.title))}</h3>` : ''
       const raw = String(d.body || d.content || '')
-      const body = (raw.includes('<')) ? sanitize(raw) : inlineMd(raw)
-      return `<div class="card${variant}"${step}>${title}<p>${body}</p></div>`
+      const body = raw.includes('<') ? sanitize(raw) : markdownToHtml(raw)
+      return `<div class="card${variant}"${step}>${title}${body}</div>`
     }
 
     case 'label': {
@@ -198,7 +198,7 @@ function renderModule(mod: Module, files?: ExportFile[], opts?: RenderOptions): 
     case 'tip-box': {
       const title = d.title ? `<strong>${esc(String(d.title))}</strong>` : ''
       const raw = String(d.content || d.text || '')
-      const body = (raw.includes('<')) ? sanitize(raw) : inlineMd(raw)
+      const body = raw.includes('<') ? sanitize(raw) : markdownToHtml(raw)
       return `<div class="tip-box"${step}>${title}${body}</div>`
     }
 
@@ -246,8 +246,8 @@ function renderModule(mod: Module, files?: ExportFile[], opts?: RenderOptions): 
         const p = panel as Record<string, unknown>
         const title = p.title ? `<h3>${esc(String(p.title))}</h3>` : ''
         const raw = String(p.body || p.content || '')
-        const body = raw.includes('<') ? sanitize(raw) : inlineMd(raw)
-        html += `<div class="comparison-panel">${title}<p>${body}</p></div>`
+        const body = raw.includes('<') ? sanitize(raw) : markdownToHtml(raw)
+        html += `<div class="comparison-panel">${title}${body}</div>`
       }
       html += `</div>`
       return html
@@ -261,9 +261,9 @@ function renderModule(mod: Module, files?: ExportFile[], opts?: RenderOptions): 
         const c = card as Record<string, unknown>
         const title = c.title ? `<h3>${esc(String(c.title))}</h3>` : ''
         const raw = String(c.body || c.content || '')
-        const body = raw.includes('<') ? sanitize(raw) : inlineMd(raw)
+        const body = raw.includes('<') ? sanitize(raw) : markdownToHtml(raw)
         const variant = c.variant ? ` card-${esc(String(c.variant))}` : ''
-        html += `<div class="card${variant}">${title}<p>${body}</p></div>`
+        html += `<div class="card${variant}">${title}${body}</div>`
       }
       html += `</div>`
       return html
