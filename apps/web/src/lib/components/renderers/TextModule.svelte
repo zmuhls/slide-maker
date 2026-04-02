@@ -14,6 +14,7 @@
   let fittedFontSize: number | undefined = $state(undefined)
   let editorActive = $state(false)
   let editContent = $state('')
+  let clickCoords: { x: number; y: number } | null = $state(null)
 
   const BASE_SIZE = 17
   const MIN_SIZE = 12
@@ -64,13 +65,14 @@
       placeholder="Type text here..."
       onchange={handleRichTextChange}
       {oneditorready}
+      initialClickCoords={clickCoords}
     />
   {:else}
     <!-- svelte-ignore a11y_no_static_element_interactions -->
     <div
       class="text-preview"
       class:editable
-      onclick={() => { if (editable) { editContent = renderedHtml; editorActive = true } }}
+      onclick={(e) => { if (editable) { clickCoords = { x: e.clientX, y: e.clientY }; editContent = renderedHtml; editorActive = true } }}
       onkeydown={(e) => { if (editable && e.key === 'Enter') { editContent = renderedHtml; editorActive = true } }}
       role={editable ? 'button' : undefined}
       tabindex={editable ? 0 : undefined}
@@ -121,6 +123,10 @@
   .text-preview.editable {
     cursor: text;
     border-radius: var(--radius-sm, 4px);
+    padding-inline: 12px;
+  }
+  /* Match preview padding so text doesn't shift left when editor activates */
+  .text-block :global(.tiptap-mount) {
     padding-inline: 12px;
   }
 </style>

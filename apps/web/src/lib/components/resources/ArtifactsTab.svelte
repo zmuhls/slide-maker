@@ -266,7 +266,8 @@
                             class="act-btn"
                             class:act-active={editingArtifactId === artifact.id}
                             onclick={() => openConfigEditor(artifact)}
-                            title="Configure data before inserting"
+                            title={editingArtifactId === artifact.id ? 'Close config editor' : 'Configure data before inserting'}
+                            aria-label={editingArtifactId === artifact.id ? 'Close config editor' : 'Configure data before inserting'}
                           >
                             {#if editingArtifactId === artifact.id}
                               <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="2" y1="2" x2="10" y2="10"/><line x1="10" y1="2" x2="2" y2="10"/></svg>
@@ -279,7 +280,8 @@
                           class="act-btn"
                           class:act-copied={copied === artifact.id}
                           onclick={() => copyConfig(artifact)}
-                          title="Copy config to clipboard"
+                          title={copied === artifact.id ? 'Copied' : 'Copy config to clipboard'}
+                          aria-label={copied === artifact.id ? 'Copied' : 'Copy config to clipboard'}
                         >
                           {#if copied === artifact.id}
                             <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="2.5,6.5 5,9 9.5,3.5"/></svg>
@@ -290,7 +292,8 @@
                         <button
                           class="act-btn act-at"
                           onclick={() => injectAtRef(artifact)}
-                          title="Send @artifact:{displayName(artifact.name).toLowerCase().replace(/\s+/g, '-')} to chat"
+                          title="Send @artifact reference to chat"
+                          aria-label="Send @artifact reference to chat"
                         >
                           <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"><circle cx="6" cy="6" r="2"/><path d="M8 4.5v2.3a1.2 1.2 0 002.4 0V6a4.4 4.4 0 10-2.2 3.8"/></svg>
                         </button>
@@ -365,7 +368,7 @@
     padding: 5px 8px;
     background: var(--color-ghost-bg, rgba(59, 115, 230, 0.08));
     border: 1px solid var(--color-border, #e2e8f0);
-    border-radius: 3px;
+    border-radius: calc(var(--radius-sm, 6px) / 2);
     cursor: pointer;
     transition: background 0.12s, border-color 0.12s;
   }
@@ -498,7 +501,7 @@
     background: transparent;
     color: var(--color-text-muted, #94a3b8);
     border: 1px solid transparent;
-    border-radius: 3px;
+    border-radius: calc(var(--radius-sm, 6px) / 2);
     cursor: pointer;
     transition: color 0.12s, background 0.12s, border-color 0.12s;
     line-height: 1;
@@ -574,7 +577,7 @@
     line-height: 1.5;
     padding: 6px;
     border: 1px solid var(--color-border, #e2e8f0);
-    border-radius: 3px;
+    border-radius: calc(var(--radius-sm, 6px) / 2);
     background: var(--color-bg, #fff);
     color: var(--color-text, #1f2937);
     resize: vertical;
@@ -599,7 +602,7 @@
     background: transparent;
     color: var(--color-primary, #3B73E6);
     border: 1px solid var(--color-primary, #3B73E6);
-    border-radius: 3px;
+    border-radius: calc(var(--radius-sm, 6px) / 2);
     cursor: pointer;
     align-self: flex-start;
     transition: background 0.12s, color 0.12s;

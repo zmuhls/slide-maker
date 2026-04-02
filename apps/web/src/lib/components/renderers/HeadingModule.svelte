@@ -27,6 +27,7 @@
   $effect(() => {
     void text
     void level
+    if (focused) return
     if (!containerEl || !text.trim()) { fittedFontSize = undefined; return }
     const raf = requestAnimationFrame(() => {
       if (!containerEl) return
@@ -57,6 +58,7 @@
     bind:this={containerEl}
     class="heading heading-1"
     contenteditable={editable}
+    spellcheck={false}
     onfocus={() => focused = true}
     oninput={handleInput}
     onblur={() => focused = false}
@@ -68,6 +70,7 @@
     bind:this={containerEl}
     class="heading heading-2"
     contenteditable={editable}
+    spellcheck={false}
     onfocus={() => focused = true}
     oninput={handleInput}
     onblur={() => focused = false}
@@ -79,6 +82,7 @@
     bind:this={containerEl}
     class="heading heading-3"
     contenteditable={editable}
+    spellcheck={false}
     onfocus={() => focused = true}
     oninput={handleInput}
     onblur={() => focused = false}
@@ -90,6 +94,7 @@
     bind:this={containerEl}
     class="heading heading-4"
     contenteditable={editable}
+    spellcheck={false}
     onfocus={() => focused = true}
     oninput={handleInput}
     onblur={() => focused = false}

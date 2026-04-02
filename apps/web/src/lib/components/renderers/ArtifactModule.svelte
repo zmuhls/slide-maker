@@ -14,7 +14,7 @@
   import '$lib/modules/artifacts/nake'
   import '$lib/modules/artifacts/rossler'
   import '$lib/modules/artifacts/sprott'
-  import '$lib/modules/artifacts/tenprint'
+
   import '$lib/modules/artifacts/truchet'
 
   let { data, editable = false } = $props<{
@@ -136,7 +136,7 @@
     const containerEl = zone ?? wrapper.parentElement
     const zoneRect = containerEl?.getBoundingClientRect()
     const wrapRect = wrapper.getBoundingClientRect()
-    if (!zoneRect || !wrapRect) return
+    if (!zoneRect || !wrapRect.width) return
     const availH = Math.max(120, zoneRect.height - 24) // leave some breathing room
     const availW = Math.max(1, wrapRect.width)
     const ideal = availW / ratio
@@ -229,7 +229,7 @@
     width: 100%;
     flex: 1;
     min-height: 0;
-    aspect-ratio: 1;
+    aspect-ratio: 16 / 9;
   }
   .artifact-wrapper.custom-sized .artifact-native,
   .artifact-wrapper.custom-sized .artifact-iframe { aspect-ratio: auto; }

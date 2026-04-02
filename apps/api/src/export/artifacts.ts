@@ -1,7 +1,7 @@
 export const NATIVE_ARTIFACT_NAMES = new Set([
   'A* Pathfinding', 'Boids', 'Flow Field', 'Harmonograph',
   "Langton's Ant", 'Lorenz Attractor', 'Molnar', 'Nake',
-  'Rössler Attractor', 'Sprott Attractor', '10 PRINT', 'Truchet Tiles',
+  'Rössler Attractor', 'Sprott Attractor', 'Truchet Tiles',
 ])
 
 export const ARTIFACTS_JS = `
@@ -1967,100 +1967,6 @@ export const ARTIFACTS_JS = `
         canvas.removeEventListener('pointermove', onPointerMove);
         canvas.removeEventListener('pointerup', onPointerUp);
         canvas.removeEventListener('pointercancel', onPointerUp);
-        root.removeChild(canvas);
-      },
-    };
-  });
-
-  // --- 10 PRINT ---
-  register('10 PRINT', function(root, initialConfig) {
-    initialConfig = initialConfig || {};
-
-    var canvas = document.createElement('canvas');
-    canvas.style.display = 'block';
-    canvas.style.width = '100%';
-    canvas.style.height = '100%';
-    canvas.style.touchAction = 'none';
-    root.appendChild(canvas);
-
-    var ctx = canvas.getContext('2d');
-    var W = 0, H = 0;
-    var x = 0, y = 0;
-    var raf = 0;
-
-    var config = {
-      cellSize: 22,
-      lineWidth: 2,
-      color: '#c0c0c0',
-      bgColor: '#050b07',
-    };
-    Object.assign(config, initialConfig);
-
-    function resize() {
-      var dpr = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
-      var rect = root.getBoundingClientRect();
-      W = Math.max(1, rect.width);
-      H = Math.max(1, rect.height);
-      canvas.width = Math.floor(W * dpr);
-      canvas.height = Math.floor(H * dpr);
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      resetDraw();
-    }
-
-    function resetDraw() {
-      x = 0;
-      y = 0;
-      ctx.fillStyle = config.bgColor;
-      ctx.fillRect(0, 0, W, H);
-      ctx.strokeStyle = config.color;
-      ctx.lineWidth = config.lineWidth;
-      ctx.lineCap = 'square';
-    }
-
-    function loop() {
-      var size = config.cellSize;
-      var linesPerFrame = 6;
-
-      for (var i = 0; i < linesPerFrame; i++) {
-        if (y >= H) {
-          resetDraw();
-          raf = requestAnimationFrame(loop);
-          return;
-        }
-        ctx.beginPath();
-        if (Math.random() > 0.5) {
-          ctx.moveTo(x, y);
-          ctx.lineTo(x + size, y + size);
-        } else {
-          ctx.moveTo(x + size, y);
-          ctx.lineTo(x, y + size);
-        }
-        ctx.stroke();
-        x += size;
-        if (x >= W) { x = 0; y += size; }
-      }
-      raf = requestAnimationFrame(loop);
-    }
-
-    function onClick() { resetDraw(); }
-
-    var ro = new ResizeObserver(function() { resize(); });
-    ro.observe(root);
-    root.addEventListener('click', onClick);
-
-    resize();
-    raf = requestAnimationFrame(loop);
-
-    return {
-      update: function(next) {
-        var nextMerged = Object.assign({}, config, next);
-        config = nextMerged;
-        resetDraw();
-      },
-      destroy: function() {
-        cancelAnimationFrame(raf);
-        ro.disconnect();
-        root.removeEventListener('click', onClick);
         root.removeChild(canvas);
       },
     };

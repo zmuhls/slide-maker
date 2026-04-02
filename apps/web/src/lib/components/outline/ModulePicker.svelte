@@ -56,7 +56,13 @@
       case 'stream-list':
         return { items: [] }
       case 'artifact':
-        return { rawSource: '', alt: 'Interactive visualization', width: '100%', height: '400px' }
+        return {
+          rawSource: '',
+          alt: 'Interactive visualization',
+          width: '100%',
+          autoSize: true,
+          aspectRatio: 16 / 9,
+        }
       default:
         return {}
     }

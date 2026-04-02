@@ -55,6 +55,19 @@ export interface ArtifactData {
   alt?: string
   artifactId?: string
   artifactName?: string
+  /**
+   * When true (default), the renderer will auto-compute height to fit
+   * within the canvas zone while preserving `aspectRatio`. Setting an
+   * explicit `width`/`height` or resizing in the editor should switch
+   * this off by setting `autoSize` to false.
+   */
+  autoSize?: boolean
+  /**
+   * Preferred aspect ratio (width / height) used when `autoSize` is
+   * active and no explicit size is provided. Renderer defaults to 16/9;
+   * data-viz artifacts inserted from ArtifactsTab default to 4/3.
+   */
+  aspectRatio?: number
 }
 
 // Artifact config schema types

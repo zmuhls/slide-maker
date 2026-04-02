@@ -220,10 +220,10 @@ describe('module CSS rules in base', () => {
     expect(getProperty(rules[0], 'width')).toBe('100%')
   })
 
-  it('artifact iframe is square by default and drops aspect when height is set', () => {
+  it('artifact iframe is 16:9 by default and drops aspect when height is set', () => {
     const iframeRules = findRules(FRAMEWORK_CSS_BASE, '.artifact-wrapper iframe')
     expect(iframeRules.length).toBeGreaterThan(0)
-    expect(getProperty(iframeRules[0], 'aspect-ratio')).toBe('1')
+    expect(getProperty(iframeRules[0], 'aspect-ratio')).toBe('16 / 9')
 
     const override = findRules(FRAMEWORK_CSS_BASE, '.artifact-wrapper[style*="height"] iframe')
     expect(override.length).toBeGreaterThan(0)

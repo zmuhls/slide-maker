@@ -37,6 +37,7 @@
 <span
   class="label label-{color}"
   contenteditable={editable}
+  spellcheck={false}
   onfocus={handleFocus}
   oninput={handleInput}
   onblur={handleBlur}

@@ -146,7 +146,11 @@
       window.removeEventListener('mouseup', onUp)
       // Persist resize for artifact/image modules
       if (customW && customH && (module.type === 'artifact' || module.type === 'image')) {
-        onchange?.({ ...module.data, width: `${Math.round(customW)}px`, height: `${Math.round(customH)}px` })
+        const next: Record<string, unknown> = { ...module.data, width: `${Math.round(customW)}px`, height: `${Math.round(customH)}px` }
+        if (module.type === 'artifact') next.autoSize = false
+        onchange?.(next)
+        customW = null
+        customH = null
       }
     }
     window.addEventListener('mousemove', onMove)
@@ -169,7 +173,6 @@
       class:active={isActive}
       bind:this={triggerEl}
       onclick={toggleControls}
-      title="Module actions"
       aria-label="Module actions"
       aria-expanded={isActive}
     >⋯</button>

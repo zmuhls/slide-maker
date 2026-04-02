@@ -199,13 +199,6 @@
     transition: background 0.15s ease;
   }
 
-  /* When editing, prefer caret-stable wrapping rules inside contenteditable
-     to avoid cursor jumps back to the first breakable space. */
-  .zone-drop.editable .module-item {
-    overflow-wrap: break-word;  /* break long tokens only when needed */
-    hyphens: manual;            /* do not auto-hyphenate contenteditable */
-  }
-
   .module-item:hover {
     background: rgba(255, 255, 255, 0.02);
   }

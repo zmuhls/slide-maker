@@ -217,7 +217,7 @@ figcaption { margin-top: 8px; font-size: 0.85rem; color: var(--text-muted); }
 }
 .artifact-wrapper iframe {
   display: block; width: 100%; flex: 1; min-height: 0;
-  aspect-ratio: 1; border: none;
+  aspect-ratio: 16 / 9; border: none;
 }
 .artifact-wrapper .artifact-native {
   display: block; width: 100%; flex: 1; min-height: 0;
@@ -228,7 +228,7 @@ figcaption { margin-top: 8px; font-size: 0.85rem; color: var(--text-muted); }
 }
 .artifact-card iframe {
   display: block; width: 100%; flex: 1; min-height: 0;
-  aspect-ratio: 1; border: none;
+  aspect-ratio: 16 / 9; border: none;
 }
 /* When a height is specified inline (e.g., style="height: 240px"),
    drop the default square aspect ratio and allow natural sizing. */

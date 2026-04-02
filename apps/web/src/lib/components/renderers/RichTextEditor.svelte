@@ -11,6 +11,7 @@
     placeholder = 'Type here...',
     onchange,
     oneditorready,
+    initialClickCoords,
     class: className = '',
   }: {
     content: string
@@ -18,6 +19,7 @@
     placeholder?: string
     onchange?: (html: string) => void
     oneditorready?: (editor: Editor) => void
+    initialClickCoords?: { x: number; y: number } | null
     class?: string
   } = $props()
 
@@ -81,6 +83,19 @@
     })
 
     oneditorready?.(editor)
+
+    // Position cursor at the original click location if provided
+    if (initialClickCoords) {
+      requestAnimationFrame(() => {
+        if (!editor) return
+        const pos = editor.view.posAtCoords({ left: initialClickCoords.x, top: initialClickCoords.y })
+        if (pos) {
+          editor.commands.setTextSelection(pos.pos)
+        } else {
+          editor.commands.focus('end')
+        }
+      })
+    }
   })
 
   onDestroy(() => {

@@ -36,10 +36,19 @@ function markdownToHtml(md: string): string {
   let listType = ''
 
   for (const line of lines) {
+    const headingMatch = line.match(/^(#{1,6})\s+(.+)/)
     const bulletMatch = line.match(/^[-*]\s+(.+)/)
     const numberedMatch = line.match(/^\d+\.\s+(.+)/)
 
-    if (bulletMatch) {
+    if (headingMatch) {
+      if (inList) {
+        out.push(listType === 'ol' ? '</ol>' : '</ul>')
+        inList = false
+        listType = ''
+      }
+      const level = headingMatch[1].length
+      out.push(`<h${level}>${inlineMd(headingMatch[2])}</h${level}>`)
+    } else if (bulletMatch) {
       if (!inList || listType !== 'ul') {
         if (inList) out.push(listType === 'ol' ? '</ol>' : '</ul>')
         out.push('<ul>')
@@ -283,9 +292,13 @@ function renderModule(mod: Module, files?: ExportFile[], opts?: RenderOptions): 
       const alt = esc(String(d.alt || 'Interactive visualization'))
       const aw = d.width ? String(d.width) : ''
       const ah = d.height ? String(d.height) : ''
+      const autoSize = d.autoSize !== false
+      const ar = Number(d.aspectRatio)
+      const hasAr = isFinite(ar) && ar > 0
       const align = typeof d.align === 'string' ? String(d.align) : 'center'
       const alignCss = align === 'left' ? 'margin-right:auto;' : align === 'right' ? 'margin-left:auto;' : 'margin:0 auto;'
-      const sizeStyle = ` style="${aw ? `width:${esc(aw)};` : ''}${ah ? `height:${esc(ah)};aspect-ratio:auto;` : ''}${alignCss}"`
+      const arStyle = !ah && autoSize && hasAr ? `aspect-ratio:${ar};` : ''
+      const sizeStyle = ` style="${aw ? `width:${esc(aw)};` : ''}${ah ? `height:${esc(ah)};aspect-ratio:auto;` : arStyle}${alignCss}"`
       const wrapArtifact = (content: string) => `<div class="artifact-wrapper"${step}${sizeStyle}>${content}</div>`
 
       // Native JS rendering for registered canvas artifacts (no iframe)
