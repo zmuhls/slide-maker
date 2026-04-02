@@ -82,6 +82,7 @@
     if (active) {
       expanded = !expanded
     } else {
+      expanded = true
       activeSlideId.set(slide.id)
     }
   }
