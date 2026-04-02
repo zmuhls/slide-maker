@@ -1,5 +1,7 @@
 # CLAUDE.md
 
+Check `TODO.md` for the current task list when planning work, but default to the operator's instructions, especially if they involve birds.
+
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 ## What This Is
@@ -83,10 +85,17 @@ Do NOT invent new ones. Each module MUST specify a `zone` matching the layout.
 | `card-grid` | `{ cards: [{title, content, color?}], columns?: 2-4 }` | Multi-card grid |
 | `flow` | `{ nodes: [{label, description?}] }` | Process flow with arrows |
 | `stream-list` | `{ items: string[] }` | Styled bullet list |
-| `artifact` | `{ src?, rawSource?, alt?, width?, height? }` | Embedded HTML/JS viz (iframe, sandboxed) |
+| `artifact` | `{ artifactName?, rawSource?, config?, alt?, width?, height? }` | Interactive JS viz (native canvas or iframe fallback) |
 
 Renderers: `apps/web/src/lib/components/renderers/`. Dispatched by `ModuleRenderer.svelte`.
 Artifact config utilities: `apps/web/src/lib/utils/artifact-config.ts` (resolves defaults, builds `@artifact:` chat refs).
+
+### Artifacts (Two Rendering Paths)
+Artifacts render interactive visualizations. Two paths:
+- **Native** — pure JS rendered into a div (no iframe). Registered in `apps/web/src/lib/modules/artifacts/` (client) and `apps/api/src/export/artifacts.ts` (export). Names listed in `NATIVE_ARTIFACT_NAMES`. Includes: A* Pathfinding, Boids, Flow Field, Harmonograph, Langton's Ant, Leaflet Map, Lorenz Attractor, Molnar, Nake, Rossler, Sprott, Truchet Tiles.
+- **Iframe fallback** — for HTML-source artifacts with `rawSource`. Used when no native factory matches. Export extracts these to `artifacts/` folder in the zip.
+
+When adding a new artifact: create a factory in `apps/web/src/lib/modules/artifacts/`, import it in `ArtifactModule.svelte`, add the equivalent vanilla JS `register()` call in `apps/api/src/export/artifacts.ts`, and add the name to `NATIVE_ARTIFACT_NAMES`.
 
 ### Zone Model
 Modules flow vertically within zones. No absolute x/y positioning.
@@ -97,8 +106,8 @@ Modules flow vertically within zones. No absolute x/y positioning.
 
 ### Canvas Rendering (Two Modes)
 The canvas has two modes (`CanvasMode = 'edit' | 'view'`):
-- **View mode** (default) — iframe with `srcdoc` renders the slide using the exact same HTML/CSS as the export. Guaranteed WYSIWYG. Theme-driven via CSS variables. Client-side HTML renderer at `apps/web/src/lib/utils/slide-html.ts` mirrors the API export renderer. The iframe srcdoc rebuilds reactively when slide data or theme changes (uses `{#key slideHtml}` for re-render).
-- **Edit mode** — double-click or click "Edit" button to switch. Uses SlideRenderer with Svelte components (TipTap, module picker, ▲/▼ controls). Press Escape to switch back.
+- **View mode** (default) — `SlideRenderer` with Svelte components, non-editable. Theme-driven via CSS variables. Click to switch to edit mode.
+- **Edit mode** — click "Edit" button to switch. Uses SlideRenderer with TipTap editors, module picker, ▲/▼ controls. Press Escape to switch back.
 - **Preview** — toolbar button opens `{API_URL}/api/decks/{id}/preview` in a new browser tab (full deck preview, not inline). Not a canvas mode — just a `window.open()` call.
 
 ### Canvas Editing (Edit Mode)
