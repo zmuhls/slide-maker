@@ -14,6 +14,7 @@ export const env = {
   anthropicApiKey: process.env.ANTHROPIC_API_KEY ?? '',
   openrouterApiKey: process.env.OPENROUTER_API_KEY ?? '',
   tavilyApiKey: process.env.TAVILY_API_KEY ?? '',
+  pexelsApiKey: process.env.PEXELS_API_KEY ?? '',
   publicUrl: process.env.PUBLIC_URL ?? 'http://localhost:5173',
 } as const
 
@@ -28,6 +29,9 @@ if (!env.openrouterApiKey && !env.anthropicApiKey) {
 }
 if (!env.smtp.host) {
   warnings.push('SMTP_HOST not set — email verification will not work')
+}
+if (!env.pexelsApiKey) {
+  warnings.push('PEXELS_API_KEY not set — image search will not work')
 }
 if (warnings.length > 0) {
   console.warn(`\n⚠ Environment warnings:\n  ${warnings.join('\n  ')}\n`)

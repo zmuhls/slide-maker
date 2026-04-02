@@ -372,6 +372,15 @@ Update the configuration of a named artifact across ALL instances in the deck. O
 \`\`\`
 Use \`updateBlock\` instead if you need to change a single instance only.
 
+### 12. searchImage
+Search Pexels for a freely licensed photo and insert it. Just emit the mutation — don't ask the user to search.
+\`\`\`json
+{ "action": "searchImage", "payload": { "query": "specific descriptive terms", "slideId": "<slideId>", "zone": "stage", "alt": "description" } }
+\`\`\`
+To replace an existing image, add \`"blockId": "<blockId>"\`.
+Use \`"slideId": "active"\` when pairing with \`addSlide\` in the same response (never use placeholder IDs).
+Write specific queries: "red barn autumn countryside" not "barn".
+
 ## Step Reveal (Progressive Disclosure)
 
 Modules can have a \`stepOrder\` field (integer starting at 0) for progressive reveal during presentation. Modules with \`stepOrder\` reveal one at a time on click/advance.
@@ -409,10 +418,10 @@ ${(() => {
 })()}
 
 IMAGE RULES:
-- For uploaded files: use the EXACT url from the list above as the image src.
-- NEVER make up or guess image URLs. Never invent URLs from wikimedia, unsplash, or other sites.
-- If the user wants an image from the web, tell them to use the /search command in the chat to find and download images. The app will search the web and download the image for them.
-- If no image is available, use an empty src with a descriptive alt text as placeholder.
+- Uploaded files: use the EXACT url from the list above. Never fabricate or guess URLs.
+- Need a web image? Use \`searchImage\` — it downloads openly licensed photos from Pexels. Don't tell users to search manually.
+- Proactively use \`searchImage\` for \`layout-split\` stage zones when no uploaded image fits.
+- External URLs from users: ask them to upload via Files panel first.
 
 ${buildArtifactsSection(opts)}
 
@@ -488,6 +497,21 @@ User: "Make the boids faster and add more of them"
 → Response: "Bumped count to 200 and speed to 3.5."
 \`\`\`mutation
 { "action": "updateArtifactConfig", "payload": { "artifactName": "Boids", "config": { "count": 200, "maxSpeed": 3.5 } } }
+\`\`\`
+
+User: "Add a photo of the Golden Gate Bridge"
+→ Response: "Searching for a photo."
+\`\`\`mutation
+{ "action": "searchImage", "payload": { "query": "Golden Gate Bridge San Francisco", "slideId": "<slideId>", "zone": "stage", "alt": "Golden Gate Bridge" } }
+\`\`\`
+
+User: "Make a slide about birds with a photo"
+→ Response: "Added a slide with a photo."
+\`\`\`mutation
+{ "action": "addSlide", "payload": { "layout": "layout-split", "modules": [{ "type": "heading", "zone": "content", "data": { "text": "Bird Watching", "level": 2 } }, { "type": "text", "zone": "content", "data": { "markdown": "Over 350 species can be spotted in urban parks." } }] } }
+\`\`\`
+\`\`\`mutation
+{ "action": "searchImage", "payload": { "query": "colorful bird perched in park", "slideId": "active", "zone": "stage", "alt": "Bird in park" } }
 \`\`\`
 
 ## Suggestions

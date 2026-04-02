@@ -69,19 +69,40 @@
       appendToAssistant(searchMsgId, 'Searching the web...')
 
       try {
-        const results = await api.webSearch(query)
+        // Tavily for text results — don't let failure block image search
+        let results: { answer?: string; results: any[]; images: string[] } = { results: [], images: [] }
+        try {
+          results = await api.webSearch(query)
+        } catch {
+          // Tavily may be down — continue with Pexels image search
+        }
         let response = `**Search results for "${query}":**\n\n`
 
-        if (results.images?.length) {
-          response += `**Images found (${results.images.length}):**\n`
-          // Auto-download first image and add to slide
-          const imgUrl = results.images[0]
-          try {
-            const downloaded = await api.downloadImage(imgUrl, deck.id, `${query.replace(/\s+/g, '-').slice(0, 30)}.jpg`)
-            if (downloaded?.file) {
+        // Search Pexels for openly licensed images
+        try {
+          const imgResults = await api.searchImages(query, 3)
+          const pexelsImages = imgResults.images ?? []
+
+          if (pexelsImages.length) {
+            const sanitized = query.replace(/[^a-zA-Z0-9]+/g, '-').slice(0, 40)
+            const downloads = await Promise.allSettled(
+              pexelsImages.map((img, i) =>
+                api.downloadImage(img.url, deck.id, `search-${sanitized}-${i + 1}.jpg`)
+              )
+            )
+            const successful = downloads
+              .filter((d): d is PromiseFulfilledResult<any> => d.status === 'fulfilled' && d.value?.file)
+              .map(d => d.value)
+
+            if (successful.length) {
+              response += `**Images downloaded (${successful.length})** (via Pexels, free to use):\n`
+              successful.forEach((d: any) => {
+                response += `- "${d.file.filename}" → ${d.file.url}\n`
+              })
+              // Auto-insert first image into active slide
               const slideId = get(activeSlideId)
               if (slideId) {
-                const API_URL = import.meta.env.PUBLIC_API_URL ?? 'http://localhost:3001'
+                // Store relative path — ImageModule.svelte prepends API_URL at render time
                 await applyMutation({
                   action: 'addBlock',
                   payload: {
@@ -89,21 +110,16 @@
                     block: {
                       type: 'image',
                       zone: 'stage',
-                      data: { src: `${API_URL}${downloaded.file.url}`, alt: query, caption: '' },
+                      data: { src: successful[0].file.url, alt: query, caption: '' },
                     },
                   },
                 })
-                response += `\nImage downloaded and added to the active slide.\n`
-              } else {
-                response += `\nImage downloaded to Files. Select a slide to insert it.\n`
+                response += `\nFirst image added to the active slide.\n`
               }
             }
-          } catch {
-            response += `\nCouldn't download the image automatically. Here are the URLs:\n`
-            results.images.slice(0, 3).forEach((img: string, i: number) => {
-              response += `${i + 1}. ${img}\n`
-            })
           }
+        } catch {
+          response += `\nImage search unavailable.\n`
         }
 
         if (results.answer) {
@@ -120,6 +136,12 @@
         chatMessages.update((msgs) =>
           msgs.map((m) => m.id === searchMsgId ? { ...m, content: response, streaming: false } : m)
         )
+
+        // Persist search results to DB so AI sees them in future turns
+        api.saveChatMessages(deck.id, [
+          { role: 'user', content: text },
+          { role: 'assistant', content: response },
+        ]).catch(err => console.error('Failed to persist search:', err))
       } catch (err: any) {
         chatMessages.update((msgs) =>
           msgs.map((m) => m.id === searchMsgId ? { ...m, content: `Search failed: ${err.message}`, streaming: false } : m)

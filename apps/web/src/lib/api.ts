@@ -112,10 +112,20 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({ query }),
     }),
+  searchImages: (query: string, perPage?: number) =>
+    request<{ images: { id: number; url: string; thumbnail: string; alt: string; photographer: string; pexelsUrl: string }[] }>(
+      '/api/search/images',
+      { method: 'POST', body: JSON.stringify({ query, perPage }) },
+    ),
   downloadImage: (url: string, deckId: string, filename?: string) =>
     request<{ file: { id: string; url: string; filename: string } }>('/api/search/download-image', {
       method: 'POST',
       body: JSON.stringify({ url, deckId, filename }),
+    }),
+  saveChatMessages: (deckId: string, messages: { role: string; content: string }[]) =>
+    request<{ ok: true }>(`/api/chat/${deckId}/messages`, {
+      method: 'POST',
+      body: JSON.stringify({ messages }),
     }),
 
   // Debug

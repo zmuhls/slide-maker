@@ -33,6 +33,7 @@ export function summarizeMutation(m: Record<string, unknown>): string {
     case 'applyTemplate': return 'Apply template'
     case 'updateMetadata': return 'Update deck name'
     case 'updateArtifactConfig': return `Update ${p.artifactName ?? 'artifact'} config`
+    case 'searchImage': return `Search images: "${(p as any).query || 'image'}"`
     default: return action
   }
 }

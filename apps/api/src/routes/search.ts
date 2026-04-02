@@ -71,6 +71,51 @@ search.post('/', async (c) => {
   }
 })
 
+// POST /api/search/images — Search Pexels for openly licensed images
+search.post('/images', async (c) => {
+  if (!env.pexelsApiKey) {
+    return c.json({ error: 'Image search not configured (PEXELS_API_KEY missing)' }, 503)
+  }
+
+  const { query, perPage } = await c.req.json<{ query: string; perPage?: number }>()
+  if (!query?.trim() || query.trim().length > 200) {
+    return c.json({ error: 'Query required (max 200 chars)' }, 400)
+  }
+
+  const clampedPerPage = Math.min(Math.max(perPage ?? 5, 1), 10)
+
+  try {
+    const res = await fetch(
+      `https://api.pexels.com/v1/search?query=${encodeURIComponent(query.trim())}&per_page=${clampedPerPage}&orientation=landscape`,
+      {
+        headers: { Authorization: env.pexelsApiKey },
+        signal: AbortSignal.timeout(10_000),
+      },
+    )
+
+    if (!res.ok) {
+      console.error('Pexels API error:', res.status, await res.text())
+      return c.json({ error: 'Image search failed' }, 502)
+    }
+
+    const data = await res.json()
+    return c.json({
+      images: (data.photos ?? []).map((p: any) => ({
+        id: p.id,
+        url: p.src?.large ?? p.src?.original,
+        thumbnail: p.src?.medium,
+        alt: p.alt || query,
+        photographer: p.photographer,
+        photographerUrl: p.photographer_url,
+        pexelsUrl: p.url,
+      })),
+    })
+  } catch (err) {
+    console.error('Pexels search error:', err)
+    return c.json({ error: 'Image search failed' }, 500)
+  }
+})
+
 // POST /api/search/download-image — Download an image from URL and save as uploaded file
 search.post('/download-image', async (c) => {
   const { url, deckId, filename } = await c.req.json<{ url: string; deckId: string; filename?: string }>()

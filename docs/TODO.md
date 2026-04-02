@@ -12,6 +12,14 @@ Working list of near-term fixes and enhancements. Grouped by area and written as
   - [ ] Visual drop affordances and a11y roles/labels
 - [ ] Split handle a11y
   - [ ] Focusable handle with arrow-key resizing and value change announcements
+- [x] Arrow key slide navigation in edit mode (left/right to switch slides)
+- [x] Global keyboard nav — arrow keys for slides, Escape for gallery
+
+## New Module Types
+- [x] Video module (`video`) — YouTube, Vimeo, Loom embed support
+  - [x] Renderer (`VideoModule.svelte`), export support, framework CSS
+  - [x] Added to `VALID_BLOCK_TYPES` whitelist and `ModulePicker`
+  - [x] URL input UX fixes (focus, click propagation, save flow)
 
 ## Undo / Redo Hardening
 - [ ] Group/coalesce rapid mutations (typing, quick slider changes) into a single history entry
@@ -21,6 +29,7 @@ Working list of near-term fixes and enhancements. Grouped by area and written as
 - [ ] Add unit tests for history push/pop, grouped mutations, and failure paths
 
 ## Chat-to-Editor Coverage
+- [x] Chat context awareness, suggestion chips, per-mutation accept/reject
 - [ ] Expand mutations exposed to the assistant so every module’s key–value pairs are reachable
   - [ ] Artifact: `artifactName`, `config` fields, `width`, `height`, `align`
   - [ ] Heading: `text`, `level`
@@ -35,10 +44,22 @@ Working list of near-term fixes and enhancements. Grouped by area and written as
   - [ ] Card Grid: `cards[]`, `columns`
   - [ ] Flow: `nodes[]`
   - [ ] Stream List: `items[]`
+  - [ ] Video: `url`, `caption`
   - [ ] Slide: `layout`, `splitRatio`
   - [ ] Deck: `name`, `themeId`, branding metadata
 - [ ] System prompt: list features + examples as key–value JSON mutations (keeps fence format ```mutation)
 - [ ] E2E: chat can add a slide, add module, and set fields end‑to‑end
+
+## Sharing
+- [x] Share button in editor toolbar
+
+## Resource Panel Redesign
+- [ ] Evaluate alternative panel layouts (wireframes at `docs/wireframes/resource-panel-alternatives.html`)
+  - [ ] Option A: Accordion stack — all sections visible, collapsible
+  - [ ] Option B: Search palette + pinned shelf — unified search across all resource types
+  - [ ] Option C: Icon dock + context view — contextual suggestions based on active slide
+- [ ] Implement chosen design
+- [ ] Add search/filter capability across resource types
 
 ## Accessibility
 - [ ] Replace ad-hoc popovers/dialogs with an ARIA‑compliant pattern (or a small utility wrapper)
@@ -47,6 +68,7 @@ Working list of near-term fixes and enhancements. Grouped by area and written as
 
 ## Export/Preview Consistency
 - [x] Unify artifact sizing across editor/preview/export (wrapper + iframe aspect rules)
+- [x] Video module export support (html-renderer)
 - [ ] View mode WYSIWYG: render view mode via iframe srcdoc using FRAMEWORK_CSS_PREVIEW + client-side renderSlideHtml (mirrors API html-renderer) so canvas view matches preview/export exactly
 - [ ] Export: optional artifact size report (per‑artifact byte size and total) in `manifest.json`
 - [ ] Add checksum to extracted artifact filenames for cacheability
@@ -60,7 +82,7 @@ Working list of near-term fixes and enhancements. Grouped by area and written as
 - [ ] Unit: ZoneDrop reorder → `reorderBlocks` mapping (including keyboard path)
 - [ ] Unit: History store coalescing and redo branch behavior
 - [ ] E2E: drag from Resources to canvas creates expected module
-- [ ] Expand framework CSS tests for future modules (e.g., charts)
+- [ ] Expand framework CSS tests for future modules (e.g., video, charts)
 
 ## Security
 - [ ] Re‑verify CSP in artifact HTML when user‑provided `rawSource` is injected

@@ -421,6 +421,84 @@ export async function applyMutation(mutation: Record<string, unknown>): Promise<
       break
     }
 
+    case 'searchImage': {
+      const query = payload.query as string
+      const zone = (payload.zone as string) || 'stage'
+      const alt = (payload.alt as string) || query
+      const blockId = payload.blockId as string | undefined
+
+      // Resolve slideId: use provided ID if it matches a real slide, otherwise fall back to active slide.
+      // This handles the case where AI emits addSlide + searchImage in the same response —
+      // addSlide sets activeSlideId, so searchImage can find the new slide even with a placeholder ID.
+      let slideId = payload.slideId as string
+      const slideExists = slideId && deck.slides.some((s) => s.id === slideId)
+      if (!slideExists) {
+        slideId = get(activeSlideId) ?? ''
+      }
+
+      if (!query || !slideId) break
+
+      // Search Pexels for openly licensed images
+      const { api: searchApi } = await import('$lib/api')
+      const results = await searchApi.searchImages(query, 3)
+      const images = results.images ?? []
+
+      if (!images.length) {
+        // Surface to user via a short assistant message
+        try {
+          const { addAssistantMessage, appendToAssistant, finishAssistant } = await import('$lib/stores/chat')
+          const msgId = addAssistantMessage()
+          appendToAssistant(msgId, `Image search found no results for "${query}" (Pexels). Try different terms.`)
+          finishAssistant(msgId)
+        } catch {}
+        console.warn('searchImage: no images found for', query)
+        break
+      }
+
+      // Try downloading images until one succeeds
+      const sanitized = query.replace(/[^a-zA-Z0-9]+/g, '-').slice(0, 40)
+      let downloaded: { file: { id: string; url: string; filename: string } } | null = null
+      for (let i = 0; i < images.length; i++) {
+        try {
+          downloaded = await searchApi.downloadImage(
+            images[i].url, deck.id,
+            `search-${sanitized}-${i + 1}.jpg`,
+          )
+          if (downloaded?.file) break
+        } catch { continue }
+      }
+
+      if (!downloaded?.file) {
+        try {
+          const { addAssistantMessage, appendToAssistant, finishAssistant } = await import('$lib/stores/chat')
+          const msgId = addAssistantMessage()
+          appendToAssistant(msgId, `Failed to download images for "${query}". Please try again or adjust the query.`)
+          finishAssistant(msgId)
+        } catch {}
+        console.warn('searchImage: all downloads failed for', query)
+        break
+      }
+
+      // Store relative path — ImageModule.svelte prepends API_URL when it sees /api/ prefix
+      const imgSrc = downloaded.file.url
+
+      // Either update existing image block or add new one
+      if (blockId) {
+        await applyMutation({
+          action: 'updateBlock',
+          payload: { slideId, blockId, data: { src: imgSrc, alt } },
+        })
+      } else {
+        await applyMutation({
+          action: 'addBlock',
+          payload: { slideId, block: { type: 'image', zone, data: { src: imgSrc, alt, caption: '' } } },
+        })
+      }
+
+      logAction(`AI: searched web for "${query}"`)
+      break
+    }
+
     default:
       console.warn('Unhandled mutation action:', mutation.action)
   }

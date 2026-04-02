@@ -434,6 +434,63 @@ chat.post('/', chatRateLimit, async (c) => {
   })
 })
 
+// POST /:deckId/messages — Save chat messages (for search results, system messages, etc.)
+chat.post('/:deckId/messages', async (c) => {
+  const user = c.get('user')
+  const deckId = c.req.param('deckId')
+
+  const access = await db
+    .select()
+    .from(deckAccess)
+    .where(and(eq(deckAccess.deckId, deckId), eq(deckAccess.userId, user.id)))
+    .get()
+
+  if (!access) {
+    return c.json({ error: 'Not found or no access' }, 404)
+  }
+  if (access.role === 'viewer') {
+    return c.json({ error: 'Forbidden: viewers cannot save messages' }, 403)
+  }
+
+  // Parse body with guard
+  let messages: { role: 'user' | 'assistant'; content: string }[] | undefined
+  try {
+    const body = await c.req.json<{ messages: { role: 'user' | 'assistant'; content: string }[] }>()
+    messages = body?.messages
+  } catch {
+    return c.json({ error: 'Invalid JSON body' }, 400)
+  }
+
+  if (!Array.isArray(messages) || messages.length === 0 || messages.length > 10) {
+    return c.json({ error: 'messages required (max 10)' }, 400)
+  }
+
+  // Runtime validation of message roles + content
+  for (const msg of messages) {
+    if (msg.role !== 'user' && msg.role !== 'assistant') {
+      return c.json({ error: 'Invalid role' }, 400)
+    }
+    if (typeof msg.content !== 'string' || msg.content.trim().length === 0) {
+      return c.json({ error: 'Invalid content' }, 400)
+    }
+  }
+
+  const now = new Date()
+  for (const msg of messages) {
+    const content = (msg.content || '').slice(0, 10000)
+    await db.insert(chatMessages).values({
+      id: createId(),
+      deckId,
+      role: msg.role,
+      content,
+      provider: 'system',
+      createdAt: now,
+    })
+  }
+
+  return c.json({ ok: true })
+})
+
 // GET /:deckId/history — Get chat history for a deck
 chat.get('/:deckId/history', async (c) => {
   const user = c.get('user')
