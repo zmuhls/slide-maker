@@ -89,7 +89,7 @@
     align-items: end;
     gap: 6px;
     padding: 0 8px;
-    border-bottom: 1px solid var(--color-bg-tertiary, #f1f5f9);
+    border-bottom: 1px solid var(--color-border, #e2e8f0);
     flex-shrink: 0;
     /* Default: no horizontal scrolling shown */
     overflow: visible;

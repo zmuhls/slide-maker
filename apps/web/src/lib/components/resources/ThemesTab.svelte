@@ -2,7 +2,6 @@
   import { get } from 'svelte/store'
   import { currentDeck } from '$lib/stores/deck'
   import { themesStore, themesLoaded, ensureThemesLoaded, type ThemeData, isDark } from '$lib/stores/themes'
-  import { editorDarkMode } from '$lib/stores/editor-theme'
   import { API_URL } from '$lib/api'
 
   type Theme = ThemeData
@@ -191,19 +190,6 @@
 <div class="themes-tab">
   <div class="tab-header">
     <div class="header-actions">
-      <button
-        class="toggle-btn"
-        class:toggled-on={$editorDarkMode}
-        onclick={() => editorDarkMode.toggle()}
-        title={$editorDarkMode ? 'Switch editor to light mode' : 'Switch editor to dark mode'}
-        aria-label={$editorDarkMode ? 'Switch editor to light mode' : 'Switch editor to dark mode'}
-        role="switch"
-        aria-checked={$editorDarkMode}>
-        <span class="toggle-track">
-          <span class="toggle-thumb"></span>
-        </span>
-        <span class="toggle-label">{$editorDarkMode ? 'Dark' : 'Light'}</span>
-      </button>
       <button class="create-btn" onclick={() => { showCreateForm = !showCreateForm }}>
         {showCreateForm ? 'Cancel' : '+ Create Theme'}
       </button>
@@ -323,50 +309,6 @@
 
   .header-actions { display: flex; gap: 6px; align-items: center; }
 
-  .toggle-btn {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    padding: 4px 8px;
-    background: transparent;
-    border: 1px solid var(--color-border, #e5e7eb);
-    border-radius: var(--radius-sm, 6px);
-    cursor: pointer;
-    font-size: 10px;
-    font-weight: 600;
-    color: var(--color-text-muted, #6b7280);
-    transition: background 0.15s, border-color 0.15s;
-  }
-  .toggle-btn:hover:not(:disabled) { background: #f3f4f6; }
-  .toggle-btn:disabled { opacity: 0.5; cursor: default; }
-
-  .toggle-track {
-    position: relative;
-    width: 24px;
-    height: 14px;
-    background: var(--color-border, #d1d5db);
-    border-radius: 7px;
-    transition: background 0.2s;
-  }
-  .toggled-on .toggle-track {
-    background: var(--color-primary, #3B73E6);
-  }
-  .toggle-thumb {
-    position: absolute;
-    top: 2px;
-    left: 2px;
-    width: 10px;
-    height: 10px;
-    background: #fff;
-    border-radius: 50%;
-    transition: transform 0.2s;
-  }
-  .toggled-on .toggle-thumb {
-    transform: translateX(10px);
-  }
-  .toggle-label {
-    min-width: 24px;
-  }
 
   .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); border: 0; }
 
