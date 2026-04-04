@@ -95,42 +95,19 @@ describe('buildAtRef', () => {
     expect(ref.startsWith('@artifact:Boids Visualization')).toBe(true)
   })
 
-  it('contains a json fenced code block', () => {
+  it('is exactly the short token — no JSON payload', () => {
     const ref = buildAtRef(flatArtifact)
-    expect(ref).toContain('```json')
-    expect(ref).toContain('```')
+    expect(ref).toBe('@artifact:Boids Visualization')
   })
 
-  it('includes name, type, source, and resolved config in payload', () => {
-    const ref = buildAtRef(flatArtifact)
-    const jsonBlock = ref.split('```json\n')[1].split('\n```')[0]
-    const payload = JSON.parse(jsonBlock)
-    expect(payload.name).toBe('Boids Visualization')
-    expect(payload.type).toBe('visualization')
-    expect(payload.source).toBe('https://example.com/gallery/boids.html')
-    expect(payload.config).toEqual({
-      width: '100%',
-      height: '400px',
-      sandbox: 'allow-scripts',
-    })
-  })
-
-  it('resolves schema config defaults in the payload', () => {
+  it('produces just @artifact:<name> for schema-config artifacts', () => {
     const ref = buildAtRef(schemaArtifact)
-    const jsonBlock = ref.split('```json\n')[1].split('\n```')[0]
-    const payload = JSON.parse(jsonBlock)
-    expect(payload.config).toEqual({
-      title: 'My Chart',
-      values: [10, 20, 30],
-      color: '#3b82f6',
-    })
+    expect(ref).toBe('@artifact:Bar Chart')
   })
 
-  it('produces empty config object for null config artifacts', () => {
+  it('produces just @artifact:<name> for null-config artifacts', () => {
     const ref = buildAtRef(nullConfigArtifact)
-    const jsonBlock = ref.split('```json\n')[1].split('\n```')[0]
-    const payload = JSON.parse(jsonBlock)
-    expect(payload.config).toEqual({})
+    expect(ref).toBe('@artifact:Empty Visualization')
   })
 })
 

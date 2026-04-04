@@ -61,6 +61,7 @@ interface BuildPromptOptions {
   expandSlideIds?: string[]
   recentActions?: string[]
   lastAgentSlideId?: string | null
+  focusedTemplateNames?: string[]
 }
 
 const MAX_SLIDES = 60
@@ -152,6 +153,18 @@ export function buildSystemPrompt(opts: BuildPromptOptions): string {
     })
     .join('\n')
 
+  const slideIndex = deck.slides.length
+    ? deck.slides.map((s, i) => {
+        const h = s.blocks.find((b) => b.type === 'heading')
+        const title = h
+          ? String((h.data as Record<string, unknown>).text || '').slice(0, 60)
+          : s.blocks[0]
+            ? `[${s.blocks[0].type}]`
+            : '(empty)'
+        return `${i + 1}. "${title}"${s.id === activeSlideId ? ' [ACTIVE]' : ''}`
+      }).join('\n')
+    : '(empty deck)'
+
   const activeSlideInfo = (() => {
     if (!activeSlideId) {
       if ((deck.slides?.length ?? 0) === 0) {
@@ -170,6 +183,15 @@ export function buildSystemPrompt(opts: BuildPromptOptions): string {
         return `  - "${t.name}" (id="${t.id}", layout="${t.layout}") → [${modSummary}]`
       }).join('\n')
     : '  (none loaded)'
+
+  let focusedTemplatesDetail = ''
+  if (opts.focusedTemplateNames?.length && templates?.length) {
+    for (const name of opts.focusedTemplateNames) {
+      const tpl = templates.find((t) => t.name.toLowerCase() === name.toLowerCase())
+      if (!tpl) continue
+      focusedTemplatesDetail += `\n## @template:${tpl.name} (full schema)\nlayout: ${tpl.layout}\nmodules: ${JSON.stringify(tpl.modules, null, 2)}\n`
+    }
+  }
 
   const themeInfo = theme
     ? `  Theme: "${theme.name}" (id="${theme.id}")\n  Colors: ${JSON.stringify(theme.colors)}\n  Fonts: ${JSON.stringify(theme.fonts)}`
@@ -393,6 +415,9 @@ Example in addSlide modules array:
 
 A carousel module with \`syncSteps: true\` advances its images in sync with step reveals on the same slide.
 
+## Slide Index
+${slideIndex}
+
 ## Current Deck State
 
 Deck: "${deck.name}" (id="${deck.id}")
@@ -402,7 +427,7 @@ Total slides: ${deck.slides.length}
 ${slidesSummary || '  (empty deck)'}
 
 ## Available Templates
-${templatesList}
+${templatesList}${focusedTemplatesDetail}
 
 ## Uploaded Files
 ${files?.length ? files.map((f) => `- "${f.filename}" (${f.mimeType}) → use src: "${f.url}" in image modules`).join('\n') : '(no files uploaded)'}
@@ -444,7 +469,8 @@ ${opts.lastAgentSlideId ? (() => {
 
 **Brevity:** Keep responses short — 1-2 sentences max. State what you did, not why or how. Never narrate your reasoning, restate the user's request, or ask rhetorical follow-ups. Only ask a question if you genuinely need clarification to proceed. Do not editorialize about aesthetic choices or explain what the user can already see.
 
-- Prefer editing existing slides and modules over creating new ones. Only add new slides when the user explicitly requests new content.
+- **No duplicate slides.** Before emitting \`addSlide\`, scan the Slide Index above. If a slide with the same or similar heading already exists, use \`addBlock\` or \`updateBlock\` on that slide instead. Only emit \`addSlide\` when the content is genuinely distinct.
+- Prefer editing existing slides and modules over creating new ones.
 - When the user describes changes, check if the active slide already has a suitable module to update before adding a new one.
 - Include a brief text response alongside mutations. Never respond with only mutation blocks.
 - Use ONLY the 13 module types listed above. Do not invent types like "bullets", "table", "divider", "subtitle", "code", or "quote".

@@ -42,15 +42,7 @@ export function getResolvedConfig(artifact: ArtifactRef): Record<string, unknown
  * Build the `@artifact:Name` chat reference string with full JSON payload.
  */
 export function buildAtRef(artifact: ArtifactRef): string {
-  const config = getResolvedConfig(artifact)
-  const payload = {
-    name: artifact.name,
-    type: artifact.type,
-    source: artifact.source,
-    config,
-  }
-  const json = JSON.stringify(payload, null, 2)
-  return `@artifact:${artifact.name}\n\`\`\`json\n${json}\n\`\`\``
+  return `@artifact:${artifact.name}`
 }
 
 /**

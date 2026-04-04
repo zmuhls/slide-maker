@@ -292,8 +292,8 @@
                         <button
                           class="act-btn act-at"
                           onclick={() => injectAtRef(artifact)}
-                          title="Send @artifact reference to chat"
-                          aria-label="Send @artifact reference to chat"
+                          title="Mention in chat (@artifact)"
+                          aria-label="Mention in chat"
                         >
                           <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"><circle cx="6" cy="6" r="2"/><path d="M8 4.5v2.3a1.2 1.2 0 002.4 0V6a4.4 4.4 0 10-2.2 3.8"/></svg>
                         </button>

@@ -3,6 +3,7 @@
   import { currentDeck, addSlideToDeck } from '$lib/stores/deck'
   import { setActiveSlide } from '$lib/stores/ui'
   import { API_URL } from '$lib/api'
+  import { chatDraft } from '$lib/stores/chat'
 
   interface Template {
     id: string
@@ -112,6 +113,10 @@
       })
   })
 
+  function injectTemplateRef(template: Template) {
+    chatDraft.set(`@template:${template.name}`)
+  }
+
   async function applyTemplate(template: Template) {
     const deck = get(currentDeck)
     if (!deck) return
@@ -158,8 +163,9 @@
                             : tmpl.layout === 'layout-content' ? (dark ? contentVariants[i % contentVariants.length] : contentVariantsLight[i % contentVariantsLight.length])
                             : tmpl.layout === 'layout-grid' ? (dark ? gridVariants[i % gridVariants.length] : gridVariantsLight[i % gridVariantsLight.length])
                             : dark ? base : (layoutMetaLight[tmpl.layout] ?? base)}
-            <button class="template-card" onclick={() => applyTemplate(tmpl)}>
-              <div class="thumbnail" style:background={meta.bg}>
+            <div class="template-card-wrap">
+              <button class="template-card" onclick={() => applyTemplate(tmpl)}>
+                <div class="thumbnail" style:background={meta.bg}>
                 {#if tmpl.layout === 'title-slide' || tmpl.layout === 'closing-slide'}
                   <div class="thumb-zones thumb-center">
                     <div class="z-bar z-wide" style:background={meta.fg}></div>
@@ -223,10 +229,14 @@
                   </div>
                 {/if}
               </div>
+              </button>
               <div class="template-info">
                 <span class="template-name">{tmpl.name}</span>
+                <button class="act-btn act-at" onclick={() => injectTemplateRef(tmpl)} title="Mention in chat (@template)" aria-label="Mention in chat">
+                  <svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"><circle cx="6" cy="6" r="2"/><path d="M8 4.5v2.3a1.2 1.2 0 002.4 0V6a4.4 4.4 0 10-2.2 3.8"/></svg>
+                </button>
               </div>
-            </button>
+            </div>
           {/each}
         </div>
       </div>
@@ -281,22 +291,27 @@
     gap: 6px;
   }
 
-  .template-card {
+  .template-card-wrap {
     display: flex;
     flex-direction: column;
     background: var(--color-bg);
-    border: none;
     border-radius: var(--radius-sm);
     overflow: hidden;
-    min-width: 0; /* prevent grid min-content overflow */
-    cursor: pointer;
-    text-align: left;
-    padding: 0;
+    min-width: 0;
     transition: box-shadow 0.15s;
   }
 
-  .template-card:hover {
+  .template-card-wrap:hover {
     box-shadow: 0 1px 6px rgba(59, 115, 230, 0.12);
+  }
+
+  .template-card {
+    display: block;
+    width: 100%;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    background: transparent;
   }
 
   .thumbnail {
@@ -429,7 +444,11 @@
   }
 
   .template-info {
-    padding: 6px 8px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 4px 6px 4px 8px;
+    gap: 4px;
   }
 
   .template-name {
@@ -439,6 +458,29 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    flex: 1;
+  }
+
+  .act-btn {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    padding: 0;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    background: transparent;
+    color: var(--color-text-secondary, #6b7280);
+    cursor: pointer;
+    transition: background 0.12s, color 0.12s, border-color 0.12s;
+  }
+
+  .act-btn:hover {
+    background: var(--color-ghost-bg, rgba(59, 115, 230, 0.08));
+    color: var(--color-primary, #3B73E6);
+    border-color: var(--color-primary, #3B73E6);
   }
 
   .group-header {

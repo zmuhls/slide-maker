@@ -204,6 +204,8 @@ chat.post('/', chatRateLimit, async (c) => {
 
   // Detect @artifact: references in user message for focused tier
   const atRefs = [...message.matchAll(/@artifact:([^\n@]+)/gi)].map((m) => m[1].trim())
+  // Detect @template: references for focused template detail in system prompt
+  const templateAtRefs = [...message.matchAll(/@template:([^\n@]+)/gi)].map((m) => m[1].trim())
 
   // Detect slide references in user message for on-demand expansion
   const slideRefs = [...message.matchAll(/(?:slide|page)\s*(\d+)/gi)]
@@ -228,6 +230,7 @@ chat.post('/', chatRateLimit, async (c) => {
     artifacts: artifactsList,
     activeArtifacts: activeArtifactsList,
     focusedArtifactNames: atRefs.length > 0 ? atRefs : undefined,
+    focusedTemplateNames: templateAtRefs.length > 0 ? templateAtRefs : undefined,
     allThemes: allThemesList,
     expandSlideIds: slideRefs.length > 0 ? slideRefs : undefined,
     recentActions: Array.isArray(recentActions)

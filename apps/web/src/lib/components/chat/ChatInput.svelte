@@ -2,8 +2,10 @@
   import { chatStreaming, chatDraft } from '$lib/stores/chat'
   import { currentDeck } from '$lib/stores/deck'
   import { api } from '$lib/api'
+  import { API_URL } from '$lib/api'
   import { get } from 'svelte/store'
   import { activeSlideId } from '$lib/stores/ui'
+  import { artifactsStore, ensureArtifactsLoaded } from '$lib/stores/artifacts'
 
   interface Props {
     onsend: (text: string) => void
@@ -16,12 +18,12 @@
 
   let textarea: HTMLTextAreaElement | undefined = $state()
 
+  // Inject drafts from resources panel — use space separator for short mention tokens
   $effect(() => {
     const draft = $chatDraft
     if (!draft) return
-    text = text ? `${text}\n${draft}` : draft
+    text = text ? `${text} ${draft}` : draft
     chatDraft.set('')
-    // Focus the textarea so the user can keep typing
     textarea?.focus()
   })
 
@@ -35,9 +37,89 @@
     const trimmed = text.trim()
     if (!trimmed || $chatStreaming || uploading) return false
     if (trimmed.startsWith('/search ')) return true
-    // Allow creation when the deck has no slides yet; otherwise require an active slide
     return !hasSlides || !!$activeSlideId
   })
+
+  // ── @ mention autocomplete ──────────────────────────────────────────────────
+
+  interface MentionItem { name: string; prefix: 'artifact' | 'template' }
+
+  let mentionQuery = $state<string | null>(null)  // null = closed
+  let mentionAtPos = $state(-1)
+  let mentionIndex = $state(0)
+  let mentionDataLoaded = $state(false)
+  let mentionTemplates = $state<MentionItem[]>([])
+
+  async function loadMentionData() {
+    if (mentionDataLoaded) return
+    mentionDataLoaded = true
+    await ensureArtifactsLoaded()
+    try {
+      const res = await fetch(`${API_URL}/api/templates`, { credentials: 'include' })
+      if (res.ok) {
+        const data = await res.json()
+        mentionTemplates = (data.templates ?? []).map((t: any) => ({ name: t.name, prefix: 'template' as const }))
+      }
+    } catch { /* non-fatal */ }
+  }
+
+  let mentionItems = $derived.by((): MentionItem[] => {
+    if (mentionQuery === null) return []
+    const q = mentionQuery.toLowerCase()
+    const artifacts = ($artifactsStore ?? []).map((a) => ({ name: a.name, prefix: 'artifact' as const }))
+    const all: MentionItem[] = [...artifacts, ...mentionTemplates]
+    return q ? all.filter((m) => m.name.toLowerCase().includes(q)) : all
+  })
+
+  function detectMention() {
+    if (!textarea) return
+    const cursorPos = textarea.selectionStart ?? 0
+    const textBeforeCursor = text.slice(0, cursorPos)
+    // Match @ followed by word chars and spaces with no whitespace break
+    const match = textBeforeCursor.match(/@([\w ]*)$/)
+    if (match) {
+      mentionQuery = match[1]
+      mentionAtPos = cursorPos - match[0].length
+      mentionIndex = 0
+      if (!mentionDataLoaded) loadMentionData()
+    } else {
+      mentionQuery = null
+      mentionAtPos = -1
+    }
+  }
+
+  function selectMention(item: MentionItem) {
+    if (!textarea) return
+    const cursorPos = textarea.selectionStart ?? text.length
+    const token = `@${item.prefix}:${item.name}`
+    text = text.slice(0, mentionAtPos) + token + text.slice(cursorPos)
+    const newCursor = mentionAtPos + token.length
+    mentionQuery = null
+    mentionAtPos = -1
+    // Restore cursor after Svelte re-renders
+    requestAnimationFrame(() => {
+      textarea?.focus()
+      textarea?.setSelectionRange(newCursor, newCursor)
+    })
+  }
+
+  function closeMention() {
+    mentionQuery = null
+    mentionAtPos = -1
+  }
+
+  // ── Mention chips (parsed from text) ───────────────────────────────────────
+
+  let activeMentions = $derived.by(() => {
+    const matches = [...text.matchAll(/@(artifact|template):([^\n@]+)/g)]
+    return matches.map((m) => ({ prefix: m[1] as 'artifact' | 'template', name: m[2].trim(), full: m[0] }))
+  })
+
+  function removeMention(full: string) {
+    text = text.replace(full, '').replace(/\s{2,}/g, ' ').trim()
+  }
+
+  // ── Module shortcuts (/add menu) ────────────────────────────────────────────
 
   const moduleShortcuts = [
     { type: 'heading', label: 'Heading' },
@@ -59,21 +141,35 @@
     handleSubmit()
   }
 
+  // ── Send / keyboard ─────────────────────────────────────────────────────────
+
   function handleSubmit() {
     const trimmed = text.trim()
     if (!trimmed || $chatStreaming) return
-    // Allow /search without an active slide; allow normal prompts if deck is empty
     if (!trimmed.startsWith('/search ') && hasSlides && !$activeSlideId) return
     onsend(trimmed)
     text = ''
   }
 
   function handleKeydown(e: KeyboardEvent) {
+    // Autocomplete keyboard nav — must run before submit guard
+    if (mentionQuery !== null && mentionItems.length) {
+      if (e.key === 'ArrowDown') { e.preventDefault(); mentionIndex = (mentionIndex + 1) % mentionItems.length; return }
+      if (e.key === 'ArrowUp')   { e.preventDefault(); mentionIndex = (mentionIndex - 1 + mentionItems.length) % mentionItems.length; return }
+      if (e.key === 'Enter')     { e.preventDefault(); selectMention(mentionItems[mentionIndex]); return }
+      if (e.key === 'Escape')    { closeMention(); return }
+    }
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault()
       handleSubmit()
     }
   }
+
+  function handleInput() {
+    detectMention()
+  }
+
+  // ── File drag-and-drop ──────────────────────────────────────────────────────
 
   function handleDragOver(e: DragEvent) {
     e.preventDefault()
@@ -99,7 +195,6 @@
       for (const file of Array.from(files)) {
         const result = await api.uploadFile(deck.id, file)
         if (result?.file) {
-          // Just mention in chat — let the user tell the AI what to do with it
           const label = file.type.startsWith('image/') ? 'image' : 'file'
           text += (text ? '\n' : '') + `[Uploaded ${label}: ${file.name}]`
         }
@@ -128,14 +223,47 @@
       {/each}
     </div>
   {/if}
+
+  {#if mentionQuery !== null && mentionItems.length > 0}
+    <div class="mention-popup" role="listbox">
+      {#each mentionItems.slice(0, 12) as item, i}
+        <button
+          class="mention-item"
+          class:mention-item-active={i === mentionIndex}
+          role="option"
+          aria-selected={i === mentionIndex}
+          onmousedown={(e) => { e.preventDefault(); selectMention(item) }}
+        >
+          <span class="mention-prefix">{item.prefix === 'artifact' ? '⬡' : '▤'}</span>
+          <span class="mention-name">{item.name}</span>
+          <span class="mention-type">{item.prefix}</span>
+        </button>
+      {/each}
+    </div>
+  {/if}
+
   {#if dragOver}
     <div class="drop-overlay">Drop file to upload</div>
   {/if}
+
+  {#if activeMentions.length > 0}
+    <div class="mention-chips">
+      {#each activeMentions as m}
+        <span class="mention-chip" title="@{m.prefix}:{m.name}">
+          <span class="chip-at">@</span>{m.name}
+          <button class="chip-remove" onclick={() => removeMention(m.full)} aria-label="Remove mention">×</button>
+        </span>
+      {/each}
+    </div>
+  {/if}
+
   <textarea
     bind:this={textarea}
     bind:value={text}
     placeholder={placeholderText}
     onkeydown={handleKeydown}
+    oninput={handleInput}
+    onblur={() => { setTimeout(closeMention, 120) }}
     disabled={$chatStreaming || uploading}
     rows={2}
   ></textarea>
@@ -156,11 +284,13 @@
 <style>
   .chat-input {
     display: flex;
+    flex-wrap: wrap;
     gap: 6px;
     padding: 10px;
     border-top: 1px solid var(--color-border);
     background: var(--color-bg);
     position: relative;
+    align-items: flex-end;
   }
 
   .chat-input.drag-over {
@@ -197,6 +327,7 @@
     outline: none;
     line-height: 1.4;
     transition: border-color 0.15s;
+    min-width: 0;
   }
 
   textarea:focus {
@@ -244,11 +375,10 @@
   }
 
   @keyframes spin {
-    to {
-      transform: rotate(360deg);
-    }
+    to { transform: rotate(360deg); }
   }
 
+  /* ── /add menu ── */
   .add-menu {
     position: absolute;
     bottom: 100%;
@@ -282,5 +412,113 @@
   .add-menu-item:hover {
     background: var(--color-ghost-bg);
     color: var(--color-primary);
+  }
+
+  /* ── @ autocomplete popup ── */
+  .mention-popup {
+    position: absolute;
+    bottom: 100%;
+    left: 10px;
+    right: 10px;
+    margin-bottom: 4px;
+    background: var(--color-bg);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    padding: 4px;
+    z-index: 11;
+    box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.1);
+    max-height: 200px;
+    overflow-y: auto;
+  }
+
+  .mention-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    width: 100%;
+    padding: 5px 8px;
+    font-size: 12px;
+    text-align: left;
+    background: transparent;
+    border: none;
+    border-radius: 4px;
+    color: var(--color-text);
+    cursor: pointer;
+    transition: background 0.1s;
+  }
+
+  .mention-item:hover,
+  .mention-item-active {
+    background: var(--color-ghost-bg);
+    color: var(--color-primary);
+  }
+
+  .mention-prefix {
+    font-size: 10px;
+    opacity: 0.6;
+    flex-shrink: 0;
+  }
+
+  .mention-name {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .mention-type {
+    font-size: 10px;
+    opacity: 0.45;
+    flex-shrink: 0;
+  }
+
+  /* ── Mention chips bar ── */
+  .mention-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    width: 100%;
+    order: -1; /* appears above textarea row */
+  }
+
+  .mention-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    padding: 2px 6px 2px 5px;
+    font-size: 11px;
+    background: var(--color-ghost-bg, rgba(59, 115, 230, 0.08));
+    color: var(--color-primary, #3B73E6);
+    border: 1px solid rgba(59, 115, 230, 0.25);
+    border-radius: 999px;
+    line-height: 1.4;
+  }
+
+  .chip-at {
+    opacity: 0.6;
+    font-size: 10px;
+  }
+
+  .chip-remove {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 14px;
+    height: 14px;
+    padding: 0;
+    margin-left: 1px;
+    background: transparent;
+    border: none;
+    border-radius: 50%;
+    color: inherit;
+    opacity: 0.6;
+    cursor: pointer;
+    font-size: 12px;
+    line-height: 1;
+    transition: opacity 0.1s;
+  }
+
+  .chip-remove:hover {
+    opacity: 1;
   }
 </style>

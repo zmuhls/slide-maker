@@ -101,6 +101,21 @@ export async function applyMutation(mutation: Record<string, unknown>): Promise<
     case 'addSlide': {
       const moduleDefs = (payload.modules as any[]) || []
 
+      // Guard against duplicate slides by heading text
+      const existingSlides = get(currentDeck)?.slides ?? []
+      const newHeadingMod = moduleDefs.find((m: any) => m.type === 'heading')
+      const newHeadingText = String(newHeadingMod?.data?.text ?? '').toLowerCase().trim()
+      if (newHeadingText) {
+        const duplicate = existingSlides.find((s) => {
+          const h = (s.blocks as any[])?.find((b: any) => b.type === 'heading')
+          return String((h?.data as any)?.text ?? '').toLowerCase().trim() === newHeadingText
+        })
+        if (duplicate) {
+          console.warn(`[Wiz] Skipping duplicate slide: "${newHeadingMod.data.text}" already exists as slide ${(duplicate.order ?? 0) + 1}`)
+          return
+        }
+      }
+
       // Resolve artifact sources before sending to API
       for (const mod of moduleDefs) {
         if (mod.type === 'artifact' && mod.data) {
