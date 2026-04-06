@@ -1,7 +1,7 @@
 export const NATIVE_ARTIFACT_NAMES = new Set([
   'A* Pathfinding', 'Boids', 'Flow Field', 'Harmonograph',
   "Langton's Ant", 'Leaflet Map', 'Lorenz Attractor', 'Molnar', 'Nake',
-  'Rössler Attractor', 'Sprott Attractor', 'Truchet Tiles',
+  'Rössler Attractor', 'Sprott Attractor', 'Timeline', 'Truchet Tiles',
 ])
 
 export const ARTIFACTS_JS = `
@@ -2178,6 +2178,328 @@ export const ARTIFACTS_JS = `
         ro.disconnect();
         root.removeChild(canvas);
       },
+    };
+  });
+
+  // --- Timeline ---
+  register('Timeline', function(root, initialConfig) {
+    initialConfig = initialConfig || {};
+
+    function parseDate(s) {
+      if (/^\\d{4}-\\d{2}-\\d{2}$/.test(s)) return new Date(s).getTime();
+      if (/^\\d{4}-\\d{2}$/.test(s)) return new Date(s + '-01').getTime();
+      if (/^\\d{4}$/.test(s)) return new Date(s + '-01-01').getTime();
+      return NaN;
+    }
+
+    function formatDate(s) {
+      if (/^\\d{4}$/.test(s)) return s;
+      if (/^\\d{4}-\\d{2}$/.test(s)) {
+        var d = new Date(s + '-01');
+        return d.toLocaleDateString('en-US', { year: 'numeric', month: 'short' });
+      }
+      var d = new Date(s);
+      return d.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+    }
+
+    var DEFAULT_COLORS = { axis: '#334155', dot: '#3b82f6', text: '#e2e8f0', muted: '#94a3b8', bg: '#0d1117' };
+    var DEFAULT_CAT_COLORS = { milestone: '#f59e0b', breakthrough: '#0ea5e9', release: '#10b981', event: '#6366f1', default: '#3b82f6' };
+
+    function getThemeColor(el, varName, fallback) {
+      var v = getComputedStyle(el).getPropertyValue(varName).trim();
+      return v || fallback;
+    }
+
+    function svgEl(tag, attrs) {
+      var el = document.createElementNS('http://www.w3.org/2000/svg', tag);
+      if (attrs) { for (var k in attrs) { if (attrs.hasOwnProperty(k)) el.setAttribute(k, String(attrs[k])); } }
+      return el;
+    }
+
+    var svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.style.display = 'block'; svg.style.width = '100%'; svg.style.height = '100%';
+    root.appendChild(svg);
+
+    var tooltip = null;
+    var config = {};
+    for (var k in initialConfig) { if (initialConfig.hasOwnProperty(k)) config[k] = initialConfig[k]; }
+
+    function normalizeEvents(events) {
+      return events.map(function(ev) {
+        return {
+          label: ev.label,
+          description: ev.description || ev.desc || '',
+          date: ev.date ? parseDate(ev.date) : null,
+          dateStr: ev.date || '',
+          category: ev.category || 'default'
+        };
+      });
+    }
+
+    function getColor(category, catColors) {
+      return catColors[category] || DEFAULT_CAT_COLORS[category] || DEFAULT_CAT_COLORS['default'];
+    }
+
+    function showTooltip(x, y, label, desc) {
+      if (!tooltip) {
+        tooltip = document.createElement('div');
+        tooltip.style.cssText = 'position:absolute;pointer-events:none;background:rgba(15,23,42,0.95);color:#e2e8f0;padding:6px 10px;border-radius:6px;font:12px Inter,system-ui,sans-serif;max-width:220px;z-index:10;box-shadow:0 2px 8px rgba(0,0,0,0.3);transition:opacity 0.15s;white-space:normal;line-height:1.4';
+        root.style.position = 'relative';
+        root.appendChild(tooltip);
+      }
+      var b = document.createElement('b');
+      b.textContent = label; b.style.display = 'block'; b.style.marginBottom = '2px';
+      tooltip.replaceChildren(b);
+      if (desc) { var sp = document.createElement('span'); sp.textContent = desc; sp.style.color = '#94a3b8'; tooltip.appendChild(sp); }
+      tooltip.style.opacity = '1';
+      var rootRect = root.getBoundingClientRect();
+      tooltip.style.left = Math.min(x, rootRect.width - 230) + 'px';
+      tooltip.style.top = (y - 50) + 'px';
+    }
+
+    function hideTooltip() { if (tooltip) tooltip.style.opacity = '0'; }
+
+    function renderHorizontal(W, H) {
+      svg.replaceChildren();
+      svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
+
+      var events = normalizeEvents(config.events || []);
+      if (events.length === 0) return;
+
+      var eras = config.eras || [];
+      var catColors = {}; var ck;
+      for (ck in DEFAULT_CAT_COLORS) { if (DEFAULT_CAT_COLORS.hasOwnProperty(ck)) catColors[ck] = DEFAULT_CAT_COLORS[ck]; }
+      var userCatColors = config.categoryColors || {};
+      for (ck in userCatColors) { if (userCatColors.hasOwnProperty(ck)) catColors[ck] = userCatColors[ck]; }
+
+      var isCards = config.style === 'cards';
+      var axisColor = getThemeColor(root, '--slide-accent', DEFAULT_COLORS.axis);
+      var textColor = getThemeColor(root, '--slide-text', DEFAULT_COLORS.text);
+      var mutedColor = DEFAULT_COLORS.muted;
+
+      var padL = 40, padR = 40, padT = 30, padB = 50;
+      var axisY = H * 0.55;
+      var lineW = W - padL - padR;
+
+      var hasDates = events.every(function(e) { return e.date !== null && !isNaN(e.date); });
+      var positions = [];
+
+      if (hasDates) {
+        var dates = events.map(function(e) { return e.date; });
+        var minD = Math.min.apply(null, dates), maxD = Math.max.apply(null, dates);
+        var range = maxD - minD;
+        if (range > 0) {
+          positions = dates.map(function(d) { return padL + ((d - minD) / range) * lineW; });
+        } else {
+          positions = events.map(function(_, i) { return padL + (events.length === 1 ? lineW / 2 : (i / (events.length - 1)) * lineW); });
+        }
+      } else {
+        positions = events.map(function(_, i) { return padL + (events.length === 1 ? lineW / 2 : (i / (events.length - 1)) * lineW); });
+      }
+
+      // Draw eras
+      if (hasDates && eras.length > 0) {
+        var edates = events.map(function(e) { return e.date; });
+        var eMinD = Math.min.apply(null, edates), eMaxD = Math.max.apply(null, edates);
+        var eRange = eMaxD - eMinD || 1;
+        for (var ei = 0; ei < eras.length; ei++) {
+          var era = eras[ei];
+          var startMs = parseDate(era.start), endMs = parseDate(era.end);
+          if (isNaN(startMs) || isNaN(endMs)) continue;
+          var x1 = padL + ((startMs - eMinD) / eRange) * lineW;
+          var x2 = padL + ((endMs - eMinD) / eRange) * lineW;
+          var eColor = era.color || '#3b82f6';
+          svg.appendChild(svgEl('rect', { x: Math.max(padL, x1), y: padT - 10, width: Math.min(x2, W - padR) - Math.max(padL, x1), height: H - padT - padB + 20, rx: 4, fill: eColor, opacity: 0.08 }));
+          var midX = (Math.max(padL, x1) + Math.min(x2, W - padR)) / 2;
+          var eraLabel = svgEl('text', { x: midX, y: padT - 2, 'text-anchor': 'middle', fill: eColor, 'font-size': 10, 'font-weight': 600, opacity: 0.6 });
+          eraLabel.textContent = era.name;
+          svg.appendChild(eraLabel);
+        }
+      }
+
+      // Axis line
+      svg.appendChild(svgEl('line', { x1: padL, y1: axisY, x2: W - padR, y2: axisY, stroke: axisColor, 'stroke-width': 2, opacity: 0.3 }));
+
+      // Events
+      events.forEach(function(ev, i) {
+        var x = positions[i];
+        var color = getColor(ev.category, catColors);
+        var above = i % 2 === 0;
+
+        // Connecting line
+        var lineTop = above ? axisY - 30 : axisY + 30;
+        svg.appendChild(svgEl('line', { x1: x, y1: axisY, x2: x, y2: lineTop, stroke: color, 'stroke-width': 1.5, opacity: 0.3 }));
+
+        // Dot
+        var dot = svgEl('circle', { cx: x, cy: axisY, r: 6, fill: color, stroke: 'rgba(0,0,0,0.3)', 'stroke-width': 2 });
+        dot.style.cursor = 'pointer'; dot.style.transition = 'r 0.15s';
+        dot.addEventListener('mouseenter', function() { dot.setAttribute('r', '9'); showTooltip(x, above ? axisY - 60 : axisY - 10, ev.label, ev.description); });
+        dot.addEventListener('mouseleave', function() { dot.setAttribute('r', '6'); hideTooltip(); });
+        svg.appendChild(dot);
+
+        if (isCards) {
+          var cardY = above ? axisY - 90 : axisY + 35;
+          var cardW = 120, cardH = 50, cardX = x - cardW / 2;
+          svg.appendChild(svgEl('rect', { x: cardX, y: cardY, width: cardW, height: cardH, rx: 6, fill: 'rgba(30,41,59,0.6)', stroke: color, 'stroke-width': 1, opacity: 0.9 }));
+          var title = svgEl('text', { x: x, y: cardY + 18, 'text-anchor': 'middle', fill: textColor, 'font-size': 11, 'font-weight': 600 });
+          title.textContent = ev.label; svg.appendChild(title);
+          if (ev.description) {
+            var cdesc = svgEl('text', { x: x, y: cardY + 34, 'text-anchor': 'middle', fill: mutedColor, 'font-size': 9 });
+            cdesc.textContent = ev.description.length > 25 ? ev.description.slice(0, 22) + '...' : ev.description;
+            svg.appendChild(cdesc);
+          }
+        } else {
+          var labelY = above ? axisY - 38 : axisY + 48;
+          var dateY = above ? axisY - 52 : axisY + 62;
+          var lbl = svgEl('text', { x: x, y: labelY, 'text-anchor': 'middle', fill: textColor, 'font-size': 11, 'font-weight': 600 });
+          lbl.textContent = ev.label; svg.appendChild(lbl);
+          if (ev.dateStr) {
+            var dLbl = svgEl('text', { x: x, y: dateY, 'text-anchor': 'middle', fill: mutedColor, 'font-size': 9 });
+            dLbl.textContent = formatDate(ev.dateStr); svg.appendChild(dLbl);
+          }
+        }
+      });
+
+      // Legend
+      var categories = []; var seen = {};
+      events.forEach(function(e) { if (!seen[e.category]) { seen[e.category] = true; categories.push(e.category); } });
+      if (categories.length > 1) {
+        var lx = padL, ly = H - 12;
+        for (var ci = 0; ci < categories.length; ci++) {
+          var cat = categories[ci], catCol = getColor(cat, catColors);
+          svg.appendChild(svgEl('circle', { cx: lx + 5, cy: ly - 3, r: 4, fill: catCol }));
+          var t = svgEl('text', { x: lx + 14, y: ly, fill: mutedColor, 'font-size': 10 });
+          t.textContent = cat; svg.appendChild(t);
+          lx += cat.length * 7 + 28;
+        }
+      }
+    }
+
+    function renderVertical(W, H) {
+      svg.replaceChildren();
+      svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
+
+      var events = normalizeEvents(config.events || []);
+      if (events.length === 0) return;
+
+      var catColors = {}; var ck;
+      for (ck in DEFAULT_CAT_COLORS) { if (DEFAULT_CAT_COLORS.hasOwnProperty(ck)) catColors[ck] = DEFAULT_CAT_COLORS[ck]; }
+      var userCatColors = config.categoryColors || {};
+      for (ck in userCatColors) { if (userCatColors.hasOwnProperty(ck)) catColors[ck] = userCatColors[ck]; }
+
+      var axisColor = getThemeColor(root, '--slide-accent', DEFAULT_COLORS.axis);
+      var textColor = getThemeColor(root, '--slide-text', DEFAULT_COLORS.text);
+      var mutedColor = DEFAULT_COLORS.muted;
+
+      var padL = 30, padR = 30, padT = 30, padB = 30;
+      var axisX = W * 0.2;
+      var lineH = H - padT - padB;
+
+      var hasDates = events.every(function(e) { return e.date !== null && !isNaN(e.date); });
+      var positions = [];
+
+      if (hasDates) {
+        var dates = events.map(function(e) { return e.date; });
+        var minD = Math.min.apply(null, dates), maxD = Math.max.apply(null, dates);
+        var range = maxD - minD;
+        if (range > 0) {
+          positions = dates.map(function(d) { return padT + ((d - minD) / range) * lineH; });
+        } else {
+          positions = events.map(function(_, i) { return padT + (events.length === 1 ? lineH / 2 : (i / (events.length - 1)) * lineH); });
+        }
+      } else {
+        positions = events.map(function(_, i) { return padT + (events.length === 1 ? lineH / 2 : (i / (events.length - 1)) * lineH); });
+      }
+
+      // Eras
+      var eras = config.eras || [];
+      if (hasDates && eras.length > 0) {
+        var edates = events.map(function(e) { return e.date; });
+        var eMinD = Math.min.apply(null, edates), eMaxD = Math.max.apply(null, edates);
+        var eRange = eMaxD - eMinD || 1;
+        for (var ei = 0; ei < eras.length; ei++) {
+          var era = eras[ei];
+          var startMs = parseDate(era.start), endMs = parseDate(era.end);
+          if (isNaN(startMs) || isNaN(endMs)) continue;
+          var y1 = padT + ((startMs - eMinD) / eRange) * lineH;
+          var y2 = padT + ((endMs - eMinD) / eRange) * lineH;
+          var ey1 = Math.max(padT, y1), ey2 = Math.min(H - padB, y2);
+          var eColor = era.color || '#3b82f6';
+          svg.appendChild(svgEl('rect', { x: padL - 10, y: ey1, width: W - padL - padR + 20, height: ey2 - ey1, rx: 4, fill: eColor, opacity: 0.08 }));
+          var eraLabel = svgEl('text', { x: W - padR + 5, y: (ey1 + ey2) / 2 + 4, fill: eColor, 'font-size': 9, 'font-weight': 600, opacity: 0.6 });
+          eraLabel.textContent = era.name; svg.appendChild(eraLabel);
+        }
+      }
+
+      // Axis line
+      svg.appendChild(svgEl('line', { x1: axisX, y1: padT, x2: axisX, y2: H - padB, stroke: axisColor, 'stroke-width': 2, opacity: 0.3 }));
+
+      // Events
+      events.forEach(function(ev, i) {
+        var y = positions[i];
+        var color = getColor(ev.category, catColors);
+
+        svg.appendChild(svgEl('line', { x1: axisX, y1: y, x2: axisX + 30, y2: y, stroke: color, 'stroke-width': 1.5, opacity: 0.3 }));
+
+        var dot = svgEl('circle', { cx: axisX, cy: y, r: 6, fill: color, stroke: 'rgba(0,0,0,0.3)', 'stroke-width': 2 });
+        dot.style.cursor = 'pointer'; dot.style.transition = 'r 0.15s';
+        dot.addEventListener('mouseenter', function() { dot.setAttribute('r', '9'); showTooltip(axisX + 40, y, ev.label, ev.description); });
+        dot.addEventListener('mouseleave', function() { dot.setAttribute('r', '6'); hideTooltip(); });
+        svg.appendChild(dot);
+
+        var lbl = svgEl('text', { x: axisX + 40, y: y - 2, fill: textColor, 'font-size': 12, 'font-weight': 600 });
+        lbl.textContent = ev.label; svg.appendChild(lbl);
+
+        if (ev.description) {
+          var desc = svgEl('text', { x: axisX + 40, y: y + 14, fill: mutedColor, 'font-size': 10 });
+          desc.textContent = ev.description.length > 40 ? ev.description.slice(0, 37) + '...' : ev.description;
+          svg.appendChild(desc);
+        }
+
+        if (ev.dateStr) {
+          var dLbl = svgEl('text', { x: axisX - 12, y: y + 4, 'text-anchor': 'end', fill: mutedColor, 'font-size': 9 });
+          dLbl.textContent = formatDate(ev.dateStr); svg.appendChild(dLbl);
+        }
+      });
+
+      // Legend
+      var categories = []; var seen = {};
+      events.forEach(function(e) { if (!seen[e.category]) { seen[e.category] = true; categories.push(e.category); } });
+      if (categories.length > 1) {
+        var lx = axisX + 40, ly = H - 12;
+        for (var ci = 0; ci < categories.length; ci++) {
+          var cat = categories[ci], catCol = getColor(cat, catColors);
+          svg.appendChild(svgEl('circle', { cx: lx + 5, cy: ly - 3, r: 4, fill: catCol }));
+          var t = svgEl('text', { x: lx + 14, y: ly, fill: mutedColor, 'font-size': 10 });
+          t.textContent = cat; svg.appendChild(t);
+          lx += cat.length * 7 + 28;
+        }
+      }
+    }
+
+    function render() {
+      var rect = root.getBoundingClientRect();
+      var W = Math.max(200, rect.width), H = Math.max(120, rect.height);
+      if (config.orientation === 'vertical') { renderVertical(W, H); }
+      else { renderHorizontal(W, H); }
+    }
+
+    var ro = new ResizeObserver(function() { render(); });
+    ro.observe(root);
+    render();
+
+    return {
+      update: function(next) {
+        next = next || {};
+        for (var k in next) { if (next.hasOwnProperty(k)) config[k] = next[k]; }
+        render();
+      },
+      destroy: function() {
+        ro.disconnect();
+        hideTooltip();
+        if (tooltip) { tooltip.remove(); tooltip = null; }
+        root.removeChild(svg);
+      }
     };
   });
 

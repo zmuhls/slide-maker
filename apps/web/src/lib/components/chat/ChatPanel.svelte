@@ -175,6 +175,30 @@
     let firstChunk = true
     let appliedMutationCount = 0
 
+    // Serial mutation queue — prevents race conditions when rapid-fire mutations
+    // (e.g. addBlock then reorderBlocks) overlap and hit the API out of order
+    const mutationQueue: Record<string, unknown>[] = []
+    let processingQueue = false
+    let aborted = false
+    let queueIdle: Promise<void> = Promise.resolve()
+
+    async function drainQueue() {
+      if (processingQueue) return
+      processingQueue = true
+      queueIdle = (async () => {
+        while (mutationQueue.length > 0 && !aborted) {
+          const mut = mutationQueue.shift()!
+          try {
+            await applyMutation(mut)
+          } catch (err) {
+            console.error('Failed to apply mutation:', err, mut)
+          }
+        }
+        processingQueue = false
+      })()
+      await queueIdle
+    }
+
     // Snapshot autoApply at stream start — don't let mid-stream toggles split mutations
     const liveApply = get(autoApply)
 
@@ -210,9 +234,8 @@
         while (appliedMutationCount < mutations.length) {
           const mut = mutations[appliedMutationCount]
           if (liveApply) {
-            applyMutation(mut).catch((err) =>
-              console.error('Failed to apply mutation:', err, mut)
-            )
+            mutationQueue.push(mut)
+            drainQueue()
           } else {
             addPendingMutation(assistantId, mut)
           }
@@ -220,6 +243,7 @@
         }
       },
       async () => {
+        await queueIdle
         finishAssistant(assistantId)
         chatStreaming.set(false)
         clearTimeout(hardTimeout)
@@ -227,6 +251,8 @@
         controller = null
       },
       (error) => {
+        aborted = true
+        mutationQueue.length = 0
         appendToAssistant(assistantId, `\n\n[Error: ${error}]`)
         finishAssistant(assistantId)
         chatStreaming.set(false)
