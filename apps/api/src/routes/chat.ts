@@ -30,7 +30,7 @@ chat.use('*', authMiddleware)
 chat.post('/', chatRateLimit, async (c) => {
   const user = c.get('user')
   const body = await c.req.json()
-  const { message, deckId, activeSlideId, modelId, recentActions, lastAgentSlideId } = body
+  const { message, deckId, activeSlideId, modelId, recentActions, lastAgentSlideId, renderDiagnostics } = body
 
   if (!message || !deckId || !modelId) {
     return c.json({ error: 'message, deckId, and modelId are required' }, 400)
@@ -179,6 +179,7 @@ chat.post('/', chatRateLimit, async (c) => {
       paramCount,
     }
   })
+  const artifactNamesById = new Map(allArtifacts.map((artifact) => [artifact.id, artifact.name]))
 
   // Compute active artifacts (those placed in deck slides)
   const activeArtifactsMap = new Map<string, { name: string; slidePositions: number[]; config: Record<string, unknown> }>()
@@ -186,7 +187,8 @@ chat.post('/', chatRateLimit, async (c) => {
     for (const block of slide.blocks) {
       if (block.type !== 'artifact') continue
       const d = block.data as Record<string, unknown>
-      const name = String(d.artifactName || d.alt || '').trim()
+      const registryId = typeof d.registryId === 'string' ? d.registryId : ''
+      const name = String(d.artifactName || artifactNamesById.get(registryId) || d.alt || '').trim()
       if (!name) continue
       const existing = activeArtifactsMap.get(name.toLowerCase())
       if (existing) {
@@ -216,6 +218,36 @@ chat.post('/', chatRateLimit, async (c) => {
     .filter((id): id is string => id !== null)
 
   // Build system prompt
+  type NormalizedRenderDiagnostic = {
+    moduleId: string
+    slideId: string
+    moduleType: string
+    surface: 'edit' | 'preview'
+    status: 'idle' | 'loading' | 'ready' | 'error'
+    message?: string
+  }
+
+  const normalizedRenderDiagnostics: NormalizedRenderDiagnostic[] | undefined = Array.isArray(renderDiagnostics)
+    ? renderDiagnostics
+      .filter((diagnostic: unknown) => diagnostic && typeof diagnostic === 'object')
+      .map((diagnostic: any): NormalizedRenderDiagnostic => ({
+        moduleId: String(diagnostic.moduleId || ''),
+        slideId: String(diagnostic.slideId || ''),
+        moduleType: String(diagnostic.moduleType || 'artifact'),
+        surface: diagnostic.surface === 'preview' ? 'preview' : 'edit',
+        status:
+          diagnostic.status === 'error'
+            ? 'error'
+            : diagnostic.status === 'ready'
+              ? 'ready'
+              : diagnostic.status === 'loading'
+                ? 'loading'
+                : 'idle',
+        message: typeof diagnostic.message === 'string' ? diagnostic.message : undefined,
+      }))
+      .filter((diagnostic): diagnostic is NormalizedRenderDiagnostic => Boolean(diagnostic.moduleId && diagnostic.slideId))
+    : undefined
+
   const systemPrompt = buildSystemPrompt({
     deck: {
       id: deck.id,
@@ -236,6 +268,7 @@ chat.post('/', chatRateLimit, async (c) => {
     recentActions: Array.isArray(recentActions)
       ? recentActions.slice(0, 15).map((a: unknown) => String(a).slice(0, 120).replace(/[\n\r]/g, ' '))
       : undefined,
+    renderDiagnostics: normalizedRenderDiagnostics,
     lastAgentSlideId: typeof lastAgentSlideId === 'string' && slidesWithBlocks.some((s) => s.id === lastAgentSlideId)
       ? lastAgentSlideId
       : undefined,

@@ -2,9 +2,14 @@ import { Hono } from 'hono'
 import { eq, and, desc, inArray, sql } from 'drizzle-orm'
 import { createId } from '@paralleldrive/cuid2'
 import type { Session, User } from 'lucia'
-import { generateSlug } from '@slide-maker/shared'
+import {
+  buildArtifactBlockData,
+  generateSlug,
+  type ArtifactBlockBuildOptions,
+  type JsonValue,
+} from '@slide-maker/shared'
 import { db } from '../db/index.js'
-import { decks, deckAccess, slides, contentBlocks } from '../db/schema.js'
+import { artifacts, decks, deckAccess, slides, contentBlocks } from '../db/schema.js'
 import { authMiddleware } from '../middleware/auth.js'
 
 type AuthEnv = {
@@ -15,6 +20,59 @@ type AuthEnv = {
 }
 
 const VALID_BLOCK_TYPES = new Set(['heading', 'text', 'card', 'label', 'tip-box', 'prompt-block', 'image', 'carousel', 'comparison', 'card-grid', 'flow', 'stream-list', 'artifact', 'video'])
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return value != null && typeof value === 'object' && !Array.isArray(value)
+}
+
+function isNonEmptyString(value: unknown): value is string {
+  return typeof value === 'string' && value.length > 0
+}
+
+function hasExplicitInlineArtifactSource(data: Record<string, unknown>): boolean {
+  return isNonEmptyString(data.rawSource) || isNonEmptyString(data.src) || isNonEmptyString(data.url)
+}
+
+function getArtifactBuildOptions(data: Record<string, unknown>): ArtifactBlockBuildOptions {
+  return {
+    alt: isNonEmptyString(data.alt) ? data.alt : undefined,
+    width: isNonEmptyString(data.width) ? data.width : undefined,
+    height: isNonEmptyString(data.height) ? data.height : undefined,
+  }
+}
+
+function getArtifactConfig(data: Record<string, unknown>): Record<string, JsonValue> | undefined {
+  return isRecord(data.config) ? (data.config as Record<string, JsonValue>) : undefined
+}
+
+async function normalizeBlockData(
+  type: string,
+  data: unknown,
+  incomingData?: Record<string, unknown>,
+): Promise<Record<string, unknown>> {
+  const normalized = isRecord(data) ? data : {}
+  if (type !== 'artifact') return normalized
+
+  if (incomingData && hasExplicitInlineArtifactSource(incomingData)) {
+    return normalized
+  }
+
+  const registryId = isNonEmptyString(normalized.registryId) ? normalized.registryId : null
+  if (registryId) {
+    const artifact = await db.select().from(artifacts).where(eq(artifacts.id, registryId)).get()
+    if (!artifact) {
+      throw new Error(`artifact-not-found:${registryId}`)
+    }
+
+    return buildArtifactBlockData(
+      artifact,
+      getArtifactConfig(normalized),
+      getArtifactBuildOptions(normalized),
+    )
+  }
+
+  return normalized
+}
 
 export const decksRouter = new Hono<AuthEnv>()
 
@@ -232,6 +290,23 @@ decksRouter.post('/:id/slides', async (c) => {
     }
   }
 
+  let normalizedModuleDefs = moduleDefs
+  if (moduleDefs && Array.isArray(moduleDefs)) {
+    try {
+      normalizedModuleDefs = await Promise.all(
+        moduleDefs.map(async (mod) => ({
+          ...mod,
+          data: await normalizeBlockData(mod.type, mod.data),
+        })),
+      )
+    } catch (err) {
+      if (err instanceof Error && err.message.startsWith('artifact-not-found:')) {
+        return c.json({ error: `Artifact not found: ${err.message.slice('artifact-not-found:'.length)}` }, 400)
+      }
+      throw err
+    }
+  }
+
   const slideId = createId()
   const now = new Date()
   const createdBlocks: (typeof contentBlocks.$inferSelect)[] = []
@@ -270,9 +345,9 @@ decksRouter.post('/:id/slides', async (c) => {
       'INSERT INTO slides (id, deck_id, layout, split_ratio, "order", notes, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
     ).run(slideId, deckId, slideLayout, splitRatio || '0.45', order, null, now.getTime(), now.getTime())
 
-    if (moduleDefs && Array.isArray(moduleDefs)) {
-      for (let i = 0; i < moduleDefs.length; i++) {
-        const mod = moduleDefs[i]
+    if (normalizedModuleDefs && Array.isArray(normalizedModuleDefs)) {
+      for (let i = 0; i < normalizedModuleDefs.length; i++) {
+        const mod = normalizedModuleDefs[i]
         const blockId = createId()
         const blockRow = {
           id: blockId,
@@ -436,6 +511,16 @@ decksRouter.post('/:id/slides/:slideId/blocks', async (c) => {
     return c.json({ error: 'Invalid block type' }, 400)
   }
 
+  let normalizedBlockData: Record<string, unknown>
+  try {
+    normalizedBlockData = await normalizeBlockData(type, blockData)
+  } catch (err) {
+    if (err instanceof Error && err.message.startsWith('artifact-not-found:')) {
+      return c.json({ error: `Artifact not found: ${err.message.slice('artifact-not-found:'.length)}` }, 400)
+    }
+    throw err
+  }
+
   // Get next order
   const lastBlock = await db
     .select({ maxOrder: sql<number>`COALESCE(MAX(${contentBlocks.order}), -1)` })
@@ -449,7 +534,7 @@ decksRouter.post('/:id/slides/:slideId/blocks', async (c) => {
     slideId,
     type,
     zone: zone || 'content',
-    data: blockData || {},
+    data: normalizedBlockData,
     order: (lastBlock?.maxOrder ?? -1) + 1,
     stepOrder: stepOrder ?? null,
   }
@@ -496,8 +581,16 @@ decksRouter.patch('/:id/slides/:slideId/blocks/:blockId', async (c) => {
   const updates: Record<string, unknown> = {}
 
   if (blockData !== undefined) {
-    const mergedData = { ...(existing.data as Record<string, unknown>), ...blockData }
-    updates.data = mergedData
+    const incomingBlockData = isRecord(blockData) ? blockData : {}
+    const mergedData = { ...(existing.data as Record<string, unknown>), ...incomingBlockData }
+    try {
+      updates.data = await normalizeBlockData(existing.type, mergedData, incomingBlockData)
+    } catch (err) {
+      if (err instanceof Error && err.message.startsWith('artifact-not-found:')) {
+        return c.json({ error: `Artifact not found: ${err.message.slice('artifact-not-found:'.length)}` }, 400)
+      }
+      throw err
+    }
   }
 
   if (zone !== undefined) {

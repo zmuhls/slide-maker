@@ -47,6 +47,7 @@ export interface CardGridData { cards: { title: string; content: string; icon?: 
 export interface FlowData { nodes: { icon?: string; label: string; description?: string }[] }
 export interface StreamListData { items: string[] }
 export interface ArtifactData {
+  registryId?: string
   src?: string
   rawSource?: string
   config?: Record<string, unknown>
@@ -55,6 +56,7 @@ export interface ArtifactData {
   alt?: string
   artifactId?: string
   artifactName?: string
+  factory?: Record<string, unknown> | null
   /**
    * When true (default), the renderer will auto-compute height to fit
    * within the canvas zone while preserving `aspectRatio`. Setting an

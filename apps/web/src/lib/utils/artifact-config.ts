@@ -1,83 +1,70 @@
-import type {
-  ArtifactConfigField as SharedArtifactConfigField,
-  ArtifactConfigSchema as SharedArtifactConfigSchema,
+import {
+  buildArtifactBlockData as buildSharedArtifactBlockData,
+  buildAtRef as buildSharedAtRef,
+  getResolvedConfig as getSharedResolvedConfig,
+  resolveArtifactFactory,
+  type ArtifactBlockBuildOptions,
+  type ArtifactConfigField as SharedArtifactConfigField,
+  type ArtifactRegistryEntry as SharedArtifactRef,
+  type JsonValue,
 } from '@slide-maker/shared'
 
-// Local re-exports with explicit interface/alias to satisfy shell checks.
-// This maintains a single source of truth in `packages/shared`, while providing
-// a concrete interface declaration here for greps used in shell tests.
 export interface ArtifactConfigField extends SharedArtifactConfigField {}
-export type ArtifactConfigSchema = SharedArtifactConfigSchema
 
-export interface ArtifactRef {
-  id: string
-  name: string
-  description: string
-  type: string
-  source: string
-  config: ArtifactConfigSchema | Record<string, unknown>
+export interface ArtifactRef extends SharedArtifactRef {}
+
+export function getResolvedConfig(artifact: ArtifactRef): Record<string, JsonValue> {
+  return getSharedResolvedConfig(artifact)
 }
 
-/**
- * Resolve an artifact's config to a flat key-value object.
- * Handles two shapes:
- *   1. Schema config — values are `{ type, label, default }` → extracts `.default`
- *   2. Flat config — values are primitives → returned as-is
- */
-export function getResolvedConfig(artifact: ArtifactRef): Record<string, unknown> {
-  const cfg = artifact.config as Record<string, unknown> | null
-  if (!cfg || typeof cfg !== 'object') return {}
-
-  const hasSchema = Object.values(cfg).some(
-    (v) => v && typeof v === 'object' && 'default' in (v as Record<string, unknown>),
-  )
-
-  if (hasSchema) {
-    const defaults: Record<string, unknown> = {}
-    for (const [key, field] of Object.entries(cfg)) {
-      if (field && typeof field === 'object' && 'default' in (field as Record<string, unknown>)) {
-        defaults[key] = (field as ArtifactConfigField).default
-      }
-    }
-    return defaults
-  }
-
-  return cfg
+export function buildAtRef(
+  artifact: ArtifactRef,
+  config: Record<string, JsonValue> = getResolvedConfig(artifact),
+): string {
+  return buildSharedAtRef(artifact, config)
 }
 
-/**
- * Build the `@artifact:Name` chat reference string with full JSON payload.
- *
- * Note: The short token form is used in chat input, without embedding JSON:
- *   @artifact:Boids Visualization
- * If a fenced payload is ever needed in the future, use a JSON code block:
- *
- * ```json
- * { "artifactName": "Boids Visualization", "config": { "count": 200 } }
- * ```
- */
-export function buildAtRef(artifact: ArtifactRef): string {
-  return `@artifact:${artifact.name}`
+export function buildArtifactBlockData(
+  artifact: ArtifactRef,
+  config: Record<string, JsonValue> = getResolvedConfig(artifact),
+  options: ArtifactBlockBuildOptions = {},
+): Record<string, unknown> {
+  return buildSharedArtifactBlockData(artifact, config, options)
 }
 
-/**
- * Inject a config object into an artifact's HTML source via data-config attribute on <body>.
- * The artifact JS reads this at boot via document.body.getAttribute('data-config').
- */
-export function buildSourceWithConfig(source: string, configData: Record<string, unknown>): string {
+export function buildSourceWithConfig(
+  source: string,
+  configData: Record<string, unknown>,
+  attrName: string = 'data-config',
+): string {
   const configStr = JSON.stringify(configData).replace(/"/g, '&quot;')
-  // Replace existing data-config if present
   const replaced = source.replace(
-    /<body([^>]*?)\sdata-config=\"[^\"]*\"([^>]*)>/i,
-    (_m, pre, post) => `<body${pre} data-config=\"${configStr}\"${post}>`,
+    new RegExp(`<body([^>]*?)\\s${attrName}="[^"]*"([^>]*)>`, 'i'),
+    (_match, pre, post) => `<body${pre} ${attrName}="${configStr}"${post}>`,
   )
   if (replaced !== source) return replaced
-  // Otherwise, inject
   if (source.includes('<body>')) {
-    return source.replace('<body>', `<body data-config=\"${configStr}\">`)
+    return source.replace('<body>', `<body ${attrName}="${configStr}">`)
   }
   if (source.includes('<body ')) {
-    return source.replace('<body ', `<body data-config=\"${configStr}\" `)
+    return source.replace('<body ', `<body ${attrName}="${configStr}" `)
   }
   return source
+}
+
+export function buildSourceWithFactory(
+  artifact: ArtifactRef,
+  config: Record<string, JsonValue> = getResolvedConfig(artifact),
+): string {
+  const factory = resolveArtifactFactory(artifact)
+  if (factory.kind === 'url-json-param') {
+    try {
+      const url = new URL(artifact.source)
+      url.searchParams.set(factory.key || 'config', JSON.stringify(config))
+      return url.toString()
+    } catch {
+      return artifact.source
+    }
+  }
+  return buildSourceWithConfig(artifact.source, config, factory.key || 'data-config')
 }

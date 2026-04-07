@@ -62,6 +62,14 @@ interface BuildPromptOptions {
   recentActions?: string[]
   lastAgentSlideId?: string | null
   focusedTemplateNames?: string[]
+  renderDiagnostics?: {
+    moduleId: string
+    slideId: string
+    moduleType: string
+    surface: 'edit' | 'preview'
+    status: 'idle' | 'loading' | 'ready' | 'error'
+    message?: string
+  }[]
 }
 
 const MAX_SLIDES = 60
@@ -106,6 +114,16 @@ function buildArtifactsSection(opts: BuildPromptOptions): string {
   }
 
   return section
+}
+
+function buildRenderDiagnosticsSection(opts: BuildPromptOptions): string {
+  const issues = (opts.renderDiagnostics ?? []).filter((d) => d.status === 'error')
+  if (!issues.length) return ''
+  const lines = issues.map((issue) => {
+    const message = issue.message ? ` — ${issue.message}` : ''
+    return `- module "${issue.moduleId}" on slide "${issue.slideId}" (${issue.surface})${message}`
+  })
+  return `## Recent Canvas Render Issues\n${lines.join('\n')}\n`
 }
 
 function serializeSlide(s: SlideWithModules, tier: 'full' | 'skeleton', activeSlideId: string | null): string {
@@ -265,7 +283,7 @@ Every module MUST specify a \`zone\` field that matches one of the layout's zone
 - **flow**: \`{ "nodes": [{"label": "string", "description": "optional string"}, ...] }\` — Vertical process flow with arrows
 
 ### Embeds
-- **artifact**: \`{ "artifactName": "string", "alt": "string", "config": "optional object — artifact-specific parameters (e.g. events for Timeline, markers for Leaflet Map). See Available Artifacts for valid keys.", "width": "optional (default 100%)", "height": "optional (default 400px)" }\` — Interactive JS visualization. Pick a name from "Available Artifacts". Pass \`config\` to customize (e.g. Timeline events, Leaflet markers, chart data). Do not inline raw source.
+- **artifact**: \`{ "registryId": "artifact-id", "config": { ... }, "alt": "string", "width": "optional (default 100%)", "height": "optional (default 400px)" }\` — Interactive JS visualization. Use an ID from "Available Artifacts". Prefer registry-backed artifacts over raw HTML; for roadmaps/timelines, prefer the built-in timeline artifact and keep its \`events: [{label, desc}]\` config shape.
 - **video**: \`{ "url": "string", "caption": "optional string" }\` — Embedded video (YouTube, Vimeo, Loom). Use the regular video URL (e.g., \`https://youtube.com/watch?v=...\`, \`https://vimeo.com/...\`, \`https://www.loom.com/share/...\`) — the app converts it to an embed automatically.
 
 IMPORTANT: Use ONLY the 14 module types listed above. Do not invent other types.
@@ -452,7 +470,7 @@ ${buildArtifactsSection(opts)}
 
 ARTIFACT RULES:
 - Artifacts are interactive JavaScript visualizations (canvas animations, simulations, maps, charts).
-- Insert with an artifact block referencing a known name: \`{ "type": "artifact", "zone": "<zone>", "data": { "artifactName": "Lorenz Attractor", "alt": "Lorenz Attractor", "width": "100%", "height": "400px" } }\`.
+- Insert with a registry-backed artifact block: \`{ "type": "artifact", "zone": "<zone>", "data": { "registryId": "artifact-timeline", "config": { ... }, "alt": "Timeline", "width": "100%", "height": "400px" } }\`.
 - Do NOT inline large raw HTML sources or third‑party script URLs in mutations. The app resolves the source from the artifact catalog and injects config safely.
 - Use \`updateArtifactConfig\` to change parameters for a named artifact across all of its instances in the deck. Use \`updateBlock\` only for per‑instance size/placement (e.g., width/height).
 - When a user requests a visualization, look it up in Available Artifacts by name; if unclear, ask them to clarify or propose a close match.
@@ -465,6 +483,7 @@ ${opts.lastAgentSlideId ? (() => {
     ? `## Agent Memory\nLast slide you modified: Slide ${agentSlide.order + 1} (id="${agentSlide.id}", layout="${agentSlide.layout}")\n`
     : ''
 })() : ''}
+${buildRenderDiagnosticsSection(opts)}
 ## Guidelines
 
 **Brevity:** Keep responses short — 1-2 sentences max. State what you did, not why or how. Never narrate your reasoning, restate the user's request, or ask rhetorical follow-ups. Only ask a question if you genuinely need clarification to proceed. Do not editorialize about aesthetic choices or explain what the user can already see.

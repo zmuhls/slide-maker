@@ -241,13 +241,20 @@ export async function applyMutation(mutation: Record<string, unknown>): Promise<
       const oldBlock = currentSlide?.blocks.find((b) => b.id === blockId)
       const oldData = oldBlock ? { ...oldBlock.data } : {}
 
-      await apiCall(`/api/decks/${deck.id}/slides/${slideId}/blocks/${blockId}`, 'PATCH', {
+      const result = await apiCall(`/api/decks/${deck.id}/slides/${slideId}/blocks/${blockId}`, 'PATCH', {
         data: newData,
       })
+      const updatedBlock = result?.block as { id?: string; data?: Record<string, unknown> } | undefined
       updateSlideInDeck(slideId, (s) => ({
         ...s,
         blocks: s.blocks.map((b) =>
-          b.id === blockId ? { ...b, data: { ...b.data, ...newData } } : b,
+          b.id === blockId
+            ? {
+                ...b,
+                ...(updatedBlock?.id === blockId ? updatedBlock : {}),
+                data: updatedBlock?.id === blockId ? (updatedBlock.data ?? b.data) : { ...b.data, ...newData },
+              }
+            : b,
         ),
       }))
 

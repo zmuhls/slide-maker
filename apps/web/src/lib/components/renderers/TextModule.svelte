@@ -1,8 +1,8 @@
 <script lang="ts">
   import { fitText } from '$lib/utils/text-measure'
-  import { markdownToHtml } from '$lib/utils/markdown'
   import RichTextEditor from './RichTextEditor.svelte'
   import DOMPurify from 'dompurify'
+  import { renderRichTextData } from '@slide-maker/shared'
 
   import type { Editor } from '@tiptap/core'
   let { data = {}, editable = false, onchange, oneditorready }: { data: Record<string, unknown>; editable: boolean; onchange?: (newData: Record<string, unknown>) => void; oneditorready?: (editor: Editor) => void } = $props()
@@ -41,9 +41,7 @@
     return () => cancelAnimationFrame(raf)
   })
 
-  let renderedHtml = $derived(
-    DOMPurify.sanitize(typeof data.html === 'string' ? data.html : markdownToHtml(text))
-  )
+  let renderedHtml = $derived(renderRichTextData(data, (html) => DOMPurify.sanitize(html)))
 
   function handleRichTextChange(html: string) {
     editContent = html

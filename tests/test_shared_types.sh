@@ -41,8 +41,8 @@ check "layout-split maps to content,stage" "grep -A1 'layout-split' '$BT' | grep
 check "layout-content maps to main" "grep -A1 'layout-content' '$BT' | grep -q 'main'"
 
 echo ""
-echo "── Module Types (13 required) ──"
-for mod in heading text card label tip-box prompt-block image carousel comparison card-grid flow stream-list artifact; do
+echo "── Module Types (14 required) ──"
+for mod in heading text card label tip-box prompt-block image carousel comparison card-grid flow stream-list artifact video; do
   check "module: $mod" "grep -q \"'$mod'\" '$BT'"
 done
 
@@ -74,6 +74,11 @@ echo "── Exports (index.ts) ──"
 check "re-exports block-types" "grep -q 'block-types' '$IX'"
 check "re-exports mutations" "grep -q 'mutations' '$IX'"
 check "re-exports types" "grep -q 'types' '$IX'"
+check "re-exports rich-text" "grep -q 'rich-text' '$IX'"
+check "re-exports slide-layout" "grep -q 'slide-layout' '$IX'"
+check "re-exports module-registry" "grep -q 'module-registry' '$IX'"
+check "re-exports artifact-registry" "grep -q 'artifact-registry' '$IX'"
+check "re-exports artifact-runtime" "grep -q 'artifact-runtime' '$IX'"
 
 echo ""
 echo "── TypeScript Compilation ──"

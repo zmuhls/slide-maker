@@ -120,6 +120,7 @@
       <div class="module-item" class:just-added={highlightedIds.has(mod.id)}>
         <ModuleRenderer
           module={mod}
+          {slideId}
           {editable}
           onchange={(newData) => onModuleDataChange?.(mod.id, newData)}
           ondelete={() => onModuleDelete?.(mod.id)}

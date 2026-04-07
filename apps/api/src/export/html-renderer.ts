@@ -2,14 +2,17 @@ import sanitizeHtml from 'sanitize-html'
 import { NAVIGATION_JS } from './navigation.js'
 import { CAROUSEL_JS } from './carousel.js'
 import { ARTIFACTS_JS, NATIVE_ARTIFACT_NAMES } from './artifacts.js'
+import {
+  containsHtmlMarkup,
+  escapeHtml,
+  getSlideSections,
+  getSlideTitle,
+  renderFormattedContent,
+  renderRichTextData,
+} from '@slide-maker/shared'
 
 function esc(str: string): string {
-  return str
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;')
+  return escapeHtml(str)
 }
 
 const SAFE_HTML_OPTIONS: sanitizeHtml.IOptions = {
@@ -131,7 +134,11 @@ function rewriteSrc(src: string, files?: ExportFile[]): string {
   if (src.includes('/api/decks/') && src.includes('/files/')) {
     const fileId = src.split('/files/').pop()
     const matched = files?.find(f => f.id === fileId)
-    if (matched) return `assets/${matched.filename}`
+    if (matched) {
+      const extMatch = matched.filename.match(/(\.[^./]+)$/)
+      const ext = extMatch ? extMatch[1] : ''
+      return `assets/${matched.id}${ext}`
+    }
   }
   return src
 }
@@ -171,23 +178,17 @@ function renderModule(mod: Module, files?: ExportFile[], opts?: RenderOptions): 
     case 'text': {
       const cls = mod.stepOrder != null ? 'text-body step-hidden' : 'text-body'
       const ds = mod.stepOrder != null ? ` data-step="${mod.stepOrder}"` : ''
-      // data.html = TipTap-generated HTML — sanitize and use directly
-      if (d.html) {
-        const html = sanitize(String(d.html))
-        if (html.replace(/<[^>]*>/g, '').trim()) return `<div class="${cls}"${ds}>${html}</div>`
-      }
-      // Fallback: markdown or plain text — convert to HTML
-      const md = String(d.markdown || d.content || d.text || '')
-      if (md) return `<div class="${cls}"${ds}>${markdownToHtml(md)}</div>`
-      return ''
+      const html = renderRichTextData(d, sanitize)
+      return html ? `<div class="${cls}"${ds}>${html}</div>` : ''
     }
 
     case 'card': {
       const variant = d.variant ? ` card-${esc(String(d.variant))}` : ''
       const title = d.title ? `<h3>${esc(String(d.title))}</h3>` : ''
       const raw = String(d.body || d.content || '')
-      const body = raw.includes('<') ? sanitize(raw) : markdownToHtml(raw)
-      return `<div class="card${variant}"${step}>${title}${body}</div>`
+      const body = renderFormattedContent(raw, sanitize)
+      const bodyHtml = containsHtmlMarkup(raw) ? body : `<p>${body}</p>`
+      return `<div class="card${variant}"${step}>${title}${bodyHtml}</div>`
     }
 
     case 'label': {
@@ -198,7 +199,7 @@ function renderModule(mod: Module, files?: ExportFile[], opts?: RenderOptions): 
     case 'tip-box': {
       const title = d.title ? `<strong>${esc(String(d.title))}</strong>` : ''
       const raw = String(d.content || d.text || '')
-      const body = raw.includes('<') ? sanitize(raw) : markdownToHtml(raw)
+      const body = renderFormattedContent(raw, sanitize)
       return `<div class="tip-box"${step}>${title}${body}</div>`
     }
 
@@ -246,8 +247,9 @@ function renderModule(mod: Module, files?: ExportFile[], opts?: RenderOptions): 
         const p = panel as Record<string, unknown>
         const title = p.title ? `<h3>${esc(String(p.title))}</h3>` : ''
         const raw = String(p.body || p.content || '')
-        const body = raw.includes('<') ? sanitize(raw) : markdownToHtml(raw)
-        html += `<div class="comparison-panel">${title}${body}</div>`
+        const body = renderFormattedContent(raw, sanitize)
+        const bodyHtml = containsHtmlMarkup(raw) ? body : `<p>${body}</p>`
+        html += `<div class="comparison-panel">${title}${bodyHtml}</div>`
       }
       html += `</div>`
       return html
@@ -376,33 +378,33 @@ function renderModule(mod: Module, files?: ExportFile[], opts?: RenderOptions): 
 // ── Slide Rendering ─────────────────────────────────────────────────
 
 function renderSlide(slide: Slide, index: number, files?: ExportFile[], opts?: RenderOptions): string {
-  const layout = slide.layout || 'layout-content'
-  const modules = [...slide.modules].sort((a, b) => a.order - b.order)
-  const title = modules.find(m => m.type === 'heading')
-  const titleText = title ? String(title.data.text || '') : `Slide ${index + 1}`
+  const sections = getSlideSections(slide)
+  const layout = sections.layout
+  const titleText = getSlideTitle(sections.modules, index)
 
   const attrs = `class="slide ${esc(layout)}"${index === 0 ? '' : ''} role="group" aria-roledescription="slide" aria-label="Slide ${index + 1}: ${esc(titleText)}"`
 
   if (layout === 'layout-split') {
-    const contentMods = modules.filter(m => m.zone === 'content')
-    const stageMods = modules.filter(m => m.zone === 'stage')
-    const contentHtml = contentMods.map(m => renderModule(m, files, opts)).join('\n      ')
-    const stageHtml = stageMods.map(m => renderModule(m, files, opts)).join('\n      ')
+    const contentHtml = sections.contentModules.map(m => renderModule(m, files, opts)).join('\n      ')
+    const stageHtml = sections.stageModules.map(m => renderModule(m, files, opts)).join('\n      ')
+    const contentFlex = sections.splitRatio
+    const stageFlex = 1 - sections.splitRatio
 
     return `  <div ${attrs}>
-    <div class="content">
+    <div class="content" style="flex: ${contentFlex}">
       ${contentHtml}
     </div>
-    <div class="stage">
+    <div class="stage" style="flex: ${stageFlex}">
       ${stageHtml}
     </div>
   </div>`
   }
 
-  // All other layouts: render modules in order (ignore zone distinction)
-  const body = modules.map(m => renderModule(m, files, opts)).join('\n    ')
+  const body = sections.primaryModules.map(m => renderModule(m, files, opts)).join('\n      ')
   return `  <div ${attrs}>
-    ${body}
+    <div class="${sections.primaryWrapperClass}">
+      ${body}
+    </div>
   </div>`
 }
 

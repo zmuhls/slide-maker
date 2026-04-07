@@ -35,7 +35,7 @@ done
 
 echo ""
 echo "── Module Documentation ──"
-for mod in heading text card label tip-box prompt-block image carousel comparison card-grid flow stream-list artifact; do
+for mod in heading text card label tip-box prompt-block image carousel comparison card-grid flow stream-list artifact video; do
   check "documents module: $mod" "grep -q '$mod' '$SYS'"
 done
 

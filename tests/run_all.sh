@@ -14,6 +14,7 @@ SUITES=(
   "tests/test_system_prompt.sh"
   "tests/test_validation.sh"
   "tests/test_artifact_config.sh"
+  "tests/test_module_registry.sh"
 )
 
 SUITE_PASS=0

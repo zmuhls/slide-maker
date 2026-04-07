@@ -5,15 +5,13 @@
   import { get } from 'svelte/store'
   import { API_URL } from '$lib/api'
   import { chatDraft } from '$lib/stores/chat'
-  import { getResolvedConfig, buildAtRef, buildSourceWithConfig, type ArtifactConfigField } from '$lib/utils/artifact-config'
+  import {
+    buildAtRef,
+    getResolvedConfig,
+    type ArtifactRef,
+  } from '$lib/utils/artifact-config'
 
-  interface Artifact {
-    id: string
-    name: string
-    description: string
-    type: string
-    source: string
-    config: Record<string, ArtifactConfigField> | unknown
+  interface Artifact extends ArtifactRef {
     builtIn: boolean
   }
 
@@ -50,10 +48,6 @@
         loading = false
       })
   })
-
-  function isUrl(str: string): boolean {
-    return str.startsWith('http://') || str.startsWith('https://')
-  }
 
   // Group artifacts by type
   let groups = $derived.by(() => {
@@ -107,18 +101,19 @@
     }
     editingArtifactId = artifact.id
     configError = null
-    const cfg = artifact.config as Record<string, ArtifactConfigField> | null
-    if (cfg && typeof cfg === 'object') {
-      const defaults: Record<string, unknown> = {}
-      for (const [key, field] of Object.entries(cfg)) {
-        if (field && typeof field === 'object' && 'default' in field) {
-          defaults[key] = field.default
-        }
-      }
-      configJson = JSON.stringify(defaults, null, 2)
-    } else {
-      configJson = '{}'
-    }
+    configJson = JSON.stringify(getResolvedConfig(artifact), null, 2)
+  }
+
+  function getZoneForActiveSlide(): string {
+    const deck = get(currentDeck)
+    const slideId = get(activeSlideId)
+    if (!deck || !slideId) return 'stage'
+    const slide = deck.slides.find((s: any) => s.id === slideId)
+    if (!slide) return 'stage'
+    const layout = slide.layout
+    if (layout === 'title-slide' || layout === 'layout-divider' || layout === 'closing-slide') return 'hero'
+    if (layout === 'layout-split') return 'stage'
+    return 'main'
   }
 
   async function insertArtifact(artifact: Artifact, useConfig: boolean = false) {
@@ -129,10 +124,10 @@
     configError = null
 
     try {
-      let resolvedConfig = getResolvedConfig(artifact)
+      let configData = getResolvedConfig(artifact)
       if (useConfig && configJson.trim()) {
         try {
-          resolvedConfig = { ...resolvedConfig, ...JSON.parse(configJson) }
+          configData = JSON.parse(configJson)
         } catch {
           configError = 'Invalid JSON. Please fix and try again.'
           inserting = null
@@ -140,33 +135,14 @@
         }
       }
 
-      let finalSource = Object.keys(resolvedConfig).length > 0
-        ? buildSourceWithConfig(artifact.source, resolvedConfig)
-        : artifact.source
-
-      const sourceIsUrl = isUrl(finalSource)
-      const src = sourceIsUrl
-        ? finalSource
-        : URL.createObjectURL(new Blob([finalSource], { type: 'text/html' }))
-
       await applyMutation({
         action: 'addBlock',
         payload: {
           slideId,
           block: {
             type: 'artifact',
-            zone: 'stage',
-            data: {
-              src,
-              ...(sourceIsUrl ? {} : { rawSource: finalSource }),
-              alt: displayName(artifact.name),
-              artifactId: artifact.id,
-              artifactName: artifact.name,
-              config: resolvedConfig,
-              width: '60%',
-              autoSize: true,
-              aspectRatio: 4 / 3, // data-viz artifacts suit 4:3; blank artifacts (ModulePicker) default 16:9
-            },
+            zone: getZoneForActiveSlide(),
+            data: buildArtifactReferenceData(artifact, configData),
           },
         },
       })
@@ -195,6 +171,16 @@
   function hasConfig(artifact: Artifact): boolean {
     const cfg = artifact.config as Record<string, unknown> | null
     return cfg != null && typeof cfg === 'object' && Object.keys(cfg).length > 0
+  }
+
+  function buildArtifactReferenceData(artifact: Artifact, config: Record<string, unknown>) {
+    return {
+      registryId: artifact.id,
+      config,
+      alt: displayName(artifact.name),
+      width: typeof config.width === 'string' ? config.width : '100%',
+      height: typeof config.height === 'string' ? config.height : '400px',
+    }
   }
 
   // Clean artifact display text — strip noise, keep just the core name
@@ -249,53 +235,35 @@
                       </div>
                       <div class="artifact-actions">
                         <button
-                          class="act-btn act-insert"
+                          class="insert-btn"
                           onclick={() => insertArtifact(artifact, false)}
                           disabled={inserting !== null || !$activeSlideId}
                           title={$activeSlideId ? 'Insert with defaults' : 'Select a slide first'}
-                          aria-label={$activeSlideId ? 'Insert with defaults' : 'Select a slide first'}
                         >
-                          {#if inserting === artifact.id}
-                            <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><circle cx="3" cy="6" r="1" fill="currentColor"><animate attributeName="opacity" values="1;.3;1" dur=".8s" repeatCount="indefinite"/></circle><circle cx="6" cy="6" r="1" fill="currentColor"><animate attributeName="opacity" values="1;.3;1" dur=".8s" begin=".15s" repeatCount="indefinite"/></circle><circle cx="9" cy="6" r="1" fill="currentColor"><animate attributeName="opacity" values="1;.3;1" dur=".8s" begin=".3s" repeatCount="indefinite"/></circle></svg>
-                          {:else}
-                            <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="6" y1="2" x2="6" y2="10"/><line x1="2" y1="6" x2="10" y2="6"/></svg>
-                          {/if}
+                          {inserting === artifact.id ? '...' : '+'}
                         </button>
                         {#if hasConfig(artifact)}
                           <button
-                            class="act-btn"
-                            class:act-active={editingArtifactId === artifact.id}
+                            class="config-btn"
                             onclick={() => openConfigEditor(artifact)}
-                            title={editingArtifactId === artifact.id ? 'Close config editor' : 'Configure data before inserting'}
-                            aria-label={editingArtifactId === artifact.id ? 'Close config editor' : 'Configure data before inserting'}
+                            title="Configure data before inserting"
                           >
-                            {#if editingArtifactId === artifact.id}
-                              <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="2" y1="2" x2="10" y2="10"/><line x1="10" y1="2" x2="2" y2="10"/></svg>
-                            {:else}
-                              <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M6 7.5a1.5 1.5 0 100-3 1.5 1.5 0 000 3z"/><path d="M9.7 7.2l.5.3a.4.4 0 01.1.5l-.6 1a.4.4 0 01-.5.2l-.6-.2a3.6 3.6 0 01-.8.5l-.1.6a.4.4 0 01-.4.3H6.1a.4.4 0 01-.4-.3l-.1-.6a3.6 3.6 0 01-.8-.5l-.6.2a.4.4 0 01-.5-.2l-.5-1a.4.4 0 01.1-.5l.5-.3a3.5 3.5 0 010-1l-.5-.3a.4.4 0 01-.1-.5l.5-1a.4.4 0 01.5-.2l.6.2a3.6 3.6 0 01.8-.5l.1-.6A.4.4 0 016.1 3h1.2a.4.4 0 01.4.3l.1.6c.3.1.6.3.8.5l.6-.2a.4.4 0 01.5.2l.5 1a.4.4 0 01-.1.5l-.5.3a3.5 3.5 0 010 1z"/></svg>
-                            {/if}
+                            {editingArtifactId === artifact.id ? '\u00d7' : '\u2699'}
                           </button>
                         {/if}
                         <button
-                          class="act-btn"
-                          class:act-copied={copied === artifact.id}
+                          class="icon-btn"
                           onclick={() => copyConfig(artifact)}
-                          title={copied === artifact.id ? 'Copied' : 'Copy config to clipboard'}
-                          aria-label={copied === artifact.id ? 'Copied' : 'Copy config to clipboard'}
+                          title="Copy config to clipboard"
                         >
-                          {#if copied === artifact.id}
-                            <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="2.5,6.5 5,9 9.5,3.5"/></svg>
-                          {:else}
-                            <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="6.5" height="6.5" rx="1"/><path d="M8 4V2.5A1 1 0 007 1.5H2.5A1 1 0 001.5 2.5V7A1 1 0 002.5 8H4"/></svg>
-                          {/if}
+                          {copied === artifact.id ? '\u2713' : '\u2398'}
                         </button>
                         <button
-                          class="act-btn act-at"
+                          class="icon-btn"
                           onclick={() => injectAtRef(artifact)}
-                          title="Mention in chat (@artifact)"
-                          aria-label="Mention in chat"
+                          title="Send @reference to chat"
                         >
-                          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"><circle cx="6" cy="6" r="2"/><path d="M8 4.5v2.3a1.2 1.2 0 002.4 0V6a4.4 4.4 0 10-2.2 3.8"/></svg>
+                          @
                         </button>
                       </div>
                     </div>
@@ -334,66 +302,64 @@
 
 <style>
   .artifacts-tab {
-    padding: 4px;
-    overflow-x: hidden;
+    padding: 6px;
   }
 
   .center-msg {
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 24px 12px;
-    font-size: 11px;
+    padding: 30px 16px;
+    font-size: 12px;
     color: var(--color-text-muted, #6b7280);
     text-align: center;
     line-height: 1.5;
   }
 
   .center-msg.error {
-    color: var(--color-error, #ef4444);
+    color: #ef4444;
   }
 
   .group-list {
     display: flex;
     flex-direction: column;
-    gap: 2px;
+    gap: 4px;
   }
 
-  /* ── Group header ── */
+  /* ── Group header (collapsed row) ── */
   .group-header {
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: 8px;
     width: 100%;
-    padding: 5px 8px;
+    padding: 8px 10px;
     background: var(--color-ghost-bg, rgba(59, 115, 230, 0.08));
-    border: 1px solid var(--color-border, #e2e8f0);
-    border-radius: calc(var(--radius-sm, 6px) / 2);
+    border: 1px solid var(--color-border, #e5e7eb);
+    border-radius: var(--radius-sm, 6px);
     cursor: pointer;
-    transition: background 0.12s, border-color 0.12s;
+    transition: background 0.15s, border-color 0.15s;
   }
   .group-header:hover {
     background: var(--color-ghost-bg-hover, rgba(59, 115, 230, 0.12));
-    border-color: var(--color-primary, #3B73E6);
+    border-color: #93c5fd;
   }
 
   .group-badge {
-    width: 18px;
-    height: 18px;
+    width: 22px;
+    height: 22px;
     display: flex;
     align-items: center;
     justify-content: center;
-    background: var(--color-primary, #3B73E6);
-    color: #fff;
-    border-radius: 2px;
-    font-size: 9px;
+    background: var(--color-ghost-bg, rgba(59, 115, 230, 0.08));
+    color: var(--color-primary, #3B73E6);
+    border-radius: var(--radius-sm, 6px);
+    font-size: 10px;
     font-weight: 700;
     flex-shrink: 0;
-    letter-spacing: 0.02em;
   }
 
   .group-label {
-    font-size: 11px;
+    font-size: 12px;
     font-weight: 600;
     color: var(--color-text, #1f2937);
     flex: 1;
@@ -401,19 +367,18 @@
   }
 
   .group-count {
-    font-size: 9px;
+    font-size: 10px;
     color: var(--color-text-muted, #94a3b8);
-    background: rgba(0, 0, 0, 0.05);
-    padding: 1px 5px;
-    border-radius: 2px;
-    font-weight: 600;
-    font-variant-numeric: tabular-nums;
+    background: rgba(0, 0, 0, 0.04);
+    padding: 1px 6px;
+    border-radius: 9px;
+    font-weight: 500;
   }
 
   .group-chevron {
-    font-size: 10px;
+    font-size: 11px;
     color: var(--color-text-muted, #94a3b8);
-    transition: transform 0.15s;
+    transition: transform 0.2s;
     transform: rotate(0deg);
     flex-shrink: 0;
   }
@@ -425,34 +390,34 @@
   .group-items {
     display: flex;
     flex-direction: column;
-    margin-left: 10px;
-    padding-left: 8px;
-    border-left: 1.5px solid var(--color-border, #e2e8f0);
+    margin-left: 12px;
+    padding-left: 10px;
+    border-left: 2px solid var(--color-border, #e5e7eb);
   }
 
   .artifact-row {
     display: flex;
     flex-direction: column;
-    border-bottom: 1px solid color-mix(in srgb, var(--color-border, #e2e8f0) 60%, transparent);
+    border-bottom: 1px solid var(--color-border, #e5e7eb);
     transition: background 0.1s;
   }
   .artifact-row:last-child {
     border-bottom: none;
   }
   .artifact-row:hover {
-    background: var(--color-ghost-bg, rgba(59, 115, 230, 0.08));
+    background: rgba(59, 130, 246, 0.03);
   }
   .artifact-row.editing {
-    background: rgba(59, 130, 246, 0.06);
+    background: rgba(59, 130, 246, 0.05);
   }
 
   .artifact-main {
-    padding: 4px 6px;
+    padding: 6px 8px;
   }
 
   .artifact-top {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     gap: 6px;
   }
 
@@ -461,7 +426,7 @@
     min-width: 0;
     display: flex;
     flex-direction: column;
-    gap: 0;
+    gap: 1px;
   }
 
   .artifact-name {
@@ -471,114 +436,108 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    line-height: 1.4;
   }
 
   .artifact-desc {
-    font-size: 9.5px;
+    font-size: 10px;
     color: var(--color-text-muted, #94a3b8);
-    line-height: 1.25;
+    line-height: 1.3;
     display: -webkit-box;
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;
   }
 
-  /* ── Action buttons ── */
   .artifact-actions {
     display: flex;
-    gap: 2px;
+    gap: 3px;
     flex-shrink: 0;
   }
 
-  .act-btn {
+  .insert-btn {
     width: 22px;
     height: 22px;
     display: flex;
     align-items: center;
     justify-content: center;
     padding: 0;
+    font-size: 14px;
+    font-weight: 700;
     background: transparent;
-    color: var(--color-text-muted, #94a3b8);
-    border: 1px solid transparent;
-    border-radius: calc(var(--radius-sm, 6px) / 2);
+    color: var(--color-primary, #3B73E6);
+    border: 1px solid var(--color-primary, #3B73E6);
+    border-radius: var(--radius-sm, 6px);
     cursor: pointer;
-    transition: color 0.12s, background 0.12s, border-color 0.12s;
+    transition: background 0.15s;
     line-height: 1;
   }
-  .act-btn:hover {
-    color: var(--color-primary, #3B73E6);
-    background: var(--color-ghost-bg, rgba(59, 115, 230, 0.08));
-    border-color: var(--color-border, #e2e8f0);
-  }
-  .act-btn:active {
-    background: var(--color-ghost-bg-hover, rgba(59, 115, 230, 0.12));
-  }
+  .insert-btn:hover:not(:disabled) { background: var(--color-ghost-bg, rgba(59, 115, 230, 0.08)); }
+  .insert-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
-  /* Insert button — the primary action, always visible border */
-  .act-insert {
-    color: var(--color-primary, #3B73E6);
-    border-color: var(--color-primary, #3B73E6);
+  .config-btn {
+    width: 22px;
+    height: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    font-size: 13px;
+    background: #f1f5f9;
+    color: #475569;
+    border: 1px solid #e2e8f0;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+    line-height: 1;
   }
-  .act-insert:hover:not(:disabled) {
-    background: var(--color-primary, #3B73E6);
-    color: #fff;
-  }
-  .act-insert:disabled {
-    opacity: 0.35;
-    cursor: not-allowed;
-    border-color: var(--color-border, #e2e8f0);
-    color: var(--color-text-muted, #94a3b8);
-  }
+  .config-btn:hover { background: #e2e8f0; color: #334155; }
 
-  /* Active config toggle */
-  .act-active {
-    color: var(--color-primary, #3B73E6);
-    background: var(--color-ghost-bg, rgba(59, 115, 230, 0.08));
-    border-color: var(--color-primary, #3B73E6);
+  .icon-btn {
+    width: 22px;
+    height: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    font-size: 11px;
+    font-weight: 700;
+    background: #f1f5f9;
+    color: #64748b;
+    border: 1px solid #e2e8f0;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+    line-height: 1;
   }
-
-  /* Copied state flash */
-  .act-copied {
-    color: var(--color-success, #166534);
-    border-color: var(--color-success, #166534);
-    background: rgba(22, 101, 52, 0.06);
-  }
-
-  /* @ button hint */
-  .act-at:hover {
-    color: var(--color-accent, #2FB8D6);
-    border-color: var(--color-accent, #2FB8D6);
-    background: rgba(47, 184, 214, 0.08);
-  }
+  .icon-btn:hover { background: var(--color-ghost-bg, rgba(59, 115, 230, 0.08)); color: var(--color-primary, #3B73E6); }
 
   /* ── Config editor ── */
   .config-editor {
-    padding: 6px 6px 8px;
-    border-top: 1px solid var(--color-border, #e2e8f0);
-    background: var(--color-bg-secondary, #f8fafc);
+    padding: 8px 8px 10px;
+    border-top: 1px solid var(--color-border, #e5e7eb);
+    background: #f9fafb;
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 6px;
   }
 
   .config-label {
-    font-size: 9px;
-    font-weight: 700;
+    font-size: 10px;
+    font-weight: 600;
     color: var(--color-text-muted, #6b7280);
     text-transform: uppercase;
-    letter-spacing: 0.05em;
+    letter-spacing: 0.03em;
   }
 
   .config-textarea {
     width: 100%;
     font-family: 'JetBrains Mono', 'Fira Code', monospace;
-    font-size: 10.5px;
+    font-size: 11px;
     line-height: 1.5;
-    padding: 6px;
-    border: 1px solid var(--color-border, #e2e8f0);
-    border-radius: calc(var(--radius-sm, 6px) / 2);
-    background: var(--color-bg, #fff);
+    padding: 8px;
+    border: 1px solid var(--color-border, #e5e7eb);
+    border-radius: 4px;
+    background: white;
     color: var(--color-text, #1f2937);
     resize: vertical;
     box-sizing: border-box;
@@ -586,30 +545,26 @@
   .config-textarea:focus {
     outline: none;
     border-color: var(--color-primary, #3B73E6);
-    box-shadow: 0 0 0 1px var(--color-primary, #3B73E6);
   }
 
   .config-error {
     font-size: 10px;
-    color: var(--color-error, #ef4444);
+    color: #ef4444;
     margin: 0;
   }
 
   .insert-configured-btn {
-    padding: 4px 10px;
-    font-size: 10px;
+    padding: 5px 12px;
+    font-size: 11px;
     font-weight: 600;
     background: transparent;
     color: var(--color-primary, #3B73E6);
     border: 1px solid var(--color-primary, #3B73E6);
-    border-radius: calc(var(--radius-sm, 6px) / 2);
+    border-radius: var(--radius-sm, 6px);
     cursor: pointer;
     align-self: flex-start;
-    transition: background 0.12s, color 0.12s;
+    transition: background 0.15s;
   }
-  .insert-configured-btn:hover:not(:disabled) {
-    background: var(--color-primary, #3B73E6);
-    color: #fff;
-  }
-  .insert-configured-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .insert-configured-btn:hover:not(:disabled) { background: var(--color-ghost-bg, rgba(59, 115, 230, 0.08)); }
+  .insert-configured-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 </style>

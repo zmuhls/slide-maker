@@ -17,6 +17,7 @@
   import { currentDeck } from '$lib/stores/deck'
   import { activeSlideId } from '$lib/stores/ui'
   import { consumeActions, lastAgentSlideId } from '$lib/stores/actions'
+  import { getRecentRenderDiagnostics } from '$lib/stores/render-diagnostics'
   import { pendingMutations, autoApply, addPendingMutation, acceptMutation, rejectMutation } from '$lib/stores/pending-mutations'
   import { streamChat } from '$lib/utils/sse'
   import { extractMutations, applyMutation } from '$lib/utils/mutations'
@@ -205,6 +206,7 @@
     // Consume action buffer for AI context
     const actions = consumeActions()
     const agentSlideId = get(lastAgentSlideId)
+    const recentRenderDiagnostics = getRecentRenderDiagnostics()
 
     // Build history from existing messages (exclude the streaming placeholder)
     const history = get(chatMessages)
@@ -217,6 +219,7 @@
       slideId,
       modelId,
       history,
+      recentRenderDiagnostics,
       (chunk) => {
         if (firstChunk) {
           // Replace "Thinking..." with first real content

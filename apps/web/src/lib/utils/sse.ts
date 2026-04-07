@@ -1,9 +1,12 @@
+import type { RenderDiagnostic } from '@slide-maker/shared'
+
 export async function streamChat(
   message: string,
   deckId: string,
   activeSlideId: string | null,
   modelId: string,
   history: { role: 'user' | 'assistant'; content: string }[],
+  renderDiagnostics: RenderDiagnostic[],
   onText: (text: string) => void,
   onDone: () => void,
   onError: (error: string) => void,
@@ -18,7 +21,7 @@ export async function streamChat(
       method: 'POST',
       credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message, deckId, activeSlideId, modelId, history, recentActions, lastAgentSlideId }),
+      body: JSON.stringify({ message, deckId, activeSlideId, modelId, history, renderDiagnostics, recentActions, lastAgentSlideId }),
       signal,
     })
   } catch (e: any) {

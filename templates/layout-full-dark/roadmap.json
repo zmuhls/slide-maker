@@ -3,10 +3,22 @@
   "layout": "layout-full-dark",
   "modules": [
     { "type": "heading", "zone": "main", "data": { "text": "Product Roadmap", "level": 2 } },
-    { "type": "card-grid", "zone": "main", "data": { "columns": 3, "cards": [
-      { "title": "Q1: Foundation", "body": "Core infrastructure and CI/CD.", "variant": "cyan" },
-      { "title": "Q2: Features", "body": "Collaboration and AI integration.", "variant": "cyan" },
-      { "title": "Q3: Scale", "body": "Performance and analytics.", "variant": "cyan" }
-    ] } }
+    {
+      "type": "artifact",
+      "zone": "main",
+      "data": {
+        "registryId": "artifact-timeline",
+        "config": {
+          "events": [
+            { "label": "Q1: Foundation", "desc": "Core infrastructure and CI/CD." },
+            { "label": "Q2: Features", "desc": "Collaboration and AI integration." },
+            { "label": "Q3: Scale", "desc": "Performance and analytics." }
+          ]
+        },
+        "alt": "Timeline",
+        "width": "100%",
+        "height": "400px"
+      }
+    }
   ]
 }

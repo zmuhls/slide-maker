@@ -17,8 +17,9 @@
   import type { Editor } from '@tiptap/core'
   import { activeModuleControls } from '$lib/stores/ui'
 
-  let { module, editable = false, onchange, oneditorready, ondelete, onmoveup, onmovedown, onstepchange, isFirst = false, isLast = false }: {
+  let { module, slideId = '', editable = false, onchange, oneditorready, ondelete, onmoveup, onmovedown, onstepchange, isFirst = false, isLast = false }: {
     module: { id: string; type: string; data: Record<string, unknown>; stepOrder?: number | null };
+    slideId?: string;
     editable: boolean;
     onchange?: (newData: Record<string, unknown>) => void;
     oneditorready?: (editor: Editor) => void;
@@ -243,7 +244,11 @@
 
   <div class="module-content" style:transform={scaleFactor !== 1 ? `scale(${scaleFactor})` : undefined} style:transform-origin={scaleFactor !== 1 ? 'top center' : undefined}>
     {#if Renderer}
-      <Renderer data={module.data} {editable} {onchange} {oneditorready} />
+      {#if module.type === 'artifact'}
+        <ArtifactModule data={module.data} moduleId={module.id} {slideId} {editable} {onchange} />
+      {:else}
+        <Renderer data={module.data} {editable} {onchange} {oneditorready} />
+      {/if}
     {:else}
       <div class="unknown-module">Unknown: {module.type}</div>
     {/if}
