@@ -7,7 +7,7 @@ import { db } from '../db/index.js'
 import { decks, deckAccess, slides, contentBlocks, chatMessages, templates, themes, uploadedFiles, users, tokenUsage, artifacts } from '../db/schema.js'
 import { authMiddleware } from '../middleware/auth.js'
 import { chatRateLimit } from '../middleware/rate-limit.js'
-import { getModelStream } from '../providers/index.js'
+import { getModelStream, ALL_MODELS } from '../providers/index.js'
 import { buildSystemPrompt } from '../prompts/system.js'
 import fs from 'node:fs'
 import path from 'node:path'
@@ -295,8 +295,8 @@ chat.post('/', chatRateLimit, async (c) => {
 
   chatHistory.push({ role: 'user', content: message })
 
-  // Determine provider from model
-  const provider = modelId.includes('/') ? 'openrouter' : 'anthropic'
+  // Determine provider from registered models (supports openrouter, anthropic, bedrock)
+  const provider = (ALL_MODELS.find((m) => m.id === modelId)?.provider || 'unknown') as string
 
   // Check token cap
   const yearStart = new Date(new Date().getFullYear(), 0, 1)

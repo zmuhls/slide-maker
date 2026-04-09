@@ -26,3 +26,13 @@ export const ANTHROPIC_MODELS = [
   { id: 'claude-sonnet-4-20250514', name: 'Claude Sonnet 4', provider: 'anthropic' },
   { id: 'claude-haiku-4-5-20251001', name: 'Claude Haiku 4.5', provider: 'anthropic' },
 ]
+
+// Optionally expose Sonnet 4.6 via Anthropic SDK (admin-only in listing)
+if (env.anthropicSonnet46Id) {
+  ;(ANTHROPIC_MODELS as any).push({
+    id: env.anthropicSonnet46Id,
+    name: 'Claude Sonnet 4.6',
+    provider: 'anthropic',
+    adminOnly: true,
+  })
+}

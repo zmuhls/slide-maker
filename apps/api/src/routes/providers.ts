@@ -2,21 +2,38 @@ import { Hono } from 'hono'
 import { env } from '../env.js'
 import { ANTHROPIC_MODELS } from '../providers/anthropic.js'
 import { OPENROUTER_MODELS } from '../providers/openrouter.js'
+import { BEDROCK_MODELS } from '../providers/bedrock.js'
 import { authMiddleware } from '../middleware/auth.js'
 
 const providers = new Hono()
 
 // GET / — List available models (filtered by which API keys are configured)
 providers.get('/', authMiddleware, (c) => {
-  const models: { id: string; name: string; provider: string }[] = []
+  const user = c.get('user') as { role?: string } | undefined
+  const isAdmin = user?.role === 'admin'
+
+  const list: any[] = []
 
   if (env.anthropicApiKey) {
-    models.push(...ANTHROPIC_MODELS)
+    list.push(...ANTHROPIC_MODELS)
   }
 
   if (env.openrouterApiKey) {
-    models.push(...OPENROUTER_MODELS)
+    list.push(...OPENROUTER_MODELS)
   }
+
+  // Expose AWS Bedrock models if region is configured (credentials are resolved via SDK)
+  if (env.awsRegion) {
+    list.push(...BEDROCK_MODELS)
+  }
+
+  // Optional provider filter from env/CLI
+  const providerFilter = env.aiProvider
+
+  const models = list
+    .filter((m) => (providerFilter ? m.provider === providerFilter : true))
+    .filter((m) => (isAdmin ? true : !m.adminOnly))
+    .map((m) => ({ id: m.id, name: m.name, provider: m.provider }))
 
   return c.json({ models })
 })
