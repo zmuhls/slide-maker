@@ -650,6 +650,41 @@ decksRouter.delete('/:id/slides/:slideId/blocks/:blockId', async (c) => {
   return c.json({ message: 'Block deleted' })
 })
 
+// POST /:id/slides/:slideId/blocks/reorder — Batch reorder blocks within a slide
+decksRouter.post('/:id/slides/:slideId/blocks/reorder', async (c) => {
+  const user = c.get('user')
+  const deckId = c.req.param('id')
+  const slideId = c.req.param('slideId')
+
+  const access = await db
+    .select()
+    .from(deckAccess)
+    .where(and(eq(deckAccess.deckId, deckId), eq(deckAccess.userId, user.id)))
+    .get()
+
+  if (!access || access.role === 'viewer') {
+    return c.json({ error: 'No permission to reorder blocks' }, 403)
+  }
+
+  const body = await c.req.json()
+  const { order: blockOrder } = body
+
+  if (!Array.isArray(blockOrder)) {
+    return c.json({ error: 'order must be an array of block IDs' }, 400)
+  }
+
+  for (let i = 0; i < blockOrder.length; i++) {
+    await db
+      .update(contentBlocks)
+      .set({ order: i })
+      .where(and(eq(contentBlocks.id, blockOrder[i]), eq(contentBlocks.slideId, slideId)))
+  }
+
+  await db.update(decks).set({ updatedAt: new Date() }).where(eq(decks.id, deckId))
+
+  return c.json({ message: 'Blocks reordered' })
+})
+
 // POST /:id/slides/reorder — Reorder slides
 decksRouter.post('/:id/slides/reorder', async (c) => {
   const user = c.get('user')

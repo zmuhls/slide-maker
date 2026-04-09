@@ -337,7 +337,7 @@ export async function applyMutation(mutation: Record<string, unknown>): Promise<
         .sort((a, b) => a.order - b.order)
         .map((b) => b.id)
 
-      // Update store order for this zone
+      // Optimistic store update
       currentDeck.update((d) => {
         if (!d) return d
         return {
@@ -348,11 +348,8 @@ export async function applyMutation(mutation: Record<string, unknown>): Promise<
         }
       })
 
-      // Persist order for each block
-      for (let i = 0; i < order.length; i++) {
-        const id = order[i]
-        await apiCall(`/api/decks/${deck.id}/slides/${slideId}/blocks/${id}`, 'PATCH', { order: i })
-      }
+      // Batch persist — single request, fire-and-forget
+      apiCall(`/api/decks/${deck.id}/slides/${slideId}/blocks/reorder`, 'POST', { order })
 
       history.pushMutation(mutation, {
         action: 'reorderBlocks',
@@ -388,25 +385,22 @@ export async function applyMutation(mutation: Record<string, unknown>): Promise<
         }
       })
 
-      // Persist: update moved block zone + order, then reindex displaced blocks
-      await apiCall(`/api/decks/${deck.id}/slides/${slideId}/blocks/${blockId}`, 'PATCH', {
+      // Persist: update moved block zone, then batch reindex destination zone
+      apiCall(`/api/decks/${deck.id}/slides/${slideId}/blocks/${blockId}`, 'PATCH', {
         zone: toZone,
         order: order.indexOf(blockId),
       })
-      // Reindex other blocks in destination zone
-      for (let i = 0; i < order.length; i++) {
-        if (order[i] !== blockId) {
-          await apiCall(`/api/decks/${deck.id}/slides/${slideId}/blocks/${order[i]}`, 'PATCH', { order: i })
-        }
-      }
-      // Reindex source zone
+      // Batch reindex destination zone
+      apiCall(`/api/decks/${deck.id}/slides/${slideId}/blocks/reorder`, 'POST', { order })
+      // Batch reindex source zone
       const updatedDeck = get(currentDeck)
       const updatedSlide = updatedDeck?.slides.find((s) => s.id === slideId)
-      const sourceBlocks = (updatedSlide?.blocks ?? [])
+      const sourceOrder = (updatedSlide?.blocks ?? [])
         .filter((b) => b.zone === fromZone)
         .sort((a, b) => a.order - b.order)
-      for (let i = 0; i < sourceBlocks.length; i++) {
-        await apiCall(`/api/decks/${deck.id}/slides/${slideId}/blocks/${sourceBlocks[i].id}`, 'PATCH', { order: i })
+        .map((b) => b.id)
+      if (sourceOrder.length > 0) {
+        apiCall(`/api/decks/${deck.id}/slides/${slideId}/blocks/reorder`, 'POST', { order: sourceOrder })
       }
 
       history.pushMutation(mutation, {

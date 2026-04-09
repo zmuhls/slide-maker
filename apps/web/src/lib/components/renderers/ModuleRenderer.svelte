@@ -334,14 +334,14 @@
     cursor: grab;
     z-index: 10;
     opacity: 0;
-    pointer-events: none;
+    pointer-events: auto;
     touch-action: none;
     transition: opacity 0.12s;
     backdrop-filter: blur(6px);
   }
-  .module-wrapper.editable:hover .canvas-drag-handle {
+  .module-wrapper.editable:hover .canvas-drag-handle,
+  .module-wrapper.editable .canvas-drag-handle:focus-visible {
     opacity: 1;
-    pointer-events: auto;
   }
 
   /* Trigger dot — top-right, appears on hover */

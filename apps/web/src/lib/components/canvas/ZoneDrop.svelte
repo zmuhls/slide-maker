@@ -80,9 +80,10 @@
     items = e.detail.items
   }
 
-  async function handleFinalize(e: CustomEvent<{ items: Module[]; info: { trigger: string; id: string; source: string } }>) {
+  function handleFinalize(e: CustomEvent<{ items: Module[]; info: { trigger: string; id: string; source: string } }>) {
     const { info } = e.detail
     items = e.detail.items.map((m, i) => ({ ...m, order: i }))
+    dragging = false
 
     if (info.trigger === TRIGGERS.DROPPED_INTO_ZONE) {
       // This zone is the DESTINATION — check if item came from another zone
@@ -90,17 +91,15 @@
       if (movedItem && movedItem.zone !== zone) {
         const fromZone = movedItem.zone
         items = items.map(m => m.id === info.id ? { ...m, zone } : m)
-        await onMoveToZone?.(info.id, fromZone, zone, items.map(m => m.id))
+        onMoveToZone?.(info.id, fromZone, zone, items.map(m => m.id))
       } else {
         // Same-zone reorder
-        await onReorder?.(zone, items)
+        onReorder?.(zone, items)
       }
     }
     // DROPPED_INTO_ANOTHER: source zone item was taken away.
     // No mutation needed — moveBlockToZone from the destination
     // already reindexes both source and destination zones.
-
-    dragging = false
   }
 
   function togglePicker(e: MouseEvent) {
@@ -148,6 +147,7 @@
       items,
       flipDurationMs,
       type: `canvas-zone-${slideId}`,
+      dragDisabled: !editable,
       dropFromOthersDisabled: false,
       dropTargetStyle: {},
       dropTargetClasses: ['zone-drop-active'],
