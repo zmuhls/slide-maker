@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { fitText } from '$lib/utils/text-measure'
   import RichTextEditor from './RichTextEditor.svelte'
   import DOMPurify from 'dompurify'
   import { renderRichTextData } from '@slide-maker/shared'
@@ -7,39 +6,11 @@
   import type { Editor } from '@tiptap/core'
   let { data = {}, editable = false, onchange, oneditorready }: { data: Record<string, unknown>; editable: boolean; onchange?: (newData: Record<string, unknown>) => void; oneditorready?: (editor: Editor) => void } = $props()
 
-  let text = $derived(typeof data.markdown === 'string' ? data.markdown : typeof data.text === 'string' ? data.text : '')
   let column = $derived(typeof data.column === 'string' ? data.column : '')
 
-  let containerEl: HTMLDivElement | undefined = $state(undefined)
-  let fittedFontSize: number | undefined = $state(undefined)
   let editorActive = $state(false)
   let editContent = $state('')
   let clickCoords: { x: number; y: number } | null = $state(null)
-
-  const BASE_SIZE = 17
-  const MIN_SIZE = 12
-  const LINE_HEIGHT = 1.7
-
-  $effect(() => {
-    void text
-    if (!containerEl || !text.trim()) {
-      fittedFontSize = undefined
-      return
-    }
-    // Defer fitText until after first paint so it doesn't block slide transitions
-    const raf = requestAnimationFrame(() => {
-      if (!containerEl) return
-      const w = containerEl.clientWidth
-      const h = containerEl.clientHeight
-      if (w <= 0 || h <= 0) {
-        fittedFontSize = undefined
-        return
-      }
-      const size = fitText(text, 'Inter', BASE_SIZE, '400', w, h, LINE_HEIGHT, MIN_SIZE)
-      fittedFontSize = size < BASE_SIZE ? size : undefined
-    })
-    return () => cancelAnimationFrame(raf)
-  })
 
   let renderedHtml = $derived(renderRichTextData(data, (html) => DOMPurify.sanitize(html)))
 
@@ -50,11 +21,9 @@
 </script>
 
 <div
-  bind:this={containerEl}
   class="text-block"
   class:column-left={column === 'left'}
   class:column-right={column === 'right'}
-  style:font-size={fittedFontSize ? `${fittedFontSize}px` : undefined}
 >
   {#if editable && editorActive}
     <RichTextEditor

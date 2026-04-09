@@ -1,20 +1,10 @@
 <script lang="ts">
-  import { fitText } from '$lib/utils/text-measure'
-
   let { data = {}, editable = false, onchange }: { data: Record<string, unknown>; editable: boolean; onchange?: (newData: Record<string, unknown>) => void } = $props()
 
   let level = $derived(typeof data.level === 'number' ? Math.min(Math.max(data.level, 1), 4) : 1)
   let text = $derived(typeof data.text === 'string' ? data.text : '')
 
-  const LEVEL_CONFIG: Record<number, { base: number; min: number; weight: string }> = {
-    1: { base: 48, min: 24, weight: '800' },
-    2: { base: 32, min: 18, weight: '700' },
-    3: { base: 24, min: 16, weight: '600' },
-    4: { base: 18, min: 14, weight: '600' },
-  }
-
   let containerEl: HTMLElement | undefined = $state(undefined)
-  let fittedFontSize: number | undefined = $state(undefined)
   let focused = $state(false)
 
   // Set text content via DOM ref — Svelte must NOT manage contenteditable text
@@ -22,23 +12,6 @@
     if (containerEl && !focused) {
       containerEl.textContent = text
     }
-  })
-
-  $effect(() => {
-    void text
-    void level
-    if (focused) return
-    if (!containerEl || !text.trim()) { fittedFontSize = undefined; return }
-    const raf = requestAnimationFrame(() => {
-      if (!containerEl) return
-      const w = containerEl.clientWidth
-      const h = containerEl.clientHeight
-      if (w <= 0 || h <= 0) { fittedFontSize = undefined; return }
-      const cfg = LEVEL_CONFIG[level] ?? LEVEL_CONFIG[1]
-      const size = fitText(text, 'Outfit', cfg.base, cfg.weight, w, h, 1.2, cfg.min)
-      fittedFontSize = size < cfg.base ? size : undefined
-    })
-    return () => cancelAnimationFrame(raf)
   })
 
   let saveTimer: ReturnType<typeof setTimeout> | undefined
@@ -63,7 +36,6 @@
     oninput={handleInput}
     onblur={() => focused = false}
     role={editable ? 'textbox' : undefined}
-    style:font-size={fittedFontSize ? `${fittedFontSize}px` : undefined}
   ></h1>
 {:else if level === 2}
   <h2
@@ -75,7 +47,6 @@
     oninput={handleInput}
     onblur={() => focused = false}
     role={editable ? 'textbox' : undefined}
-    style:font-size={fittedFontSize ? `${fittedFontSize}px` : undefined}
   ></h2>
 {:else if level === 3}
   <h3
@@ -87,7 +58,6 @@
     oninput={handleInput}
     onblur={() => focused = false}
     role={editable ? 'textbox' : undefined}
-    style:font-size={fittedFontSize ? `${fittedFontSize}px` : undefined}
   ></h3>
 {:else}
   <h4
@@ -99,7 +69,6 @@
     oninput={handleInput}
     onblur={() => focused = false}
     role={editable ? 'textbox' : undefined}
-    style:font-size={fittedFontSize ? `${fittedFontSize}px` : undefined}
   ></h4>
 {/if}
 
