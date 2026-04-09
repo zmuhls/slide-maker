@@ -13,16 +13,26 @@ export function containsHtmlMarkup(value: string): boolean {
   return /<[^>]+>/.test(value)
 }
 
-function inlineMarkdownToHtml(text: string): string {
-  let html = escapeHtml(text)
+function applyInlinePatterns(html: string): string {
   html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+  html = html.replace(/__(.+?)__/g, '<strong>$1</strong>')
   html = html.replace(/\*(.+?)\*/g, '<em>$1</em>')
+  html = html.replace(/(?<!\w)_(.+?)_(?!\w)/g, '<em>$1</em>')
   html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (_match, label, url) => {
     const safeUrl = /^(https?:\/\/|mailto:)/i.test(url) ? url : '#'
     return `<a href="${escapeHtml(safeUrl)}" target="_blank" rel="noopener">${label}</a>`
   })
   html = html.replace(/`([^`]+)`/g, '<code>$1</code>')
   return html
+}
+
+/** Inline markdown without HTML escaping — use with an external sanitizer (e.g. DOMPurify). */
+export function inlineMarkdown(text: string): string {
+  return applyInlinePatterns(text)
+}
+
+function inlineMarkdownToHtml(text: string): string {
+  return applyInlinePatterns(escapeHtml(text))
 }
 
 export function markdownToHtml(markdown: string): string {
