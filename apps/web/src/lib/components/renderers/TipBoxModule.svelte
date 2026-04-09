@@ -20,7 +20,7 @@
 
 <div class="tip-box">
   {#if title}
-    <div class="tip-box-title">{title}</div>
+    <strong>{title}</strong>
   {/if}
   <div class="tip-box-content">
     {#if editable}
@@ -46,7 +46,8 @@
     font-family: var(--font-body);
     min-height: clamp(120px, 16cqi, 200px);
   }
-  .tip-box-title {
+  .tip-box strong {
+    display: block;
     font-weight: 700;
     color: #79c0ff;
     margin-bottom: 0.5rem;

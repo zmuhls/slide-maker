@@ -10,7 +10,8 @@
     oneditorready?: (editor: Editor) => void;
   } = $props()
 
-  let content = $derived(renderContent(typeof data.content === 'string' ? data.content : ''))
+  let title = $derived(typeof data.title === 'string' ? data.title : '')
+  let content = $derived(renderContent(typeof data.body === 'string' ? data.body : typeof data.content === 'string' ? data.content : ''))
   let variant = $derived(typeof data.variant === 'string' ? data.variant : 'default')
 
   function handleRichTextChange(html: string) {
@@ -19,6 +20,9 @@
 </script>
 
 <div class="card" class:card-navy={variant === 'navy'} class:card-cyan={variant === 'cyan'}>
+  {#if title}
+    <h3>{title}</h3>
+  {/if}
   {#if editable}
     <RichTextEditor
       content={content}
@@ -42,6 +46,11 @@
     line-height: 1.65;
     font-family: var(--font-body);
     min-height: clamp(120px, 16cqi, 220px);
+  }
+  .card h3 {
+    font-size: clamp(1rem, 1.8cqi, 1.3rem);
+    margin: 0 0 0.5rem 0;
+    font-family: var(--font-display);
   }
   .card-navy {
     border-left-color: var(--navy, #1D3A83);

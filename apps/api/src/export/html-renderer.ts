@@ -212,7 +212,10 @@ function renderModule(mod: Module, files?: ExportFile[], opts?: RenderOptions): 
       const src = rewriteSrc(String(d.src || d.url || ''), files)
       const alt = esc(String(d.alt || ''))
       const caption = String(d.caption || '')
-      let html = `<figure${step}><img src="${esc(src)}" alt="${alt}" loading="lazy">`
+      const imgW = typeof d.width === 'string' ? d.width : ''
+      const imgH = typeof d.height === 'string' ? d.height : ''
+      const sizeAttr = imgW || imgH ? ` style="${imgW ? `width:${esc(imgW)};` : ''}${imgH ? `max-height:${esc(imgH)};` : ''}object-fit:contain;"` : ''
+      let html = `<figure${step}><img src="${esc(src)}" alt="${alt}" loading="lazy"${sizeAttr}>`
       if (caption) html += `<figcaption>${esc(caption)}</figcaption>`
       html += `</figure>`
       return html
@@ -265,7 +268,8 @@ function renderModule(mod: Module, files?: ExportFile[], opts?: RenderOptions): 
         const raw = String(c.body || c.content || '')
         const body = raw.includes('<') ? sanitize(raw) : markdownToHtml(raw)
         const variant = c.variant ? ` card-${esc(String(c.variant))}` : ''
-        html += `<div class="card${variant}">${title}${body}</div>`
+        const color = typeof c.color === 'string' && c.color ? ` style="border-top:3px solid ${esc(c.color)}"` : ''
+        html += `<div class="card${variant}"${color}>${title}${body}</div>`
       }
       html += `</div>`
       return html

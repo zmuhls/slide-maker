@@ -113,7 +113,10 @@ function renderModule(mod: Module, slide: Slide): string {
       const src = rewriteAssetSrc(String(d.src || d.url || ''))
       const alt = esc(String(d.alt || ''))
       const caption = String(d.caption || '')
-      let html = `<figure><img src="${esc(src)}" alt="${alt}" loading="lazy">`
+      const imgW = typeof d.width === 'string' ? d.width : ''
+      const imgH = typeof d.height === 'string' ? d.height : ''
+      const sizeAttr = imgW || imgH ? ` style="${imgW ? `width:${esc(imgW)};` : ''}${imgH ? `max-height:${esc(imgH)};` : ''}object-fit:contain;"` : ''
+      let html = `<figure><img src="${esc(src)}" alt="${alt}" loading="lazy"${sizeAttr}>`
       if (caption) html += `<figcaption>${esc(caption)}</figcaption>`
       html += `</figure>`
       return html
@@ -154,7 +157,8 @@ function renderModule(mod: Module, slide: Slide): string {
         const body = renderFormattedContent(raw, sanitize)
         const bodyHtml = containsHtmlMarkup(raw) ? body : `<p>${body}</p>`
         const variant = item.variant ? ` card-${esc(String(item.variant))}` : ''
-        html += `<div class="card${variant}">${title}${bodyHtml}</div>`
+        const color = typeof item.color === 'string' && item.color ? ` style="border-top:3px solid ${esc(item.color)}"` : ''
+        html += `<div class="card${variant}"${color}>${title}${bodyHtml}</div>`
       }
       html += '</div>'
       return html
@@ -175,9 +179,41 @@ function renderModule(mod: Module, slide: Slide): string {
       const items = Array.isArray(d.items) ? d.items : []
       let html = '<ul class="stream-list">'
       for (const item of items) {
-        html += `<li>${esc(String((item as Record<string, unknown>).text || item))}</li>`
+        const o = typeof item === 'object' && item ? item as Record<string, unknown> : null
+        const text = o ? String(o.text || o.content || o.label || o.title || JSON.stringify(item)) : String(item)
+        html += `<li>${esc(text)}</li>`
       }
       html += '</ul>'
+      return html
+    }
+
+    case 'video': {
+      const rawUrl = String(d.url || '')
+      const caption = String(d.caption || '')
+      let embedSrc = ''
+      try {
+        const u = new URL(rawUrl)
+        if (u.hostname.includes('youtube.com') || u.hostname.includes('youtu.be')) {
+          let vid = ''
+          if (u.hostname.includes('youtu.be')) vid = u.pathname.slice(1)
+          else if (u.pathname.startsWith('/embed/')) vid = u.pathname.split('/embed/')[1]?.split(/[?/]/)[0] || ''
+          else vid = u.searchParams.get('v') || ''
+          if (vid) embedSrc = `https://www.youtube.com/embed/${vid}`
+        } else if (u.hostname.includes('vimeo.com')) {
+          const vId = u.pathname.split('/').filter(Boolean)[0]
+          if (vId && /^\d+$/.test(vId)) embedSrc = `https://player.vimeo.com/video/${vId}`
+        } else if (u.hostname.includes('loom.com') && u.pathname.startsWith('/share/')) {
+          const lId = u.pathname.split('/share/')[1]?.split(/[?/]/)[0] || ''
+          if (lId) embedSrc = `https://www.loom.com/embed/${lId}`
+        } else if (u.pathname.includes('/embed')) {
+          embedSrc = rawUrl
+        }
+      } catch {}
+      if (!embedSrc) return ''
+      let html = '<div class="video-wrapper">'
+      html += `<div class="video-frame"><iframe src="${esc(embedSrc)}" title="${esc(caption || 'Embedded video')}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen loading="lazy"></iframe></div>`
+      if (caption) html += `<p class="video-caption">${esc(caption)}</p>`
+      html += '</div>'
       return html
     }
 

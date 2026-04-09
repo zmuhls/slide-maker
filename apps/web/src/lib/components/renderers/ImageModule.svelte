@@ -8,11 +8,13 @@
   let src = $derived(rawSrc.startsWith('/api/') ? `${API_URL}${rawSrc}` : rawSrc)
   let alt = $derived(typeof data.alt === 'string' ? data.alt : '')
   let caption = $derived(typeof data.caption === 'string' ? data.caption : '')
+  let imgWidth = $derived(typeof data.width === 'string' ? data.width : undefined)
+  let imgHeight = $derived(typeof data.height === 'string' ? data.height : undefined)
 </script>
 
 <figure class="image-block">
   {#if src}
-    <img {src} {alt} />
+    <img {src} {alt} style:width={imgWidth} style:max-height={imgHeight ?? '60vh'} />
   {:else}
     <div class="placeholder">No image source</div>
   {/if}
@@ -28,7 +30,7 @@
     width: 100%;
   }
   img {
-    width: 100%;
+    max-width: 100%;
     max-height: 60vh;
     object-fit: contain;
     border-radius: var(--radius-md);

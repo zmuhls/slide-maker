@@ -24,7 +24,7 @@
   {#each panels as panel}
     <div class="comparison-panel">
       {#if panel.title}
-        <h4>{panel.title}</h4>
+        <h3>{panel.title}</h3>
       {/if}
       <div class="panel-content">
         {@html renderContent(panel.content)}
@@ -48,7 +48,7 @@
   .comparison-panel + .comparison-panel {
     border-left: 1px solid var(--color-border);
   }
-  .comparison-panel h4 {
+  .comparison-panel h3 {
     color: #79c0ff;
     font-weight: 700;
     margin: 0 0 0.5rem 0;
