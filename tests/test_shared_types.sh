@@ -48,14 +48,14 @@ done
 
 echo ""
 echo "── Data Interfaces ──"
-for iface in HeadingData TextData CardData LabelData TipBoxData PromptBlockData ImageData CarouselData ComparisonData CardGridData FlowData StreamListData ArtifactData; do
+for iface in HeadingData TextData CardData LabelData TipBoxData PromptBlockData ImageData CarouselData ComparisonData CardGridData FlowData StreamListData ArtifactData VideoData; do
   check "interface: $iface" "grep -q 'export interface $iface' '$BT'"
 done
 check "ModuleDataMap exported" "grep -q 'ModuleDataMap' '$BT'"
 
 echo ""
 echo "── Mutation Actions (mutations.ts) ──"
-for action in addSlide removeSlide updateBlock addBlock removeBlock reorderSlides reorderBlocks applyTemplate setTheme updateMetadata; do
+for action in addSlide removeSlide updateBlock addBlock removeBlock reorderSlides reorderBlocks applyTemplate setTheme updateMetadata moveBlockToZone updateArtifactConfig; do
   check "mutation: $action" "grep -q \"'$action'\" '$MU'"
 done
 check "AddSlidePayload exported" "grep -q 'AddSlidePayload' '$MU'"

@@ -1,4 +1,5 @@
 import { currentDeck, addSlideToDeck, removeSlideFromDeck, updateSlideInDeck } from '$lib/stores/deck'
+import { reorderBlocksInZone, moveBlockBetweenZones, reorderSlides as reorderSlidesTransform } from '@slide-maker/shared/dnd-transforms'
 import { activeSlideId } from '$lib/stores/ui'
 import { history } from '$lib/stores/history'
 import { logAction, lastAgentSlideId } from '$lib/stores/actions'
@@ -319,14 +320,7 @@ export async function applyMutation(mutation: Record<string, unknown>): Promise<
       await apiCall(`/api/decks/${deck.id}/slides/reorder`, 'POST', { order })
       currentDeck.update((d) => {
         if (!d) return d
-        const slideMap = new Map(d.slides.map((s) => [s.id, s]))
-        const reordered = order
-          .map((id, idx) => {
-            const slide = slideMap.get(id)
-            return slide ? { ...slide, order: idx } : null
-          })
-          .filter(Boolean) as typeof d.slides
-        return { ...d, slides: reordered }
+        return { ...d, slides: reorderSlidesTransform(d.slides, order) }
       })
       break
     }
@@ -348,18 +342,9 @@ export async function applyMutation(mutation: Record<string, unknown>): Promise<
         if (!d) return d
         return {
           ...d,
-          slides: d.slides.map((s) => {
-            if (s.id !== slideId) return s
-            const idToBlock = new Map(s.blocks.map((b) => [b.id, b]))
-            const reorderedZone = order
-              .map((id, i) => {
-                const b = idToBlock.get(id)
-                return b ? { ...b, order: i, zone } : null
-              })
-              .filter(Boolean) as typeof s.blocks
-            const others = s.blocks.filter((b) => b.zone !== zone)
-            return { ...s, blocks: [...others, ...reorderedZone] as typeof s.blocks }
-          }),
+          slides: d.slides.map((s) =>
+            s.id !== slideId ? s : reorderBlocksInZone(s as any, zone, order) as any
+          ),
         }
       })
 
@@ -397,31 +382,9 @@ export async function applyMutation(mutation: Record<string, unknown>): Promise<
         if (!d) return d
         return {
           ...d,
-          slides: d.slides.map((s) => {
-            if (s.id !== slideId) return s
-            // Update the moved block's zone
-            const updatedBlocks = s.blocks.map((b) =>
-              b.id === blockId ? { ...b, zone: toZone } : b
-            )
-            // Reorder destination zone per the provided order
-            const idToBlock = new Map(updatedBlocks.map((b) => [b.id, b]))
-            const reorderedDest = order
-              .map((id, i) => {
-                const b = idToBlock.get(id)
-                return b ? { ...b, order: i, zone: toZone } : null
-              })
-              .filter(Boolean) as typeof s.blocks
-            // Reorder source zone (block removed, reindex)
-            const sourceBlocks = updatedBlocks
-              .filter((b) => b.zone === fromZone && b.id !== blockId)
-              .sort((a, b) => a.order - b.order)
-              .map((b, i) => ({ ...b, order: i }))
-            // Keep other zones untouched
-            const others = updatedBlocks.filter(
-              (b) => b.zone !== toZone && b.zone !== fromZone
-            )
-            return { ...s, blocks: [...others, ...sourceBlocks, ...reorderedDest] as typeof s.blocks }
-          }),
+          slides: d.slides.map((s) =>
+            s.id !== slideId ? s : moveBlockBetweenZones(s as any, blockId, fromZone, toZone, order) as any
+          ),
         }
       })
 

@@ -48,7 +48,7 @@ check "apps/api/drizzle.config.ts" '[ -f apps/api/drizzle.config.ts ]'
 
 echo ""
 echo "── apps/api routes ──"
-for route in auth chat decks export files providers resources sharing admin; do
+for route in auth chat decks export files providers resources sharing admin artifact debug preview search; do
   check "route: $route.ts" "[ -f apps/api/src/routes/${route}.ts ]"
 done
 
@@ -83,7 +83,7 @@ check "index.ts" '[ -f packages/shared/src/index.ts ]'
 echo ""
 echo "── Svelte components (renderers) ──"
 for comp in ModuleRenderer HeadingModule TextModule CardModule LabelModule TipBoxModule \
-  PromptBlockModule ImageModule CarouselModule ComparisonModule CardGridModule FlowModule StreamListModule ArtifactModule; do
+  PromptBlockModule ImageModule CarouselModule ComparisonModule CardGridModule FlowModule StreamListModule ArtifactModule VideoModule; do
   check "renderer: $comp" "[ -f apps/web/src/lib/components/renderers/${comp}.svelte ]"
 done
 

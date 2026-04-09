@@ -1,7 +1,7 @@
 <script lang="ts">
   import { untrack } from 'svelte'
   import { flip } from 'svelte/animate'
-  import { dndzone, TRIGGERS } from 'svelte-dnd-action'
+  import { dragHandleZone, TRIGGERS } from 'svelte-dnd-action'
   import ModuleRenderer from '$lib/components/renderers/ModuleRenderer.svelte'
   import ModulePicker from '$lib/components/outline/ModulePicker.svelte'
 
@@ -134,7 +134,6 @@
   })
 
   function transformDragPreview(el: HTMLElement) {
-    el.style.transform = 'scale(0.95)'
     el.style.opacity = '0.9'
     el.style.boxShadow = '0 8px 32px rgba(0,0,0,0.3)'
     el.style.borderRadius = '8px'
@@ -145,12 +144,11 @@
   <!-- svelte-ignore a11y_no_static_element_interactions -->
   <div
     class="zone-drop-list"
-    use:dndzone={{
+    use:dragHandleZone={{
       items,
       flipDurationMs,
       type: `canvas-zone-${slideId}`,
       dropFromOthersDisabled: false,
-      dragHandleSelector: '.canvas-drag-handle',
       dropTargetStyle: {},
       dropTargetClasses: ['zone-drop-active'],
       morphDisabled: true,

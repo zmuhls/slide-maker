@@ -2,7 +2,7 @@
   import { untrack } from 'svelte'
   import { get } from 'svelte/store'
   import { flip } from 'svelte/animate'
-  import { dndzone } from 'svelte-dnd-action'
+  import { dragHandleZone, dragHandle } from 'svelte-dnd-action'
   import BlockItem from './BlockItem.svelte'
   import { activeSlideId, setActiveSlide } from '$lib/stores/ui'
   import { currentDeck, removeSlideFromDeck, updateSlideInDeck } from '$lib/stores/deck'
@@ -117,7 +117,7 @@
 
 <div class="slide-card" class:active data-slide-id={slide.id}>
   <div class="card-header" onclick={handleClick} onkeydown={(e) => e.key === 'Enter' && handleClick()} role="button" tabindex="0">
-    <span class="drag-handle" title="Drag to reorder">{'\u2807'}</span>
+    <span class="drag-handle" use:dragHandle title="Drag to reorder">{'\u2807'}</span>
     <span class="arrow">{expanded ? '\u25BC' : '\u25B6'}</span>
     <span class="slide-label">{index + 1}. {layoutLabel}</span>
     {#if active}
@@ -134,7 +134,7 @@
   </div>
 
   {#if expanded && blockItems.length > 0}
-    <div class="blocks-list" use:dndzone={{ items: blockItems, flipDurationMs, dropTargetStyle: {}, dropFromOthersDisabled: true, dragHandleSelector: '.drag-handle' }} onconsider={handleDndConsider} onfinalize={handleDndFinalize}>
+    <div class="blocks-list" use:dragHandleZone={{ items: blockItems, flipDurationMs, dropTargetStyle: {}, dropFromOthersDisabled: true }} onconsider={handleDndConsider} onfinalize={handleDndFinalize}>
       {#each blockItems as block (block.id)}
         <div animate:flip={{ duration: flipDurationMs }}>
           <BlockItem {block} slideId={slide.id} />

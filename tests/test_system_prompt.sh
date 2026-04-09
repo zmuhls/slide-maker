@@ -47,13 +47,13 @@ done
 
 echo ""
 echo "── Mutation Actions Documented ──"
-for action in addSlide removeSlide updateBlock addBlock removeBlock reorderSlides setTheme updateMetadata; do
+for action in addSlide removeSlide updateBlock addBlock removeBlock reorderSlides updateSlide setTheme applyTemplate updateMetadata updateArtifactConfig; do
   check "mutation: $action" "grep -q '$action' '$SYS'"
 done
 
 echo ""
 echo "── Key Guidelines ──"
-check "warns against inventing module types" "grep -qi 'do not invent\|ONLY.*1[23] module\|only the.*module' '$SYS'"
+check "warns against inventing module types" "grep -qi 'do not invent\|ONLY.*1[0-9] module\|only the.*module' '$SYS'"
 check "zone field required" "grep -qi 'zone.*field\|MUST.*zone\|every module.*zone' '$SYS'"
 check "layout-split zone rules" "grep -q 'content.*left\|stage.*right' '$SYS'"
 check "step reveal documented" "grep -q 'stepOrder\|step_order\|progressive' '$SYS'"

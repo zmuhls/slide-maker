@@ -99,4 +99,31 @@ describe('validateUrlForSsrf', () => {
     const validateUrlForSsrf = await getValidator()
     await expect(validateUrlForSsrf('http://169.254.169.254/latest/meta-data/')).rejects.toThrow()
   })
+
+  it('rejects hostname that resolves to private IP', async () => {
+    vi.resetModules()
+    vi.doMock('node:dns/promises', () => ({
+      lookup: async () => ({ address: '10.0.0.1', family: 4 }),
+    }))
+    const mod = await import('../apps/api/src/utils/ssrf-guard')
+    await expect(mod.validateUrlForSsrf('https://evil.example.com/image.png')).rejects.toThrow()
+  })
+
+  it('rejects hostname that resolves to IPv6 loopback', async () => {
+    vi.resetModules()
+    vi.doMock('node:dns/promises', () => ({
+      lookup: async () => ({ address: '::1', family: 6 }),
+    }))
+    const mod = await import('../apps/api/src/utils/ssrf-guard')
+    await expect(mod.validateUrlForSsrf('https://evil.example.com/image.png')).rejects.toThrow()
+  })
+
+  it('rejects hostname that resolves to link-local IPv4', async () => {
+    vi.resetModules()
+    vi.doMock('node:dns/promises', () => ({
+      lookup: async () => ({ address: '169.254.1.1', family: 4 }),
+    }))
+    const mod = await import('../apps/api/src/utils/ssrf-guard')
+    await expect(mod.validateUrlForSsrf('https://evil.example.com/image.png')).rejects.toThrow()
+  })
 })

@@ -7,7 +7,7 @@
     "dev:anthropic": "AI_PROVIDER=anthropic turbo dev",
     "dev:openrouter": "AI_PROVIDER=openrouter turbo dev",
     "build": "turbo build",
-    "test": "turbo test",
+    "test": "vitest run && bash tests/run_all.sh",
     "db:push": "pnpm --filter api db:push",
     "db:seed": "pnpm --filter api db:seed",
     "seed:admin": "pnpm --filter api seed:admin",

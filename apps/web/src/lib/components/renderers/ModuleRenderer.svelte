@@ -15,6 +15,7 @@
   import VideoModule from './VideoModule.svelte'
 
   import type { Editor } from '@tiptap/core'
+  import { dragHandle } from 'svelte-dnd-action'
   import { activeModuleControls } from '$lib/stores/ui'
 
   let { module, slideId = '', editable = false, onchange, onresize, oneditorready, ondelete, onstepchange }: {
@@ -194,7 +195,7 @@
   style:height={customH ? `${customH}px` : undefined}
 >
   {#if editable}
-    <span class="canvas-drag-handle" aria-label="Drag to reorder">⠿</span>
+    <span class="canvas-drag-handle" use:dragHandle aria-label="Drag to reorder">⠿</span>
     <button
       class="module-trigger"
       class:active={isActive}
@@ -334,6 +335,7 @@
     z-index: 10;
     opacity: 0;
     pointer-events: none;
+    touch-action: none;
     transition: opacity 0.12s;
     backdrop-filter: blur(6px);
   }

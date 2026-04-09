@@ -59,12 +59,12 @@ describe('getSlideTitle', () => {
     expect(getSlideTitle(modules, 4)).toBe('Slide 5')
   })
 
-  it('returns empty string for heading with empty text', () => {
+  it('returns fallback for heading with empty text', () => {
     const modules: RenderModule[] = [
       mod({ type: 'heading', zone: 'hero', order: 0, data: { text: '' } }),
     ]
-    // String('') is falsy, returns ''
-    expect(getSlideTitle(modules, 0)).toBe('')
+    // empty text is falsy, falls back to Slide N
+    expect(getSlideTitle(modules, 0)).toBe('Slide 1')
   })
 
   it('returns fallback for empty modules array', () => {

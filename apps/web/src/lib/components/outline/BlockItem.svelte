@@ -1,5 +1,6 @@
 <script lang="ts">
   import { get } from 'svelte/store'
+  import { dragHandle } from 'svelte-dnd-action'
   import { currentDeck, updateSlideInDeck } from '$lib/stores/deck'
   import { API_URL } from '$lib/api'
 
@@ -110,7 +111,7 @@
 <div class="block-item">
   <!-- svelte-ignore a11y_no_static_element_interactions -->
   <div class="block-header" onclick={(e) => { if (!(e.target as HTMLElement).closest('.delete-block-btn')) expanded = !expanded }} onkeydown={(e) => e.key === 'Enter' && (expanded = !expanded)} role="button" tabindex="0">
-    <span class="drag-handle">{'\u283F'}</span>
+    <span class="drag-handle" use:dragHandle>{'\u283F'}</span>
     <span class="block-label">{label}</span>
     {#if preview}
       <span class="block-preview">{preview}</span>

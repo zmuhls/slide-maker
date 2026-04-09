@@ -109,6 +109,13 @@ describe('module type parity', () => {
       }
     })
 
+    it('prompt documents every MODULE_TYPE by name', () => {
+      const prompt = buildSystemPrompt(baseOpts)
+      for (const type of MODULE_TYPES) {
+        expect(prompt).toContain(`**${type}**`)
+      }
+    })
+
     it('artifact data shape includes config field', () => {
       const prompt = buildSystemPrompt(baseOpts)
       const artifactLine = prompt.split('\n').find((l) => l.includes('**artifact**'))

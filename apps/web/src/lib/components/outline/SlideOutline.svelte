@@ -5,7 +5,7 @@
   import AddSlideMenu from './AddSlideMenu.svelte'
   import { currentDeck } from '$lib/stores/deck'
   import { activeSlideId } from '$lib/stores/ui'
-  import { dndzone } from 'svelte-dnd-action'
+  import { dragHandleZone } from 'svelte-dnd-action'
   import { history } from '$lib/stores/history'
   import { undo, redo, applyMutation } from '$lib/utils/mutations'
 
@@ -79,7 +79,7 @@
   {:else}
     <div
       class="slide-list"
-      use:dndzone={{ items: dragItems, flipDurationMs, dropFromOthersDisabled: true, dragHandleSelector: '.drag-handle' }}
+      use:dragHandleZone={{ items: dragItems, flipDurationMs, dropFromOthersDisabled: true }}
       onconsider={handleConsider}
       onfinalize={handleFinalize}
     >

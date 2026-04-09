@@ -35,7 +35,7 @@ export function getOrderedModules(slide: RenderSlide): RenderModule[] {
 
 export function getSlideTitle(modules: RenderModule[], index: number): string {
   const title = modules.find((module) => module.type === 'heading')
-  return title ? String(title.data.text || '') : `Slide ${index + 1}`
+  return title?.data.text ? String(title.data.text) : `Slide ${index + 1}`
 }
 
 export function parseSplitRatio(value: string | undefined | null, fallback: number = 0.45): number {

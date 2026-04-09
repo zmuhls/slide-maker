@@ -11,7 +11,7 @@ pass() { PASS=$((PASS + 1)); echo "  ✓ $1"; }
 fail() { FAIL=$((FAIL + 1)); echo "  ✗ $1"; }
 
 VALID_LAYOUTS="title-slide layout-split layout-content layout-grid layout-full-dark layout-divider closing-slide"
-VALID_MODULES="heading text card label tip-box prompt-block image carousel comparison card-grid flow stream-list artifact"
+VALID_MODULES="heading text card label tip-box prompt-block image carousel comparison card-grid flow stream-list artifact video"
 VALID_ZONES="content stage main hero"
 
 echo "═══════════════════════════════════════════════"
