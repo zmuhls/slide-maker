@@ -298,17 +298,18 @@
   }
   .step-badge {
     position: absolute;
-    top: -8px;
+    top: 0;
     left: 0;
     background: var(--teal, #2FB8D6);
     color: white;
-    font-size: 9px;
-    padding: 1px 7px;
-    border-radius: 0 8px 8px 0;
+    font-size: 8px;
+    padding: 0 5px;
+    border-radius: 0 0 4px 0;
     font-weight: 700;
     letter-spacing: 0.03em;
     z-index: 5;
     text-transform: uppercase;
+    line-height: 14px;
   }
 
   .module-content {
@@ -318,18 +319,18 @@
   /* Drag handle — top-left, appears on hover */
   .canvas-drag-handle {
     position: absolute;
-    top: 4px;
-    left: 4px;
-    width: 22px;
-    height: 22px;
+    top: 2px;
+    left: 2px;
+    width: 16px;
+    height: 16px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 14px;
+    font-size: 10px;
     line-height: 1;
     background: rgba(20, 30, 50, 0.85);
     border: 1px solid rgba(255, 255, 255, 0.12);
-    border-radius: 5px;
+    border-radius: 3px;
     color: rgba(255, 255, 255, 0.6);
     cursor: grab;
     z-index: 10;
@@ -347,19 +348,19 @@
   /* Trigger dot — top-right, appears on hover */
   .module-trigger {
     position: absolute;
-    top: 4px;
-    right: 4px;
-    width: 22px;
-    height: 22px;
+    top: 2px;
+    right: 2px;
+    width: 16px;
+    height: 16px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 14px;
+    font-size: 10px;
     line-height: 1;
     letter-spacing: 1px;
     background: rgba(20, 30, 50, 0.85);
     border: 1px solid rgba(255, 255, 255, 0.12);
-    border-radius: 5px;
+    border-radius: 3px;
     color: rgba(255, 255, 255, 0.6);
     cursor: pointer;
     z-index: 10;
@@ -391,14 +392,14 @@
     z-index: 1000;
     background: rgba(18, 25, 42, 0.97);
     border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 8px;
-    padding: 6px;
-    min-width: 140px;
-    box-shadow: 0 8px 28px rgba(0, 0, 0, 0.45);
+    border-radius: 6px;
+    padding: 4px;
+    min-width: 120px;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.45);
     backdrop-filter: blur(12px);
     display: flex;
     flex-direction: column;
-    gap: 2px;
+    gap: 1px;
   }
 
   .pop-section {
@@ -443,8 +444,8 @@
   }
 
   .pop-select {
-    height: 26px;
-    font-size: 11px;
+    height: 22px;
+    font-size: 10px;
     border: 1px solid rgba(255, 255, 255, 0.12);
     border-radius: 5px;
     background: rgba(255, 255, 255, 0.06);

@@ -315,7 +315,7 @@
     display: flex;
     flex-direction: column;
     background: var(--color-bg-tertiary);
-    min-width: 0;
+    min-width: 320px;
   }
 
   .right-panel {
@@ -429,6 +429,16 @@
     }
     .right-panel {
       max-width: 180px;
+    }
+  }
+
+  @media (max-width: 640px) {
+    .left-panel,
+    .right-panel {
+      display: none;
+    }
+    .center-panel {
+      min-width: 0;
     }
   }
 </style>

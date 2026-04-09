@@ -52,7 +52,7 @@
     <div class="placeholder">No images in carousel</div>
   {:else}
     <div class="carousel-viewport">
-      {#if items.length > 1}
+      {#if items.length > 1 && !editable}
         <button class="carousel-nav carousel-prev" onclick={prev} aria-label="Previous">&lsaquo;</button>
       {/if}
       <figure class="carousel-slide">
@@ -61,11 +61,11 @@
           <figcaption>{items[activeIndex].caption}</figcaption>
         {/if}
       </figure>
-      {#if items.length > 1}
+      {#if items.length > 1 && !editable}
         <button class="carousel-nav carousel-next" onclick={next} aria-label="Next">&rsaquo;</button>
       {/if}
     </div>
-    {#if items.length > 1}
+    {#if items.length > 1 && !editable}
       <div class="carousel-dots">
         {#each items as _, i}
           <button

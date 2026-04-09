@@ -174,7 +174,7 @@
     display: flex;
     flex-direction: column;
     height: 100%;
-    background: var(--color-bg-secondary);
+    background: var(--color-bg-tertiary);
   }
   .canvas-area {
     flex: 1;
@@ -221,6 +221,7 @@
     aspect-ratio: 16 / 9;
     background: white;
     border-radius: var(--radius-md);
+    border: 1px solid var(--color-border);
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
     overflow: hidden;
   }
