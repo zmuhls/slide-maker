@@ -343,9 +343,9 @@
   appearance: menulist !important;
 }
 .slide-frame .add-module-btn {
-  background: color-mix(in srgb, var(--theme-accent, #64b5f6) 10%, transparent) !important;
-  color: var(--theme-accent, #64b5f6) !important;
-  border-color: color-mix(in srgb, var(--theme-accent, #64b5f6) 25%, transparent) !important;
+  background: color-mix(in srgb, var(--theme-text, #f0f0f0) 10%, transparent) !important;
+  color: var(--theme-text, #f0f0f0) !important;
+  border-color: color-mix(in srgb, var(--theme-text, #f0f0f0) 25%, transparent) !important;
 }
 
 /* ── Inline code ─────────────────────────────────────────────────── */
