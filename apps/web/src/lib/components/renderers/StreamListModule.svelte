@@ -41,7 +41,6 @@
       <li
         contenteditable="true"
         oninput={(e) => handleItemInput(i, e)}
-        role="textbox"
       >{item}</li>
     {:else}
       <li>{@html DOMPurify.sanitize(inlineMarkdown(item))}</li>

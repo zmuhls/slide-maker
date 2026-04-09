@@ -152,8 +152,13 @@
         <div class="slide-frame view-mode" style={themeStyle}>
           <SlideRenderer slide={activeSlide} editable={false} />
           {#if editable}
-            <!-- svelte-ignore a11y_no_static_element_interactions -->
-            <div class="click-overlay" onclick={() => setMode('edit')}></div>
+            <div
+              class="click-overlay"
+              role="button"
+              tabindex="0"
+              onclick={() => setMode('edit')}
+              onkeydown={(e) => (e.key === 'Enter' || e.key === ' ') && setMode('edit')}
+            ></div>
             <div class="edit-hint">Click to edit</div>
           {/if}
         </div>

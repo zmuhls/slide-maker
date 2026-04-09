@@ -415,10 +415,7 @@
     letter-spacing: 0.4px;
   }
 
-  .pop-row {
-    display: flex;
-    gap: 2px;
-  }
+  /* removed unused .pop-row */
 
   .pop-btn {
     display: flex;

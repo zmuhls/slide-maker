@@ -210,6 +210,8 @@
 <div
   class="chat-input"
   class:drag-over={dragOver}
+  role="region"
+  aria-label="Chat input and attachments"
   ondragover={handleDragOver}
   ondragleave={handleDragLeave}
   ondrop={handleDrop}

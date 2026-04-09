@@ -174,6 +174,7 @@
       {#each files as file (file.id ?? file._id)}
         {@const name = file.originalName ?? file.filename ?? 'file'}
         {@const id = file.id ?? file._id}
+        <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
         <div
           class="file-card"
           class:clickable={isImage(name)}

@@ -129,7 +129,7 @@
   </div>
 
   {#if expanded}
-    <div class="block-fields" onclick={(e) => e.stopPropagation()}>
+    <div class="block-fields" role="presentation" onclick={(e) => e.stopPropagation()}>
       {#if block.type === 'heading'}
         <input
           class="field-input"
@@ -298,6 +298,5 @@
   .delete-block-btn:hover { color: #ef4444; background: rgba(239, 68, 68, 0.1); }
   .delete-block-btn:active { transform: translateY(1px); }
 
-  .delete-block-btn.confirming { color: #fff; background: #ef4444; }
   .delete-block-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 </style>

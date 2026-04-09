@@ -1,50 +1,40 @@
 # Repository Guidelines
 
-## Project Structure & Module Organization
-- `apps/web` — SvelteKit (Svelte 5) UI: editor, canvas, resources, chat, admin pages.
-- `apps/api` — Hono API + Drizzle/SQLite: auth, decks, artifacts, chat, admin/debug routes.
-- `packages/shared` — Shared types/mutations used by web + API.
-- `templates` — Slide templates and artifact definitions (JSON).
-- `tests` — Vitest unit tests and shell checks; Playwright E2E.
-- Debug: `apps/web/src/routes/(app)/debug/*`, API: `apps/api/src/routes/debug.ts`, transcripts at `apps/api/data/debug-logs/transcripts.json`.
+## Project Structure & Modules
+- `apps/web` — SvelteKit (Svelte 5) UI: editor/canvas, resources, chat, admin.
+- `apps/api` — Hono API + Drizzle/SQLite: auth, decks, artifacts, chat, debug.
+- `packages/shared` — Shared types and mutations used by web + API.
+- `templates/` — Slide templates and artifact definitions (JSON).
+- `tests/` — Vitest unit tests, shell checks; Playwright E2E.
 
-## Build, Test, and Development Commands
-- `pnpm dev` — Run web + API via Turbo (web:5173, api:3001).
-- `pnpm build` — Build all workspaces.
-- `pnpm test` — Run unit tests across packages.
-- `pnpm test:e2e` — Run Playwright E2E (requires `pnpm dev`).
-- `pnpm db:seed` — Seed templates, themes, artifacts; auto-admins if env set.
-- `pnpm seed:admin -- <email> [--password <pwd>]` — Create/update an admin.
+## Build, Test, Develop
+- `pnpm dev` — Run web+api (web:5173, api:3001).
+- `pnpm build` — Build all workspaces via Turbo/Vite/tsc.
+- `pnpm test` — Run unit tests (Vitest) and shell checks.
+- `pnpm test:e2e` — Playwright E2E (requires `pnpm dev`).
+- `pnpm db:seed` — Seed templates/themes/artifacts. `pnpm seed:admin -- <email> [--password <pwd>]` to create an admin.
 
-## Coding Style & Naming Conventions
-- TypeScript-first. Svelte 5 `$state`/`$derived` for reactivity.
-- 2‑space indentation; clear, descriptive names (avoid one‑letter vars).
-- Keep modules small under `apps/web/src/lib/**`; prefer composable utilities.
-- Artifacts render in sandboxed iframes; inject strict CSP for blob/inline HTML.
+## Coding Style & Naming
+- TypeScript-first; 2-space indentation; descriptive names (avoid one-letter vars).
+- Svelte 5 reactivity: use `$state`, `$derived`, `$effect`; avoid capturing initial props in state.
+- Keep UI modules small under `apps/web/src/lib/**`; prefer composable utilities.
+- Artifacts render in sandboxed iframes; apply strict CSP for blob/inline HTML.
 
 ## Testing Guidelines
-- Unit: `tests/*.test.ts` (Vitest). Shell checks: `tests/*.sh` via `tests/run_all.sh`.
-- E2E: `e2e/*.spec.ts` (Playwright). Keep fixtures minimal; assert core behaviors.
-- Update/add tests when changing mutations, renderers, or artifact sizing.
+- Unit tests in `tests/*.test.ts` (Vitest). Shell checks `tests/*.sh` via `tests/run_all.sh`.
+- E2E in `e2e/*.spec.ts` (Playwright). Keep fixtures minimal; assert core behavior.
+- Update/add tests when changing mutations, renderers, or artifact sizing/layout.
 
-## Commit & Pull Request Guidelines
+## Commits & PRs
 - Conventional Commits: `feat:`, `fix:`, `docs:`, `chore:`, `test:`, `ux:`.
-- Keep PRs small and scoped; include description and screenshots/GIFs for UI.
-- Link issues or handoff docs (`docs/prompts/*`). Never commit secrets, `.env*`, or local logs (e.g., `.playwright-mcp/`).
+- Small, scoped PRs with clear description; include screenshots/GIFs for UI changes.
+- Link issues and/or `docs/prompts/*`. Never commit secrets or `.env*`; exclude local logs (e.g., `.playwright-mcp/`).
 
-## Security & Configuration Tips
+## Security & Configuration
 - Configure env in `.env`; run `pnpm db:seed` on fresh setups.
-- API/web on separate ports; CORS/CSRF/auth enforced server-side.
-- Debug routes mount only when `NODE_ENV !== 'production'`; override transcript path with `DEBUG_TRANSCRIPT_LOG` for tests.
+- API and web run on separate ports; enforce CORS/CSRF/auth server-side.
+- Debug routes only when `NODE_ENV !== 'production'`. For tests, set `DEBUG_TRANSCRIPT_LOG=/tmp/transcripts.test.json`.
 
-## Agent‑Specific Notes
-- Prefer surgical diffs; follow existing mutation flow and shared types.
-- Artifact sizing: new blocks default to `autoSize: true` and `aspectRatio` 16/9. On manual resize, persist `width/height` and set `autoSize: false`.
-- Validate changes locally with unit tests first, then E2E for UI‑affecting work.
-
-## LLM Debugging Dashboard
-- Access: `/debug` (web), admin-only. API debug routes mount only in non‑production.
-- Live Streams: subscribes to `GET /api/debug/stream` (SSE) with credentials. Shows model/user/deck, tokens/sec (~chars/4), chunk count; highlights ```mutation fences; completed/error streams fade and auto-collapse after 30s (Clear Completed to prune).
-- Transcript Log: JSON persisted at `apps/api/data/debug-logs/transcripts.json`. Endpoints: `GET /api/debug/transcripts?limit=50&deck=ID&model=ID`, `DELETE /api/debug/transcripts`. UI supports filters, search, row expansion, markdown rendering; auto-refreshes every 5s and on `stream:done`.
-- Local test: `pnpm dev`, seed an admin (`pnpm seed:admin -- <email> --password <pwd>`), log in, open a deck, send a chat, then watch Live Streams and confirm a transcript entry.
-- Override for tests: set `DEBUG_TRANSCRIPT_LOG=/tmp/transcripts.test.json` to isolate logs.
+## Agent Notes
+- Prefer surgical diffs; follow shared types and mutation flow.
+- New blocks default `autoSize: true`, `aspectRatio: 16/9`; on manual resize, persist `width/height` and set `autoSize: false`.

@@ -9,6 +9,9 @@
   let error = $state('');
   let loading = $state(false);
 
+  let dialogEl = $state(null) as HTMLDivElement | null;
+  let nameInput = $state(null) as HTMLInputElement | null;
+
   async function handleSubmit(e: SubmitEvent) {
     e.preventDefault();
     error = '';
@@ -44,13 +47,23 @@
       open = false;
     }
   }
+
+  $effect(() => {
+    if (open) {
+      // Focus dialog for accessibility and then the name input for usability
+      queueMicrotask(() => {
+        dialogEl?.focus?.();
+        nameInput?.focus?.();
+      });
+    }
+  });
 </script>
 
 {#if open}
   <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
-  <div class="overlay" role="dialog" aria-modal="true" onclick={handleBackdrop} onkeydown={handleKeydown}>
-    <div class="dialog">
-      <h2>New Deck</h2>
+  <div class="overlay" role="presentation" onclick={handleBackdrop} onkeydown={handleKeydown}>
+    <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="new-deck-title" tabindex="-1" bind:this={dialogEl}>
+      <h2 id="new-deck-title">New Deck</h2>
 
       <form onsubmit={handleSubmit}>
         {#if error}
@@ -64,7 +77,7 @@
             bind:value={name}
             placeholder="My Presentation"
             required
-            autofocus
+            bind:this={nameInput}
           />
         </label>
 

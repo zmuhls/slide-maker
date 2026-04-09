@@ -271,9 +271,10 @@
 
                   {#if editingArtifactId === artifact.id}
                     <div class="config-editor">
-                      <label class="config-label">Edit data (JSON):</label>
+                      <label class="config-label" for={"json-" + artifact.id}>Edit data (JSON):</label>
                       <textarea
                         class="config-textarea"
+                        id={"json-" + artifact.id}
                         bind:value={configJson}
                         rows="8"
                         spellcheck="false"

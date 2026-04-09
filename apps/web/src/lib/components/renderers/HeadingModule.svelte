@@ -27,6 +27,7 @@
 </script>
 
 {#if level === 1}
+  <!-- svelte-ignore a11y_missing_content -->
   <h1
     bind:this={containerEl}
     class="heading heading-1"
@@ -38,6 +39,7 @@
     role={editable ? 'textbox' : undefined}
   ></h1>
 {:else if level === 2}
+  <!-- svelte-ignore a11y_missing_content -->
   <h2
     bind:this={containerEl}
     class="heading heading-2"
@@ -49,6 +51,7 @@
     role={editable ? 'textbox' : undefined}
   ></h2>
 {:else if level === 3}
+  <!-- svelte-ignore a11y_missing_content -->
   <h3
     bind:this={containerEl}
     class="heading heading-3"
@@ -60,6 +63,7 @@
     role={editable ? 'textbox' : undefined}
   ></h3>
 {:else}
+  <!-- svelte-ignore a11y_missing_content -->
   <h4
     bind:this={containerEl}
     class="heading heading-4"

@@ -185,10 +185,9 @@
 </div>
 
 {#if showPicker}
-  <!-- svelte-ignore a11y_no_static_element_interactions -->
-  <div class="picker-overlay" onclick={() => showPicker = false}>
-    <!-- svelte-ignore a11y_no_static_element_interactions -->
-    <div class="picker-floating" role="dialog" aria-label="Add module" style="left: {pickerX}px; top: {pickerY}px;" onclick={(e) => e.stopPropagation()}>
+  <div class="picker-overlay" role="button" tabindex="0" onclick={() => showPicker = false} onkeydown={(e) => (e.key === 'Enter' || e.key === ' ') && (showPicker = false)}>
+    <!-- svelte-ignore a11y_click_events_have_key_events -->
+    <div class="picker-floating" role="dialog" aria-label="Add module" tabindex="-1" style="left: {pickerX}px; top: {pickerY}px;" onclick={(e) => e.stopPropagation()}>
       <ModulePicker {deckId} {slideId} {zone} onAdd={handleModuleAdded} />
     </div>
   </div>

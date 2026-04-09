@@ -137,7 +137,8 @@
           {/if}
         </div>
       </div>
-      <div class="resize-handle left-handle" onmousedown={startLeftResize}>
+      <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+      <div class="resize-handle left-handle" role="separator" aria-orientation="vertical" aria-label="Resize left panel" onmousedown={startLeftResize}>
         <div class="handle-line"></div>
       </div>
     {/if}
@@ -157,7 +158,8 @@
     </div>
 
     {#if !rightCollapsed}
-      <div class="resize-handle right-handle" onmousedown={startRightResize}>
+      <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+      <div class="resize-handle right-handle" role="separator" aria-orientation="vertical" aria-label="Resize right panel" onmousedown={startRightResize}>
         <div class="handle-line"></div>
       </div>
       <div class="right-panel" style:width="{rightWidth}px" style:min-width="{rightWidth}px">

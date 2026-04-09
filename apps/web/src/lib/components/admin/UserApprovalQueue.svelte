@@ -306,8 +306,8 @@
 
 <!-- Usage Modal -->
 {#if usageModalUser}
-  <div class="modal-overlay" onclick={closeUsageModal} onkeydown={(e) => e.key === 'Escape' && closeUsageModal()} role="dialog" aria-modal="true">
-    <div class="modal-content" onclick={(e) => e.stopPropagation()}>
+  <div class="modal-overlay" onclick={closeUsageModal} onkeydown={(e) => e.key === 'Escape' && closeUsageModal()} role="dialog" aria-modal="true" tabindex="-1">
+    <div class="modal-content" role="presentation" onclick={(e) => e.stopPropagation()}>
       <div class="modal-header">
         <h2>Token Usage: {usageModalUser.name}</h2>
         <button class="modal-close" onclick={closeUsageModal} aria-label="Close">&times;</button>

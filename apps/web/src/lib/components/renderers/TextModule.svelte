@@ -35,17 +35,18 @@
       initialClickCoords={clickCoords}
     />
   {:else}
-    <!-- svelte-ignore a11y_no_static_element_interactions -->
-    <div
-      class="text-preview"
-      class:editable
-      onclick={(e) => { if (editable) { clickCoords = { x: e.clientX, y: e.clientY }; editContent = renderedHtml; editorActive = true } }}
-      onkeydown={(e) => { if (editable && e.key === 'Enter') { editContent = renderedHtml; editorActive = true } }}
-      role={editable ? 'button' : undefined}
-      tabindex={editable ? 0 : undefined}
-    >
-      {@html renderedHtml}
-    </div>
+    {#if editable}
+      <button
+        type="button"
+        class="text-preview editable"
+        onclick={(e) => { clickCoords = { x: e.clientX, y: e.clientY }; editContent = renderedHtml; editorActive = true }}
+        onkeydown={(e) => { if (e.key === 'Enter') { editContent = renderedHtml; editorActive = true } }}
+      >
+        {@html renderedHtml}
+      </button>
+    {:else}
+      <div class="text-preview">{@html renderedHtml}</div>
+    {/if}
   {/if}
 </div>
 

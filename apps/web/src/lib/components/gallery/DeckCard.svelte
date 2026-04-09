@@ -37,8 +37,7 @@
   }
 </script>
 
-<!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
-<div class="deck-card" onclick={handleClick}>
+<div class="deck-card" role="link" tabindex="0" onclick={handleClick} onkeydown={(e) => (e.key === 'Enter' || e.key === ' ') && handleClick()}>
   <div class="card-preview">
     <span class="slide-icon">&#9655;</span>
   </div>

@@ -36,7 +36,6 @@
   class:active={dragging}
   role="separator"
   aria-orientation="vertical"
-  tabindex="0"
   onpointerdown={handlePointerDown}
   onpointermove={handlePointerMove}
   onpointerup={handlePointerUp}

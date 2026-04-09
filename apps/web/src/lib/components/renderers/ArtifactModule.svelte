@@ -392,9 +392,8 @@
 </div>
 
 {#if showEditor}
-  <!-- svelte-ignore a11y_no_static_element_interactions a11y_click_events_have_key_events -->
-  <div class="editor-overlay" onclick={(event) => { if (event.target === event.currentTarget) closeEditor() }}>
-    <div class="editor-dialog">
+  <div class="editor-overlay" role="button" tabindex="0" onclick={(event) => { if (event.target === event.currentTarget) closeEditor() }} onkeydown={(e) => (e.key === 'Escape' || e.key === 'Enter' || e.key === ' ') && closeEditor()}>
+    <div class="editor-dialog" role="dialog" aria-modal="true" tabindex="-1">
       <div class="editor-header">
         <h3>Edit Artifact</h3>
         <div class="editor-tabs">

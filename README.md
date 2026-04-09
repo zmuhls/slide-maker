@@ -2,6 +2,18 @@
 
 Chat-driven slide builder for the CUNY AI Lab. Create presentation decks through AI conversation and direct on-canvas editing.
 
+## Quickstart
+
+```bash
+pnpm install
+cp .env.example .env.development
+pnpm db:seed
+pnpm seed:admin -- alice@example.com --password changeme
+pnpm dev
+```
+
+Then go to http://localhost:5173, log in with the seeded admin, open a deck, and start chatting.
+
 ## Contributor Guide
 
 See Repository Guidelines in `AGENTS.md` for project structure, local dev commands, coding style, testing, and commit conventions.
@@ -95,6 +107,24 @@ apps/api/        -- Hono API server (Node, SQLite, Drizzle ORM, Lucia auth)
 apps/web/        -- SvelteKit frontend (Svelte 5, TipTap editor)
 packages/shared/ -- Shared TypeScript types and constants
 templates/       -- Seeded slide template JSON files
+```
+
+## Architecture Overview
+
+```
+[Browser UI]
+  └─ apps/web (SvelteKit, Svelte 5)
+       • Fetches API with credentials → /api/*
+       • Admin-only SSE → /api/debug/stream
+       • Renders artifacts in sandboxed iframes (strict CSP)
+
+[Server API]
+  └─ apps/api (Hono, Lucia auth)
+       • Drizzle ORM → SQLite (local)
+       • AI providers: Anthropic | OpenRouter | Bedrock
+
+[Shared]
+  └─ packages/shared (types, mutations)
 ```
 
 ## Other Commands

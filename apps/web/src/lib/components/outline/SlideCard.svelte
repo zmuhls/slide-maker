@@ -37,7 +37,7 @@
 
   let deleting = $state(false)
   let expanded = $state(false)
-  let blockItems = $state(slide.blocks)
+  let blockItems = $state([])
   let draggingBlocks = false  // plain boolean — invisible to reactive system
 
   $effect(() => {

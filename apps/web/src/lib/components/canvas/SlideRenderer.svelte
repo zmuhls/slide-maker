@@ -32,7 +32,7 @@ import { applyMutation } from '$lib/utils/mutations'
     onEditorReady?: (editor: unknown) => void
   } = $props()
 
-  let splitRatio = $state(parseFloat(String(slide.splitRatio ?? '0.5')))
+  let splitRatio = $state(0.5)
 
   $effect(() => {
     splitRatio = parseFloat(String(slide.splitRatio ?? '0.5'))
