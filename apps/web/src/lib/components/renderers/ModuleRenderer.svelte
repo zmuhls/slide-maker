@@ -198,8 +198,8 @@
   class:is-step={module.stepOrder != null}
   class:resizing
   bind:this={wrapperEl}
-  style:width={customW ? `${customW}px` : undefined}
-  style:height={customH ? `${customH}px` : undefined}
+  style:width={customW ? `${customW}px` : (module.data?.width as string) || undefined}
+  style:height={customH ? `${customH}px` : (module.data?.height as string) || undefined}
 >
   {#if editable}
     <span class="canvas-drag-handle" use:dragHandle aria-label="Drag to reorder">⠿</span>
