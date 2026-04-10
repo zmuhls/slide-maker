@@ -58,23 +58,28 @@
   const flipDurationMs = 200
 
   $effect(() => {
-    const mods = modules.map((m) => ({ ...m }))
-    if (untrack(() => !dragging)) {
-      items = mods
+    if (untrack(() => dragging)) return
+    // Bail out early when nothing changed — avoids re-spreading every module
+    // on every store change, which caused TipTap editors to re-render and
+    // trigger cascading PATCH loops (the "blinking" bug).
+    const prev = untrack(() => items)
+    if (prev.length === modules.length && modules.every((m, i) => prev[i] === m)) return
+    // Defensive spread: svelte-dnd-action mutates item objects during drag,
+    // so copies protect the store from leaked internal tracking properties.
+    items = modules.map((m) => ({ ...m }))
 
-      const currentIds = new Set(modules.map((m) => m.id))
-      if (knownIds.size > 0) {
-        for (const id of currentIds) {
-          if (!knownIds.has(id)) {
-            highlightedIds = new Set([...highlightedIds, id])
-            setTimeout(() => {
-              highlightedIds = new Set([...highlightedIds].filter(h => h !== id))
-            }, 1500)
-          }
+    const currentIds = new Set(modules.map((m) => m.id))
+    if (knownIds.size > 0) {
+      for (const id of currentIds) {
+        if (!knownIds.has(id)) {
+          highlightedIds = new Set([...highlightedIds, id])
+          setTimeout(() => {
+            highlightedIds = new Set([...highlightedIds].filter(h => h !== id))
+          }, 1500)
         }
       }
-      knownIds = currentIds
     }
+    knownIds = currentIds
   })
 
   function handleConsider(e: CustomEvent<{ items: Module[]; info: { trigger: string; id: string; source: string } }>) {

@@ -85,9 +85,27 @@
           // Someone else is editing — show a warning but allow editing
           lockedByName = lockRes.lockedBy?.name ?? 'another user';
         }
-        // Start heartbeat every 2 minutes regardless
-        heartbeatInterval = setInterval(() => {
-          api.refreshLock(deckId).catch(() => {});
+        // Start heartbeat every 2 minutes
+        heartbeatInterval = setInterval(async () => {
+          try {
+            await api.refreshLock(deckId);
+          } catch {
+            // Lock lost — try to re-acquire
+            try {
+              const relock = await api.acquireLock(deckId);
+              if (!relock.locked) {
+                lockedByName = relock.lockedBy?.name ?? 'another user';
+              } else {
+                lockedByName = '';
+              }
+            } catch {
+              // Re-acquire failed — stop polling to avoid silent 403 spam
+              if (heartbeatInterval) {
+                clearInterval(heartbeatInterval);
+                heartbeatInterval = undefined;
+              }
+            }
+          }
         }, 2 * 60 * 1000);
       } catch {
         // If lock endpoint fails entirely, allow editing (graceful degradation)
