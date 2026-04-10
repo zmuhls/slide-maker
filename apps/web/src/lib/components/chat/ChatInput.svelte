@@ -6,35 +6,43 @@
   import { get } from 'svelte/store'
   import { activeSlideId } from '$lib/stores/ui'
   import { artifactsStore, ensureArtifactsLoaded } from '$lib/stores/artifacts'
+  import ChatRichTextEditor from './ChatRichTextEditor.svelte'
+  import ChatFormattingToolbar from './ChatFormattingToolbar.svelte'
+  import type { Editor } from '@tiptap/core'
 
   interface Props {
     onsend: (text: string) => void
   }
 
   let { onsend }: Props = $props()
-  let text = $state('')
   let dragOver = $state(false)
   let uploading = $state(false)
+  let editorFocused = $state(false)
+  let blurTimer: ReturnType<typeof setTimeout> | undefined
 
-  let textarea: HTMLTextAreaElement | undefined = $state()
+  let richEditor: ChatRichTextEditor | undefined = $state()
+  let editor: Editor | null = $state(null)
 
-  // Inject drafts from resources panel — use space separator for short mention tokens
+  // Track plain text for derived checks (mention detection, /add, canSend)
+  let plainText = $state('')
+
+  // Inject drafts from resources panel
   $effect(() => {
     const draft = $chatDraft
     if (!draft) return
-    text = text ? `${text} ${draft}` : draft
+    richEditor?.insertContent(draft)
     chatDraft.set('')
-    textarea?.focus()
+    richEditor?.focus()
   })
 
-  let showAddMenu = $derived(text.trim() === '/add')
+  let showAddMenu = $derived(plainText.trim() === '/add')
   let hasSlides = $derived(!!$currentDeck && ($currentDeck.slides?.length ?? 0) > 0)
   let placeholderText = $derived.by(() => {
     if (!hasSlides) return 'Describe your first slide — AI will create it'
     return $activeSlideId ? 'Ask AI to edit slides + resources' : 'Select a slide to enable AI edits (or type /search)'
   })
   let canSend = $derived.by(() => {
-    const trimmed = text.trim()
+    const trimmed = plainText.trim()
     if (!trimmed || $chatStreaming || uploading) return false
     if (trimmed.startsWith('/search ')) return true
     return !hasSlides || !!$activeSlideId
@@ -45,7 +53,7 @@
   interface MentionItem { name: string; prefix: 'artifact' | 'template' }
 
   let mentionQuery = $state<string | null>(null)  // null = closed
-  let mentionAtPos = $state(-1)
+  let mentionAtPos = $state(-1) // ProseMirror position of the @
   let mentionIndex = $state(0)
   let mentionDataLoaded = $state(false)
   let mentionTemplates = $state<MentionItem[]>([])
@@ -72,14 +80,13 @@
   })
 
   function detectMention() {
-    if (!textarea) return
-    const cursorPos = textarea.selectionStart ?? 0
-    const textBeforeCursor = text.slice(0, cursorPos)
-    // Match @ followed by word chars and spaces with no whitespace break
-    const match = textBeforeCursor.match(/@([\w ]*)$/)
+    if (!richEditor) return
+    const { textBefore, pos } = richEditor.getSelectionText()
+    const match = textBefore.match(/@([\w ]*)$/)
     if (match) {
       mentionQuery = match[1]
-      mentionAtPos = cursorPos - match[0].length
+      // Calculate ProseMirror position of the @ character
+      mentionAtPos = pos - match[0].length
       mentionIndex = 0
       if (!mentionDataLoaded) loadMentionData()
     } else {
@@ -89,17 +96,16 @@
   }
 
   function selectMention(item: MentionItem) {
-    if (!textarea) return
-    const cursorPos = textarea.selectionStart ?? text.length
+    if (!richEditor) return
+    const { pos } = richEditor.getSelectionText()
     const token = `@${item.prefix}:${item.name}`
-    text = text.slice(0, mentionAtPos) + token + text.slice(cursorPos)
-    const newCursor = mentionAtPos + token.length
+    // Replace from @ position to current cursor with the full token
+    richEditor.deleteRangeAndInsert(mentionAtPos, pos, token)
     mentionQuery = null
     mentionAtPos = -1
-    // Restore cursor after Svelte re-renders
+    // Update plainText after insertion
     requestAnimationFrame(() => {
-      textarea?.focus()
-      textarea?.setSelectionRange(newCursor, newCursor)
+      plainText = richEditor?.getText() ?? ''
     })
   }
 
@@ -108,15 +114,48 @@
     mentionAtPos = -1
   }
 
+  function isMentionOpen(): boolean {
+    return mentionQuery !== null && mentionItems.length > 0
+  }
+
   // ── Mention chips (parsed from text) ───────────────────────────────────────
 
   let activeMentions = $derived.by(() => {
-    const matches = [...text.matchAll(/@(artifact|template):([^\n@]+)/g)]
+    const matches = [...plainText.matchAll(/@(artifact|template):([^\n@]+)/g)]
     return matches.map((m) => ({ prefix: m[1] as 'artifact' | 'template', name: m[2].trim(), full: m[0] }))
   })
 
   function removeMention(full: string) {
-    text = text.replace(full, '').replace(/\s{2,}/g, ' ').trim()
+    if (!richEditor) return
+    const editorInstance = richEditor.getEditor()
+    if (!editorInstance) return
+    const docText = editorInstance.getText()
+    const idx = docText.indexOf(full)
+    if (idx < 0) return
+    // Map text offset to ProseMirror position (add 1 for doc start offset)
+    // Walk the doc to find precise position
+    let pmFrom = 0
+    let charCount = 0
+    editorInstance.state.doc.descendants((node, pos) => {
+      if (pmFrom > 0) return false
+      if (node.isText) {
+        const nodeText = node.text ?? ''
+        const offsetInNode = idx - charCount
+        if (offsetInNode >= 0 && offsetInNode < nodeText.length) {
+          pmFrom = pos + offsetInNode
+          return false
+        }
+        charCount += nodeText.length
+      } else if (node.type.name === 'hardBreak') {
+        charCount += 1
+      }
+    })
+    if (pmFrom > 0) {
+      editorInstance.chain().focus().deleteRange({ from: pmFrom, to: pmFrom + full.length }).run()
+      requestAnimationFrame(() => {
+        plainText = richEditor?.getText() ?? ''
+      })
+    }
   }
 
   // ── Module shortcuts (/add menu) ────────────────────────────────────────────
@@ -137,36 +176,49 @@
   ]
 
   function selectModule(label: string) {
-    text = `Add a ${label} to the active slide`
+    richEditor?.clear()
+    richEditor?.insertContent(`Add a ${label} to the active slide`)
     handleSubmit()
   }
 
   // ── Send / keyboard ─────────────────────────────────────────────────────────
 
   function handleSubmit() {
-    const trimmed = text.trim()
+    if (!richEditor) return
+    const markdown = richEditor.getMarkdown()
+    const trimmed = markdown.trim()
     if (!trimmed || $chatStreaming) return
     if (!trimmed.startsWith('/search ') && hasSlides && !$activeSlideId) return
     onsend(trimmed)
-    text = ''
+    richEditor.clear()
+    plainText = ''
   }
 
-  function handleKeydown(e: KeyboardEvent) {
-    // Autocomplete keyboard nav — must run before submit guard
+  function handleEditorKeydown(e: KeyboardEvent) {
+    // Autocomplete keyboard nav — runs on the wrapper div to intercept before TipTap
     if (mentionQuery !== null && mentionItems.length) {
       if (e.key === 'ArrowDown') { e.preventDefault(); mentionIndex = (mentionIndex + 1) % mentionItems.length; return }
       if (e.key === 'ArrowUp')   { e.preventDefault(); mentionIndex = (mentionIndex - 1 + mentionItems.length) % mentionItems.length; return }
       if (e.key === 'Enter')     { e.preventDefault(); selectMention(mentionItems[mentionIndex]); return }
       if (e.key === 'Escape')    { closeMention(); return }
     }
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault()
-      handleSubmit()
-    }
   }
 
-  function handleInput() {
+  function handleEditorInput() {
+    plainText = richEditor?.getText() ?? ''
+    editor = richEditor?.getEditor() ?? null
     detectMention()
+  }
+
+  function handleFocusChange(focused: boolean) {
+    clearTimeout(blurTimer)
+    if (focused) {
+      editorFocused = true
+      editor = richEditor?.getEditor() ?? null
+    } else {
+      // Delay blur so toolbar button clicks register
+      blurTimer = setTimeout(() => { editorFocused = false }, 150)
+    }
   }
 
   // ── File drag-and-drop ──────────────────────────────────────────────────────
@@ -196,25 +248,29 @@
         const result = await api.uploadFile(deck.id, file)
         if (result?.file) {
           const label = file.type.startsWith('image/') ? 'image' : 'file'
-          text += (text ? '\n' : '') + `[Uploaded ${label}: ${file.name}]`
+          richEditor?.insertContent(`[Uploaded ${label}: ${file.name}]`)
         }
       }
+      plainText = richEditor?.getText() ?? ''
     } catch (err: any) {
-      text += `\n[Upload failed: ${err.message}]`
+      richEditor?.insertContent(`[Upload failed: ${err.message}]`)
     } finally {
       uploading = false
     }
   }
 </script>
 
+<!-- svelte-ignore a11y_no_static_element_interactions -->
 <div
   class="chat-input"
   class:drag-over={dragOver}
+  class:editor-focused={editorFocused}
   role="region"
   aria-label="Chat input and attachments"
   ondragover={handleDragOver}
   ondragleave={handleDragLeave}
   ondrop={handleDrop}
+  onkeydown={handleEditorKeydown}
 >
   {#if showAddMenu}
     <div class="add-menu">
@@ -259,45 +315,58 @@
     </div>
   {/if}
 
-  <textarea
-    bind:this={textarea}
-    bind:value={text}
-    placeholder={placeholderText}
-    onkeydown={handleKeydown}
-    oninput={handleInput}
-    onblur={() => { setTimeout(closeMention, 120) }}
-    disabled={$chatStreaming || uploading}
-    rows={2}
-  ></textarea>
-  <button
-    class="send-btn"
-    onclick={handleSubmit}
-    disabled={!canSend}
-    title={canSend ? 'Send (Enter)' : ($activeSlideId ? 'Type a message' : 'Select a slide first (or use /search)')}
-  >
-    {#if $chatStreaming || uploading}
-      <span class="spinner"></span>
-    {:else}
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-    {/if}
-  </button>
+  <div class="editor-row">
+    <ChatRichTextEditor
+      bind:this={richEditor}
+      placeholder={placeholderText}
+      disabled={$chatStreaming || uploading}
+      {isMentionOpen}
+      onsubmit={handleSubmit}
+      oninput={handleEditorInput}
+      onfocuschange={handleFocusChange}
+    />
+    <button
+      class="send-btn"
+      onclick={handleSubmit}
+      disabled={!canSend}
+      title={canSend ? 'Send (Enter)' : ($activeSlideId ? 'Type a message' : 'Select a slide first (or use /search)')}
+    >
+      {#if $chatStreaming || uploading}
+        <span class="spinner"></span>
+      {:else}
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+      {/if}
+    </button>
+  </div>
+
+  <ChatFormattingToolbar {editor} visible={editorFocused} />
 </div>
 
 <style>
   .chat-input {
     display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
+    flex-direction: column;
+    gap: 0;
     padding: 10px;
     border-top: 1px solid var(--color-border);
     background: var(--color-bg);
     position: relative;
-    align-items: flex-end;
+    transition: box-shadow 200ms ease-out;
+  }
+
+  .chat-input.editor-focused {
+    box-shadow: 0 -2px 12px rgba(47, 184, 214, 0.06);
   }
 
   .chat-input.drag-over {
     border-color: var(--color-primary);
     background: rgba(59, 115, 230, 0.04);
+  }
+
+  .editor-row {
+    display: flex;
+    gap: 6px;
+    align-items: flex-end;
   }
 
   .drop-overlay {
@@ -314,30 +383,6 @@
     color: var(--color-primary);
     z-index: 5;
     pointer-events: none;
-  }
-
-  textarea {
-    flex: 1;
-    resize: none;
-    padding: 10px 12px;
-    font-size: 12px;
-    font-family: inherit;
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-sm);
-    background: var(--color-bg);
-    color: var(--color-text);
-    outline: none;
-    line-height: 1.4;
-    transition: border-color 0.15s;
-    min-width: 0;
-  }
-
-  textarea:focus {
-    border-color: var(--color-primary);
-  }
-
-  textarea:disabled {
-    opacity: 0.5;
   }
 
   .send-btn {
@@ -480,7 +525,7 @@
     flex-wrap: wrap;
     gap: 4px;
     width: 100%;
-    order: -1; /* appears above textarea row */
+    margin-bottom: 6px;
   }
 
   .mention-chip {

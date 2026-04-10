@@ -68,6 +68,9 @@
     html = html.replace(/__([^_]+)__/g, '<strong>$1</strong>')
     html = html.replace(/(?<!\w)_([^_]+)_(?!\w)/g, '<em>$1</em>')
 
+    // Strikethrough
+    html = html.replace(/~~([^~]+)~~/g, '<del>$1</del>')
+
     // Links [text](url)
     html = html.replace(/\[([^\]]+)\]\((https?:\/\/[^)]+)\)/g,
       '<a href="$2" target="_blank" rel="noopener" class="md-link">$1</a>')
