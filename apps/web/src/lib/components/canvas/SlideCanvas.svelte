@@ -32,17 +32,19 @@
   $effect(() => {
     const el = slideFrameEl
     if (!el) { overflowing = false; return }
-    // Check after a short delay to let content render
     const check = () => {
       if (!el) return
-      overflowing = el.scrollHeight > el.clientHeight + 4
+      // Temporarily allow overflow so scrollHeight reflects true content height
+      el.style.overflow = 'auto'
+      const isOver = el.scrollHeight > el.clientHeight + 4
+      el.style.overflow = ''
+      overflowing = isOver
     }
     const ro = new ResizeObserver(check)
     ro.observe(el)
-    // Also observe mutations (new modules added)
-    const mo = new MutationObserver(check)
-    mo.observe(el, { childList: true, subtree: true })
-    check()
+    const mo = new MutationObserver(() => requestAnimationFrame(check))
+    mo.observe(el, { childList: true, subtree: true, attributes: true })
+    requestAnimationFrame(check)
     return () => { ro.disconnect(); mo.disconnect() }
   })
 
