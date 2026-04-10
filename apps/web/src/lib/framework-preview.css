@@ -356,15 +356,20 @@
   appearance: menulist !important;
 }
 .slide-frame .add-module-btn {
-  /* Always-high-contrast on white slide background */
-  background: #f3f4f6 !important; /* gray-100 */
-  color: #1f2937 !important;      /* slate-800 */
-  border-color: #d1d5db !important; /* gray-300 */
-  color-scheme: light !important; /* prevent OS dark-mode inversion */
+  /* Light, translucent, but readable across app themes */
+  background: rgba(255, 255, 255, 0.72) !important;
+  color: #1f2937 !important; /* slate-800 */
+  border: 1px solid rgba(17, 24, 39, 0.18) !important; /* subtle solid */
+  backdrop-filter: saturate(160%) blur(6px);
+  color-scheme: light !important; /* avoid dark-mode inversion */
 }
 .slide-frame .add-module-btn:hover {
-  background: #e5e7eb !important; /* gray-200 */
-  border-color: #9ca3af !important; /* gray-400 */
+  background: rgba(255, 255, 255, 0.86) !important;
+  border-color: rgba(17, 24, 39, 0.28) !important;
+}
+.slide-frame .add-module-btn:focus-visible {
+  outline: 2px solid rgba(59, 115, 230, 0.45) !important;
+  outline-offset: 2px !important;
 }
 
 /* ── Inline code ─────────────────────────────────────────────────── */

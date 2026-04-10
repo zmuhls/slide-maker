@@ -52,7 +52,17 @@ export const MODULE_REGISTRY_LIST: ModuleRegistryEntry[] = [
     type: 'artifact',
     label: 'Artifact',
     icon: '🧩',
-    factory: makeFactory({ registryId: '', rawSource: '', alt: 'Interactive visualization', width: '100%', height: '400px', config: {} }),
+    // Standardized defaults: auto-size by aspect ratio; no fixed height.
+    // Width persists at 100% until user resizes.
+    factory: makeFactory({
+      registryId: '',
+      rawSource: '',
+      alt: 'Interactive visualization',
+      width: '100%',
+      autoSize: true,
+      aspectRatio: 16 / 9,
+      config: {},
+    }),
   },
   {
     type: 'video',

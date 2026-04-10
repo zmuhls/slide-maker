@@ -111,8 +111,8 @@
     color: var(--color-primary);
   }
   .heading[contenteditable="true"]:focus {
-    outline: 1px dashed var(--color-primary);
-    outline-offset: 2px;
+    outline: none;
     border-radius: var(--radius-sm);
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-primary, #3B73E6) 45%, transparent);
   }
 </style>

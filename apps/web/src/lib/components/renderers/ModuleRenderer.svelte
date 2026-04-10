@@ -329,17 +329,17 @@
     justify-content: center;
     font-size: 10px;
     line-height: 1;
-    background: rgba(20, 30, 50, 0.85);
-    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: rgba(255, 255, 255, 0.78);
+    border: 1px solid rgba(17, 24, 39, 0.18);
     border-radius: 3px;
-    color: rgba(255, 255, 255, 0.6);
+    color: #1f2937; /* slate-800 */
     cursor: grab;
     z-index: 10;
     opacity: 0;
     pointer-events: auto;
     touch-action: none;
-    transition: opacity 0.12s;
-    backdrop-filter: blur(6px);
+    transition: opacity 0.12s, background 0.12s, border-color 0.12s, color 0.12s;
+    backdrop-filter: saturate(160%) blur(6px);
   }
   .module-wrapper.editable:hover .canvas-drag-handle,
   .module-wrapper.editable .canvas-drag-handle:focus-visible {
@@ -359,17 +359,17 @@
     font-size: 10px;
     line-height: 1;
     letter-spacing: 1px;
-    background: rgba(20, 30, 50, 0.85);
-    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: rgba(255, 255, 255, 0.78);
+    border: 1px solid rgba(17, 24, 39, 0.18);
     border-radius: 3px;
-    color: rgba(255, 255, 255, 0.6);
+    color: #1f2937;
     cursor: pointer;
     z-index: 10;
     opacity: 0;
     pointer-events: none;
-    transition: opacity 0.12s, background 0.12s, color 0.12s;
+    transition: opacity 0.12s, background 0.12s, color 0.12s, border-color 0.12s;
     padding: 0;
-    backdrop-filter: blur(6px);
+    backdrop-filter: saturate(160%) blur(6px);
   }
   /* Enlarge tap target to 44x44 without changing visual size */
   .module-trigger::after {
@@ -380,47 +380,50 @@
   .module-trigger.active {
     opacity: 1;
     pointer-events: auto;
-    background: rgba(59, 115, 230, 0.9);
-    color: white;
-    border-color: rgba(59, 115, 230, 0.6);
+    background: rgba(255, 255, 255, 0.96);
+    color: #1f2937;
+    border-color: rgba(59, 115, 230, 0.55);
+    box-shadow: 0 0 0 2px rgba(59, 115, 230, 0.25);
   }
   .module-wrapper.editable:hover .module-trigger {
     opacity: 1;
     pointer-events: auto;
   }
   .module-trigger:hover:not(.active) {
-    background: rgba(40, 55, 85, 0.95);
-    color: rgba(255, 255, 255, 0.9);
+    background: rgba(255, 255, 255, 0.9);
+    color: #111827;
+    border-color: rgba(17, 24, 39, 0.28);
   }
 
   /* Popover — fixed, escapes all overflow */
   .module-popover {
     position: fixed;
     z-index: 1000;
-    background: rgba(18, 25, 42, 0.97);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 6px;
-    padding: 4px;
-    min-width: 120px;
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.45);
-    backdrop-filter: blur(12px);
+    background: rgba(255, 255, 255, 0.98);
+    border: 1px solid rgba(17, 24, 39, 0.12);
+    border-radius: 8px;
+    padding: 6px;
+    min-width: 140px;
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.18);
+    backdrop-filter: saturate(140%) blur(12px);
     display: flex;
     flex-direction: column;
-    gap: 1px;
+    gap: 6px;
+    color: #111827;
   }
 
   .pop-section {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 6px;
+    gap: 8px;
     padding: 2px 4px;
   }
 
   .pop-label {
     font-size: 10px;
     font-weight: 600;
-    color: rgba(255, 255, 255, 0.4);
+    color: #6b7280; /* slate-500 */
     text-transform: uppercase;
     letter-spacing: 0.4px;
   }
@@ -433,61 +436,66 @@
     justify-content: center;
     width: 26px;
     height: 26px;
-    background: transparent;
-    border: none;
-    border-radius: 5px;
-    color: rgba(255, 255, 255, 0.7);
+    background: rgba(255, 255, 255, 0.7);
+    border: 1px solid rgba(17, 24, 39, 0.15);
+    border-radius: 6px;
+    color: #1f2937;
     cursor: pointer;
     padding: 0;
-    transition: background 0.1s, color 0.1s;
+    transition: background 0.1s, color 0.1s, border-color 0.1s;
   }
   .pop-btn:hover:not(:disabled) {
-    background: rgba(255, 255, 255, 0.1);
-    color: white;
+    background: rgba(255, 255, 255, 0.9);
+    color: #111827;
+    border-color: rgba(17, 24, 39, 0.25);
   }
   .pop-btn:disabled {
-    opacity: 0.25;
+    opacity: 0.45;
     cursor: default;
   }
 
   .pop-select {
     height: 22px;
     font-size: 10px;
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    border-radius: 5px;
-    background: rgba(255, 255, 255, 0.06);
-    color: rgba(255, 255, 255, 0.8);
+    border: 1px solid rgba(17, 24, 39, 0.2);
+    border-radius: 6px;
+    background: rgba(255, 255, 255, 0.9);
+    color: #111827;
     padding: 0 6px;
     cursor: pointer;
     font-family: var(--font-body);
     outline: none;
   }
-  .pop-select:hover { border-color: rgba(255, 255, 255, 0.25); }
-  .pop-select:focus-visible { border-color: rgba(59, 115, 230, 0.6); }
+  .pop-select:hover { border-color: rgba(17, 24, 39, 0.3); }
+  .pop-select:focus-visible { border-color: rgba(59, 115, 230, 0.6); box-shadow: 0 0 0 2px rgba(59, 115, 230, 0.25); }
 
   .pop-divider {
     height: 1px;
-    background: rgba(255, 255, 255, 0.08);
+    background: rgba(17, 24, 39, 0.08);
     margin: 2px 0;
   }
 
   .pop-delete {
     width: 100%;
     height: auto;
-    padding: 5px 8px;
+    padding: 6px 8px;
     font-size: 11px;
-    font-weight: 500;
-    color: color-mix(in srgb, var(--color-error) 85%, transparent);
+    font-weight: 600;
+    color: var(--color-error);
     justify-content: center;
+    border: 1px solid color-mix(in srgb, var(--color-error) 40%, transparent);
+    background: rgba(255, 255, 255, 0.86);
+    border-radius: 6px;
   }
   .pop-delete:hover:not(:disabled) {
-    background: color-mix(in srgb, var(--color-error) 15%, transparent);
-    color: var(--color-error);
+    background: color-mix(in srgb, var(--color-error) 10%, white);
+    border-color: color-mix(in srgb, var(--color-error) 55%, transparent);
   }
   .pop-delete.confirming {
     background: var(--color-error);
     color: white;
-    font-weight: 600;
+    font-weight: 700;
+    border-color: var(--color-error);
   }
 
   /* Corner resize — fade in on hover */
