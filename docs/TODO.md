@@ -3,10 +3,13 @@
 Working list of near-term fixes and enhancements. Grouped by area and written as small, verifiable tasks. Checked items indicate work landed in this branch/session.
 
 ## Editor Interaction
-- [ ] Module drag & drop within zones (ZoneDrop)
-  - [ ] Integrate `svelte-dnd-action` for vertical reordering without fighting resize controls
+- [x] Module drag & drop within zones (ZoneDrop)
+  - [x] Integrate `svelte-dnd-action` for vertical reordering without fighting resize controls
   - [ ] Keyboard reorder (focusable list items; Alt+Arrow or Cmd/Ctrl+Arrow to move)
-  - [ ] Live order persistence and optimistic update (keeps current `reorderBlocks` API)
+  - [x] Live order persistence and optimistic update (`POST blocks/reorder` batch endpoint)
+  - [x] `dragDisabled` in view mode, `pointer-events: auto` on drag handle, `dragging` guard timing fix
+  - [x] Carousel nav hidden in edit mode to avoid DnD overlap
+  - [x] Compact controls (16px handles, inset step badge, smaller popover)
 - [ ] Drag from Resources → Canvas
   - [ ] Drop images/files/artifacts into a zone to auto-create modules
   - [ ] Visual drop affordances and a11y roles/labels
@@ -79,8 +82,10 @@ Working list of near-term fixes and enhancements. Grouped by area and written as
 - [ ] Defer non-critical editor work to rAF/time‑slicing (e.g., text fit)
 
 ## Testing
+- [x] Unit: DnD transform functions (reorderBlocksInZone, moveBlockBetweenZones, reorderSlides) — 15 tests
 - [ ] Unit: ZoneDrop reorder → `reorderBlocks` mapping (including keyboard path)
 - [ ] Unit: History store coalescing and redo branch behavior
+- [ ] Unit: Batch block reorder API endpoint (POST blocks/reorder)
 - [ ] E2E: drag from Resources to canvas creates expected module
 - [ ] Expand framework CSS tests for future modules (e.g., video, charts)
 

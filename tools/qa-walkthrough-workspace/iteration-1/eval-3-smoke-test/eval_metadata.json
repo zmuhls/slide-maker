@@ -1,0 +1,14 @@
+{
+  "eval_id": 3,
+  "eval_name": "smoke-test",
+  "prompt": "check if the api is healthy after the deploy, just want a quick sanity check",
+  "assertions": [
+    {"text": "Report is concise (under 100 lines or clearly abbreviated)", "type": "scope"},
+    {"text": "Auth tested: login and verify /auth/me", "type": "coverage"},
+    {"text": "At least 4 resource GETs hit: templates, themes, artifacts, providers", "type": "coverage"},
+    {"text": "One deck CRUD cycle: create, fetch, and delete", "type": "lifecycle"},
+    {"text": "At least one search call made (web or image)", "type": "coverage"},
+    {"text": "No error-path probes or security tests (smoke scope only)", "type": "scope"},
+    {"text": "Structured environment summary included (providers, search config, DB status)", "type": "diagnostics"}
+  ]
+}

@@ -40,6 +40,7 @@ export const env = {
   // Provider filter (optional): '', 'bedrock', 'anthropic', 'openrouter'
   aiProvider: parseProvider(cliProvider || process.env.AI_PROVIDER || null),
   tavilyApiKey: process.env.TAVILY_API_KEY ?? '',
+  braveApiKey: process.env.BRAVE_API_KEY ?? '',
   pexelsApiKey: process.env.PEXELS_API_KEY ?? '',
   publicUrl: process.env.PUBLIC_URL ?? 'http://localhost:5173',
 } as const

@@ -17,7 +17,7 @@
   let loading = $derived(!$themesLoaded)
   let error = $state<string | null>(null)
   let applying = $state<string | null>(null)
-  let deckThemeId = $state<string | null>(null)
+  let deckThemeId = $derived($currentDeck?.themeId ?? null)
   let deckHasTheme = $derived(!!deckThemeId)
   let currentTheme = $derived(themes.find((t) => t.id === deckThemeId) ?? null)
   let currentIsDark = $derived(currentTheme ? isDark((currentTheme.colors as any)?.bg ?? '#111827') : true)
@@ -34,13 +34,6 @@
   let saving = $state(false)
   let deleting = $state<string | null>(null)
   let confirmDelete = $state<string | null>(null)
-
-  $effect(() => {
-    const unsub = currentDeck.subscribe((d) => {
-      deckThemeId = d?.themeId ?? null
-    })
-    return unsub
-  })
 
   $effect(() => { ensureThemesLoaded() })
 

@@ -1,0 +1,35 @@
+{
+  "skill_name": "qa-walkthrough",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "test the search — i just added brave search support and want to make sure it actually works alongside pexels",
+      "expected_output": "Should focus on Area 7 (Web Search) exhaustively. Hits POST /api/search and detects Brave (answer field is null). Hits POST /api/search/images for Pexels. Tests download-image including SSRF probes (localhost, 169.254, private IPs) and blocked domain. Tests edge cases (empty query, long query, special chars). Guides user through /search in chat. Logs full responses with timing. Checks which provider responded and why. Generates structured log JSON alongside the report.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "run a full QA pass, I haven't tested in a while and want to see where things stand",
+      "expected_output": "Should execute all 13 areas. Authenticates, creates test deck, tests every endpoint category including error paths and security probes. Uses browser tools for frontend verification. Generates both human-readable report and structured JSON log. If past QA reports exist, compares against them and flags regressions/fixes. Produces improvement suggestions for both the app and the testing process itself. Offers to update the test matrix with newly discovered edge cases.",
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "check if the api is healthy after the deploy, just want a quick sanity check",
+      "expected_output": "Should run smoke test scope: pre-flight, auth, one GET per resource type (templates, themes, artifacts, providers), create+fetch+delete one deck, one search call, one file upload. No error paths. Report under 100 lines. Still generates the structured JSON log for trend tracking. Fast execution, no browser checks unless available.",
+      "files": []
+    },
+    {
+      "id": 4,
+      "prompt": "we pushed a bunch of search and chat changes, run a regression test focused on those areas",
+      "expected_output": "Should read git log to identify recent search/chat commits. Reads any past QA reports to find previous failures in those areas. Runs Areas 6 (Chat) and 7 (Search) exhaustively with all error paths. Compares results against previous session. Highlights what's fixed, what persists, and any new regressions. Suggests updates to test matrix if new edge cases found.",
+      "files": []
+    },
+    {
+      "id": 5,
+      "prompt": "pnpm dev --host gives me a turbo error, can we just get things running and test?",
+      "expected_output": "Should recognize the turbo --host error (turbo doesn't accept --host directly). Explains the fix: use pnpm --filter @slide-maker/web dev -- --host 0.0.0.0 to pass flags through, or just pnpm dev without --host for local testing. After helping fix the startup, proceeds with the QA session the user intended.",
+      "files": []
+    }
+  ]
+}

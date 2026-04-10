@@ -1,0 +1,11 @@
+{
+  "eval_id": 5,
+  "eval_name": "turbo-error-recovery",
+  "prompt": "pnpm dev --host gives me a turbo error, can we just get things running and test?",
+  "assertions": [
+    {"text": "Explains that turbo doesn't accept --host as a flag", "type": "diagnosis"},
+    {"text": "Provides correct fix: pnpm --filter @slide-maker/web dev -- --host 0.0.0.0 or equivalent", "type": "fix"},
+    {"text": "Proceeds to QA testing after addressing the startup error", "type": "recovery"},
+    {"text": "At least smoke-level testing is executed (health, auth, one resource GET)", "type": "coverage"}
+  ]
+}

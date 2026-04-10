@@ -25,27 +25,18 @@
   let { onCollapse }: { onCollapse?: () => void } = $props()
 
   let messagesContainer: HTMLDivElement | undefined = $state()
-  let messages = $state<ChatMsg[]>([])
   const latestAssistantId = $derived(
-    [...messages].reverse().find((m) => m.role === 'assistant' && !m.streaming)?.id ?? null
+    [...$chatMessages].reverse().find((m) => m.role === 'assistant' && !m.streaming)?.id ?? null
   )
   let clearing = $state(false)
   let controller: AbortController | null = $state(null)
   let currentAssistantId: string | null = $state(null)
 
-  // Subscribe to store
-  $effect(() => {
-    const unsub = chatMessages.subscribe((v) => {
-      messages = v
-    })
-    return unsub
-  })
-
   // Auto-scroll to bottom when messages change
   $effect(() => {
     // Track messages length to trigger scroll
-    const _len = messages.length
-    const _lastContent = messages.at(-1)?.content?.length
+    const _len = $chatMessages.length
+    const _lastContent = $chatMessages.at(-1)?.content?.length
     if (messagesContainer) {
       // Use a microtask to scroll after DOM update
       queueMicrotask(() => {
@@ -361,12 +352,12 @@
   </div>
 
   <div class="messages" bind:this={messagesContainer} aria-live="polite">
-    {#if messages.length === 0}
+    {#if $chatMessages.length === 0}
       <div class="empty-state">
         <p>Ask the AI to build slides for you.</p>
       </div>
     {:else}
-      {#each messages as msg (msg.id)}
+      {#each $chatMessages as msg (msg.id)}
         <ChatMessage
           message={msg}
           onsuggest={handleSend}

@@ -5,7 +5,6 @@
   import ThemesTab from './ThemesTab.svelte'
   import { activeResourceTab } from '$lib/stores/ui'
 
-  let activeTab = $state<'files' | 'templates' | 'artifacts' | 'themes'>('templates')
   import { currentDeck } from '$lib/stores/deck'
   let deckId = $derived($currentDeck?.id ?? '')
 
@@ -18,11 +17,6 @@
     overflowing = tabBarEl.scrollWidth > tabBarEl.clientWidth + 1
   }
 
-  $effect(() => {
-    const unsub = activeResourceTab.subscribe((v) => { activeTab = v })
-    return unsub
-  })
-
   const tabs: { key: 'files' | 'templates' | 'artifacts' | 'themes'; label: string }[] = [
     { key: 'files', label: 'Files' },
     { key: 'templates', label: 'Templates' },
@@ -30,7 +24,7 @@
     { key: 'themes', label: 'Themes' },
   ]
 
-  function setTab(key: typeof activeTab) {
+  function setTab(key: typeof $activeResourceTab) {
     activeResourceTab.set(key)
   }
 
@@ -51,9 +45,9 @@
     {#each tabs as tab}
       <button
         class="tab-btn"
-        class:active={activeTab === tab.key}
+        class:active={$activeResourceTab === tab.key}
         role="tab"
-        aria-selected={activeTab === tab.key}
+        aria-selected={$activeResourceTab === tab.key}
         onclick={() => setTab(tab.key)}
       >
         {tab.label}
@@ -62,13 +56,13 @@
   </div>
 
   <div class="tab-content">
-    {#if activeTab === 'files'}
+    {#if $activeResourceTab === 'files'}
       <FilesTab {deckId} />
-    {:else if activeTab === 'templates'}
+    {:else if $activeResourceTab === 'templates'}
       <TemplatesTab />
-    {:else if activeTab === 'artifacts'}
+    {:else if $activeResourceTab === 'artifacts'}
       <ArtifactsTab />
-    {:else if activeTab === 'themes'}
+    {:else if $activeResourceTab === 'themes'}
       <ThemesTab />
     {/if}
   </div>

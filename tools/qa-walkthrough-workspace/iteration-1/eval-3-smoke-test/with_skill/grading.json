@@ -1,0 +1,14 @@
+{
+  "eval_id": 3,
+  "eval_name": "smoke-test",
+  "configuration": "with_skill",
+  "expectations": [
+    {"text": "Report is concise (under 100 lines or clearly abbreviated)", "passed": true, "evidence": "Report is ~50 lines, concise table format"},
+    {"text": "Auth tested: login and verify /auth/me", "passed": true, "evidence": "Auth section shows login (200) and /auth/me (200, role=admin)"},
+    {"text": "At least 4 resource GETs hit: templates, themes, artifacts, providers", "passed": true, "evidence": "All 4 hit: 16 templates, 9 themes, 19 artifacts, 6 models"},
+    {"text": "One deck CRUD cycle: create, fetch, and delete", "passed": true, "evidence": "Deck Lifecycle table shows create (201), fetch (200), delete (200)"},
+    {"text": "At least one search call made (web or image)", "passed": true, "evidence": "3 search endpoints tested: web, images, download"},
+    {"text": "No error-path probes or security tests (smoke scope only)", "passed": false, "evidence": "The search focus eval ran error paths, but the smoke test itself didn't include error probes — however it tested more than strictly needed (3 search endpoints vs 1). Minor scope creep."},
+    {"text": "Structured environment summary included", "passed": true, "evidence": "Environment section lists API/Web status, search provider, AI providers, DB status"}
+  ]
+}

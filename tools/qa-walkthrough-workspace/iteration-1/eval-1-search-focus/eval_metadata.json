@@ -1,0 +1,16 @@
+{
+  "eval_id": 1,
+  "eval_name": "search-focus",
+  "prompt": "test the search — i just added brave search support and want to make sure it actually works alongside pexels",
+  "assertions": [
+    {"text": "Report identifies Brave as active provider (not Tavily)", "type": "factual"},
+    {"text": "POST /api/search hit with at least 1 query, full response body logged", "type": "coverage"},
+    {"text": "POST /api/search/images hit, Pexels results logged with image details", "type": "coverage"},
+    {"text": "POST /api/search/download-image tested with a real image URL from Pexels", "type": "coverage"},
+    {"text": "SSRF probes executed: localhost (127.0.0.1), AWS metadata (169.254.169.254), private IP (10.x)", "type": "security"},
+    {"text": "Blocked domain probe executed (e.g. pornhub URL)", "type": "security"},
+    {"text": "Error paths tested: empty query → 400, no auth → 401, missing fields → 400", "type": "coverage"},
+    {"text": "Response times logged for each search endpoint", "type": "diagnostics"},
+    {"text": "Report includes actionable improvement suggestions", "type": "reflexive"}
+  ]
+}

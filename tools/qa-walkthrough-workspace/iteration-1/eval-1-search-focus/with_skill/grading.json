@@ -1,0 +1,16 @@
+{
+  "eval_id": 1,
+  "eval_name": "search-focus",
+  "configuration": "with_skill",
+  "expectations": [
+    {"text": "Report identifies Brave as active provider (not Tavily)", "passed": true, "evidence": "Report states 'answer=null (confirms Brave)' and 'Search: Brave (TAVILY_API_KEY empty, BRAVE_API_KEY set)'"},
+    {"text": "POST /api/search hit with at least 1 query, full response body logged", "passed": true, "evidence": "Happy path + special chars query both hit, results logged with count and timing"},
+    {"text": "POST /api/search/images hit, Pexels results logged with image details", "passed": true, "evidence": "Happy path returned 3 images with full metadata (id, url, thumbnail, alt, photographer)"},
+    {"text": "POST /api/search/download-image tested with a real image URL from Pexels", "passed": true, "evidence": "Downloaded real Pexels image, verified file serves with correct Content-Type and Cache-Control"},
+    {"text": "SSRF probes executed: localhost, AWS metadata, private IP", "passed": true, "evidence": "All 3 SSRF probes (127.0.0.1, 169.254.169.254, 10.0.0.1) blocked with 400"},
+    {"text": "Blocked domain probe executed", "passed": true, "evidence": "pornhub.com URL returned 403 'This source is not allowed'"},
+    {"text": "Error paths tested: empty query, no auth, missing fields", "passed": true, "evidence": "Empty query (400), no auth (401), missing fields (400), missing body (400) all tested"},
+    {"text": "Response times logged for each search endpoint", "passed": true, "evidence": "Response Time Summary table with times for all endpoints"},
+    {"text": "Report includes actionable improvement suggestions", "passed": true, "evidence": "3 improvement suggestions: Brave image gap, CSRF inconsistency, provider indicator field"}
+  ]
+}

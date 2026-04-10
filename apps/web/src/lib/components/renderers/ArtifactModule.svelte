@@ -97,9 +97,9 @@
   let hasRenderableSource = $derived(useSrcdoc || !!iframeSrc)
   let diagnostic = $derived($renderDiagnostics[moduleId] ?? null)
 
-  let renderTimeout: ReturnType<typeof setTimeout> | null = $state(null)
+  let renderTimeout: ReturnType<typeof setTimeout> | null = null
   let wrapper: HTMLDivElement | null = $state(null)
-  let resizeObserver: ResizeObserver | null = $state(null)
+  let resizeObserver: ResizeObserver | null = null
   let computedHeight: number | null = $state(null)
 
   function clearRenderTimer() {

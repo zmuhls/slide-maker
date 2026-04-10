@@ -34,8 +34,7 @@
   // Live streams indexed by id
   let streams = $state<Record<string, StreamCard>>({})
   let streamOrder = $state<string[]>([])
-  let transcripts = $state<any[]>([])
-  $effect(() => { transcripts = data?.transcripts ?? [] })
+  let transcripts = $derived(data?.transcripts ?? [])
 
   // Filters
   let filterModel = $state('')
@@ -45,7 +44,7 @@
   let eventSource: EventSource | null = $state(null)
   let lastRefresh = $state(0)
 
-  const filteredTranscripts = $derived(() => {
+  const filteredTranscripts = $derived.by(() => {
     let arr = transcripts
     if (filterModel) arr = arr.filter((t) => t.model === filterModel)
     if (filterDeck) arr = arr.filter((t) => t.deckId === filterDeck)
@@ -59,7 +58,7 @@
     return arr
   })
 
-  const activeCount = $derived(() => Object.values(streams).filter((s) => s.status === 'active').length)
+  const activeCount = $derived.by(() => Object.values(streams).filter((s) => s.status === 'active').length)
 
   function ensureOrder(id: string) {
     if (!streamOrder.includes(id)) {

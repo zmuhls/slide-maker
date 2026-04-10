@@ -42,7 +42,7 @@ npx vitest run tests/framework-css.test.ts  # run a single test file
 npx vitest --watch    # watch mode
 ```
 
-**Env:** `.env` at workspace root, must be symlinked to `apps/api/.env` (`ln -s ../../.env apps/api/.env`). The API loads env via `dotenv/config` from its own CWD — without the symlink, no API keys are found and chat won't work. See `.env.example` for all vars. At minimum set one provider: `OPENROUTER_API_KEY`, `ANTHROPIC_API_KEY`, or `AWS_REGION` (with valid AWS credentials). Provider can be forced via `AI_PROVIDER=bedrock|anthropic|openrouter` env var.
+**Env:** `.env` at workspace root, must be symlinked to `apps/api/.env` (`ln -s ../../.env apps/api/.env`). The API loads env via `dotenv/config` from its own CWD — without the symlink, no API keys are found and chat won't work. See `.env.example` for all vars. At minimum set one provider: `OPENROUTER_API_KEY`, `ANTHROPIC_API_KEY`, or `AWS_REGION` (with valid AWS credentials). Provider can be forced via `AI_PROVIDER=bedrock|anthropic|openrouter` env var. For web search, set `BRAVE_API_KEY` and/or `TAVILY_API_KEY` (Tavily preferred when both set). For image search, set `PEXELS_API_KEY`.
 
 **Deploy to staging:** `./deploy-staging.sh` (requires Tailscale/CUNY VPN connection).
 
@@ -134,12 +134,15 @@ Key mutations:
 
 System prompt at `apps/api/src/prompts/system.ts` — includes deck state, templates, theme, and **uploaded file URLs** so AI can reference them in image modules. The AI does NOT have web access — it directs users to `/search` command for web images.
 
-### Web Search (Tavily)
+### Web Search (Brave / Tavily)
 - `/search <query>` in chat — searches web, auto-downloads first image, inserts into active slide
-- `POST /api/search` — searches the web via Tavily API, returns results + image URLs
+- `POST /api/search` — searches the web via Brave Search API or Tavily (prefers Tavily if key is set, falls back to Brave). Returns `{ answer, results[], images[] }`. Brave returns `answer: null`; Tavily provides a summarized answer.
+- `POST /api/search/images` — searches Pexels for openly licensed images. Returns `{ images: [{ id, url, thumbnail, alt, photographer, photographerUrl, pexelsUrl }] }`
 - `POST /api/search/download-image` — downloads an image from a URL and saves it as an uploaded file
 - Content filtered: inappropriate domains blocked from search and download
-- Tavily API key in `.env` as `TAVILY_API_KEY`
+- SSRF protection on download-image: validates URLs resolve to public IPs, blocks private ranges, no redirect following
+- Search provider config in `.env`: `BRAVE_API_KEY` and/or `TAVILY_API_KEY` (at least one required). `PEXELS_API_KEY` for image search.
+- Provider logic at `apps/api/src/routes/search.ts`: `searchViaTavily()` and `searchViaBrave()` functions with shared `SearchResult` response type
 - The AI does NOT have web access — tell users to use `/search` for web images
 
 ### File Uploads
@@ -294,16 +297,18 @@ Buttons across the app follow a ghost pattern: transparent background, 1px borde
 
 ## Testing
 
-Vitest at root level. Config: `vitest.config.ts`. Tests: `tests/**/*.test.ts`. Currently 220 tests across 13 files.
+Vitest at root level. Config: `vitest.config.ts`. Tests: `tests/**/*.test.ts`. Currently 427 tests across 15 files.
 
 - `tests/artifact-config.test.ts` — artifact config resolution (`getResolvedConfig`, `buildAtRef`)
 - `tests/artifact-runtime.test.ts` — artifact runtime helpers
 - `tests/canonical-template.test.ts` — template structure validation
+- `tests/dnd-transforms.test.ts` — DnD pure transform functions (reorderBlocksInZone, moveBlockBetweenZones, reorderSlides)
 - `tests/export-artifacts.test.ts` — artifact export pipeline
 - `tests/export-zip-integration.test.ts` — full export ZIP structure
 - `tests/framework-css.test.ts` — CSS specificity, layout rules, variant correctness
 - `tests/html-renderer-modules.test.ts` — HTML renderer output for all 14 module types
 - `tests/module-type-parity.test.ts` — renderer/prompt/phantom type parity across shared package
+- `tests/resource-registry.test.ts` — resource registry validation
 - `tests/rich-text.test.ts` — rich text pipeline (markdown, HTML, sanitization)
 - `tests/slide-layout.test.ts` — layout zone validation
 - `tests/ssrf-guard.test.ts` — SSRF protection for URL fetching
