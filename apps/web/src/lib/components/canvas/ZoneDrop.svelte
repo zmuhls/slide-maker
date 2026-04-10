@@ -152,7 +152,7 @@
       dropTargetStyle: {},
       dropTargetClasses: ['zone-drop-active'],
       morphDisabled: true,
-      centreDraggedOnCursor: true,
+      centreDraggedOnCursor: false,
       transformDraggedElement: transformDragPreview,
     }}
     onconsider={handleConsider}
