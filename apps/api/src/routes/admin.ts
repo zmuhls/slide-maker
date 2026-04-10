@@ -1,5 +1,7 @@
 import { Hono } from 'hono'
 import { eq, and, gte, sql, desc } from 'drizzle-orm'
+import { hash } from '@node-rs/argon2'
+import { createId } from '@paralleldrive/cuid2'
 import type { Session, User } from 'lucia'
 import { db } from '../db/index.js'
 import { users, decks, deckAccess, chatMessages, tokenUsage } from '../db/schema.js'
@@ -192,6 +194,55 @@ admin.get('/users/:id/usage', async (c) => {
     monthly,
     byModel,
   })
+})
+
+// POST /users — Create a new user (admin-created, pre-approved)
+admin.post('/users', async (c) => {
+  const body = await c.req.json()
+  const { email, password, name, role } = body
+
+  if (!email || !password || !name) {
+    return c.json({ error: 'Email, password, and name are required' }, 400)
+  }
+
+  if (typeof email !== 'string' || !email.includes('@')) {
+    return c.json({ error: 'Invalid email address' }, 400)
+  }
+
+  if (typeof password !== 'string' || password.length < 8) {
+    return c.json({ error: 'Password must be at least 8 characters' }, 400)
+  }
+
+  // Check for existing user
+  const existing = await db.select().from(users).where(eq(users.email, email.toLowerCase())).get()
+  if (existing) {
+    return c.json({ error: 'A user with this email already exists' }, 409)
+  }
+
+  const passwordHash = await hash(password)
+  const userId = createId()
+  const validRole = role && ['admin', 'editor', 'viewer'].includes(role) ? role : 'editor'
+
+  await db.insert(users).values({
+    id: userId,
+    email: email.toLowerCase(),
+    name,
+    passwordHash,
+    emailVerified: true,
+    status: 'approved',
+    role: validRole,
+    createdAt: new Date(),
+  })
+
+  const created = await db.select({
+    id: users.id,
+    email: users.email,
+    name: users.name,
+    role: users.role,
+    status: users.status,
+  }).from(users).where(eq(users.id, userId)).get()
+
+  return c.json({ user: created }, 201)
 })
 
 // POST /users/:id/approve (legacy)

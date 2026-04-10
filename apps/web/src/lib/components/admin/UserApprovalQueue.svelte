@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { api } from '$lib/api';
+  import { api, API_URL } from '$lib/api';
 
   // Data
   let allUsers = $state<any[]>([]);
@@ -7,6 +7,57 @@
   let loading = $state(true);
   let error = $state('');
   let actionInProgress = $state<string | null>(null);
+
+  // Create user form
+  let showCreateForm = $state(false);
+  let createName = $state('');
+  let createEmail = $state('');
+  let createPassword = $state('');
+  let createRole = $state<'editor' | 'admin' | 'viewer'>('editor');
+  let createError = $state('');
+  let creating = $state(false);
+
+  async function handleCreateUser() {
+    createError = '';
+    if (!createName.trim() || !createEmail.trim() || !createPassword.trim()) {
+      createError = 'All fields are required';
+      return;
+    }
+    if (createPassword.length < 8) {
+      createError = 'Password must be at least 8 characters';
+      return;
+    }
+    creating = true;
+    try {
+      const res = await fetch(`${API_URL}/api/admin/users`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: createName.trim(),
+          email: createEmail.trim(),
+          password: createPassword,
+          role: createRole,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        createError = data.error || 'Failed to create user';
+        return;
+      }
+      // Reset form and reload
+      createName = '';
+      createEmail = '';
+      createPassword = '';
+      createRole = 'editor';
+      showCreateForm = false;
+      await loadUsers();
+    } catch (err: any) {
+      createError = err.message || 'Failed to create user';
+    } finally {
+      creating = false;
+    }
+  }
 
   // Filters & sorting
   let statusFilter = $state('all');
@@ -184,6 +235,35 @@
 </script>
 
 <div class="admin-dashboard">
+  <!-- Create User -->
+  <div class="create-user-section">
+    <button class="create-user-btn" onclick={() => { showCreateForm = !showCreateForm }}>
+      {showCreateForm ? 'Cancel' : '+ Add User'}
+    </button>
+    {#if showCreateForm}
+      <div class="create-user-form">
+        <div class="form-row">
+          <input type="text" bind:value={createName} placeholder="Full name" class="form-input" />
+          <input type="email" bind:value={createEmail} placeholder="Email (e.g. user@cuny.edu)" class="form-input" />
+        </div>
+        <div class="form-row">
+          <input type="password" bind:value={createPassword} placeholder="Password (min 8 chars)" class="form-input" />
+          <select bind:value={createRole} class="form-input">
+            <option value="editor">Editor</option>
+            <option value="admin">Admin</option>
+            <option value="viewer">Viewer</option>
+          </select>
+          <button class="form-submit" onclick={handleCreateUser} disabled={creating}>
+            {creating ? 'Creating...' : 'Create'}
+          </button>
+        </div>
+        {#if createError}
+          <p class="form-error">{createError}</p>
+        {/if}
+      </div>
+    {/if}
+  </div>
+
   <!-- Stats Cards -->
   <div class="stats-row">
     <div class="stat-card">
@@ -905,5 +985,72 @@
     color: var(--color-text-secondary);
     font-variant-numeric: tabular-nums;
     font-weight: 600;
+  }
+
+  /* Create User */
+  .create-user-section {
+    margin-bottom: 1rem;
+  }
+  .create-user-btn {
+    padding: 6px 14px;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    background: transparent;
+    color: var(--color-primary, #3B73E6);
+    border: 1px solid var(--color-primary, #3B73E6);
+    border-radius: var(--radius-sm, 6px);
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .create-user-btn:hover {
+    background: var(--color-ghost-bg, rgba(59, 115, 230, 0.08));
+  }
+  .create-user-form {
+    margin-top: 0.75rem;
+    padding: 1rem;
+    background: var(--color-bg-secondary, #f8fafc);
+    border: 1px solid var(--color-border, #e2e8f0);
+    border-radius: var(--radius-md, 8px);
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  .form-row {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+  .form-input {
+    flex: 1;
+    min-width: 140px;
+    padding: 6px 10px;
+    font-size: 0.8125rem;
+    border: 1px solid var(--color-border, #e2e8f0);
+    border-radius: var(--radius-sm, 6px);
+    outline: none;
+    background: var(--color-bg, #fff);
+    color: var(--color-text, #333);
+  }
+  .form-input:focus {
+    border-color: var(--color-primary, #3B73E6);
+  }
+  .form-submit {
+    padding: 6px 16px;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    background: var(--color-primary, #3B73E6);
+    color: white;
+    border: none;
+    border-radius: var(--radius-sm, 6px);
+    cursor: pointer;
+    transition: opacity 0.15s;
+    white-space: nowrap;
+  }
+  .form-submit:hover:not(:disabled) { opacity: 0.9; }
+  .form-submit:disabled { opacity: 0.5; cursor: not-allowed; }
+  .form-error {
+    color: var(--color-error, #ef4444);
+    font-size: 0.8rem;
+    margin: 0;
   }
 </style>
