@@ -37,6 +37,7 @@
     oninput={handleInput}
     onblur={() => focused = false}
     role={editable ? 'textbox' : undefined}
+    aria-label={editable ? 'Heading 1' : undefined}
   ></h1>
 {:else if level === 2}
   <!-- svelte-ignore a11y_missing_content -->
@@ -49,6 +50,7 @@
     oninput={handleInput}
     onblur={() => focused = false}
     role={editable ? 'textbox' : undefined}
+    aria-label={editable ? 'Heading 2' : undefined}
   ></h2>
 {:else if level === 3}
   <!-- svelte-ignore a11y_missing_content -->
@@ -61,6 +63,7 @@
     oninput={handleInput}
     onblur={() => focused = false}
     role={editable ? 'textbox' : undefined}
+    aria-label={editable ? 'Heading 3' : undefined}
   ></h3>
 {:else}
   <!-- svelte-ignore a11y_missing_content -->
@@ -73,6 +76,7 @@
     oninput={handleInput}
     onblur={() => focused = false}
     role={editable ? 'textbox' : undefined}
+    aria-label={editable ? 'Heading 4' : undefined}
   ></h4>
 {/if}
 

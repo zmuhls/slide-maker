@@ -92,6 +92,12 @@
     cursor: text;
     border-radius: var(--radius-sm, 4px);
     padding-inline: 12px;
+    background: transparent;
+    border: none;
+    color: inherit;
+    font: inherit;
+    text-align: inherit;
+    width: 100%;
   }
   /* Match preview padding so text doesn't shift left when editor activates */
   .text-block :global(.tiptap-mount) {

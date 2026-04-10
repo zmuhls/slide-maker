@@ -79,7 +79,7 @@
 .slide-frame .slide[data-layout="layout-divider"] p,
 .slide-frame .slide[data-layout="closing-slide"] p,
 .slide-frame .slide[data-layout="closing-slide"] .text-block {
-  color: var(--theme-primary-text-muted, rgba(255,255,255,0.7)) !important;
+  color: var(--theme-primary-text-muted, rgba(255,255,255,0.85)) !important;
 }
 
 /* TipTap content inside primary-bg slides */
@@ -88,7 +88,7 @@
 .slide-frame .slide[data-layout="layout-divider"] .tiptap,
 .slide-frame .slide[data-layout="closing-slide"] .tiptap,
 .slide-frame .slide[data-layout="closing-slide"] .tiptap p {
-  color: var(--theme-primary-text-muted, rgba(255,255,255,0.7)) !important;
+  color: var(--theme-primary-text-muted, rgba(255,255,255,0.85)) !important;
 }
 
 /* Labels on primary-bg slides need visibility */

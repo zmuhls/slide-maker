@@ -340,7 +340,7 @@ function buildThemeCss(theme: Theme | null | undefined): string {
     .title-slide h1, .title-slide h2, .title-slide h3, .title-slide h4,
     .layout-divider h1, .layout-divider h2, .layout-divider h3,
     .closing-slide h1, .closing-slide h2, .closing-slide h3 { color: ${primaryText}; }
-    .title-slide p, .title-slide .text-body, .layout-divider p, .closing-slide p, .closing-slide .text-body { color: ${isDarkPrimary ? 'rgba(255,255,255,0.7)' : 'rgba(26,26,46,0.7)'}; }
+    .title-slide p, .title-slide .text-body, .layout-divider p, .closing-slide p, .closing-slide .text-body { color: ${isDarkPrimary ? 'rgba(255,255,255,0.85)' : 'rgba(26,26,46,0.7)'}; }
     .layout-full-dark { background: #0d1117; color: #f0f0f0; }
     .layout-full-dark h1, .layout-full-dark h2, .layout-full-dark h3, .layout-full-dark h4 { color: #f0f0f0; }
     .layout-full-dark p, .layout-full-dark .text-body { color: rgba(240,240,240,0.65); }

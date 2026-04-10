@@ -107,7 +107,7 @@
     const primary = theme?.colors?.primary ?? '#1e3a5f'
     const primaryDark = isDark(primary)
     const primaryText = primaryDark ? '#ffffff' : '#1a1a2e'
-    const primaryTextMuted = primaryDark ? 'rgba(255,255,255,0.7)' : 'rgba(26,26,46,0.7)'
+    const primaryTextMuted = primaryDark ? 'rgba(255,255,255,0.85)' : 'rgba(26,26,46,0.7)'
     const secondary = theme?.colors?.secondary ?? '#3b82f6'
     const accent = theme?.colors?.accent ?? '#64b5f6'
     const headingFont = theme?.fonts?.heading ?? 'Outfit'
