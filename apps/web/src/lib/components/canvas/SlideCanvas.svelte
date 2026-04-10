@@ -25,31 +25,7 @@
   let activeEditor: Editor | null = $state(null)
   let editorToken = 0
 
-  // Overflow detection — compare inner content height against frame's CSS height
-  let slideFrameEl: HTMLDivElement | undefined = $state()
-  let slideInnerEl: HTMLDivElement | undefined = $state()
-  let overflowing = $state(false)
-
-  function checkOverflow() {
-    const frame = slideFrameEl
-    const inner = slideInnerEl
-    if (!frame || !inner) { overflowing = false; return }
-    // Frame height is set by CSS aspect-ratio: 16/9
-    const frameH = frame.clientHeight
-    const contentH = inner.scrollHeight
-    overflowing = contentH > frameH + 4
-  }
-
-  $effect(() => {
-    const inner = slideInnerEl
-    if (!inner) { overflowing = false; return }
-    const ro = new ResizeObserver(() => checkOverflow())
-    ro.observe(inner)
-    const mo = new MutationObserver(() => requestAnimationFrame(checkOverflow))
-    mo.observe(inner, { childList: true, subtree: true })
-    requestAnimationFrame(checkOverflow)
-    return () => { ro.disconnect(); mo.disconnect() }
-  })
+  // Overflow detection removed — was causing render loops
 
   function handleEditorReady(editor: unknown) {
     editorToken++
@@ -187,17 +163,8 @@
   <div class="canvas-area">
     {#if activeSlide}
       {#if canvasMode === 'edit'}
-        <div class="slide-frame-outer">
-          <div class="slide-frame" data-theme={themeMode} style={themeStyle} bind:this={slideFrameEl}>
-            <div class="slide-inner" bind:this={slideInnerEl}>
-              <SlideRenderer slide={activeSlide} {editable} onEditorReady={handleEditorReady} onEditorBlur={handleEditorBlur} />
-            </div>
-          </div>
-          {#if overflowing}
-            <div class="overflow-warning" role="alert">
-              Content overflows the slide — some modules won't be visible in the presentation
-            </div>
-          {/if}
+        <div class="slide-frame" data-theme={themeMode} style={themeStyle}>
+          <SlideRenderer slide={activeSlide} {editable} onEditorReady={handleEditorReady} onEditorBlur={handleEditorBlur} />
         </div>
       {:else}
         <div class="slide-frame view-mode" data-theme={themeMode} style={themeStyle}>
@@ -265,15 +232,9 @@
   .slide-frame.view-mode:hover .edit-hint {
     opacity: 1;
   }
-  .slide-frame-outer {
-    width: 100%;
-    max-width: 960px;
-    display: flex;
-    flex-direction: column;
-    align-items: stretch;
-  }
   .slide-frame {
     width: 100%;
+    max-width: 960px;
     aspect-ratio: 16 / 9;
     background: white;
     border-radius: var(--radius-md);
@@ -281,26 +242,9 @@
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
     overflow: hidden;
   }
-  .slide-inner {
-    width: 100%;
-    height: 100%;
-  }
   .no-slide {
     color: var(--color-text-muted);
     font-size: 0.9rem;
     font-style: italic;
-  }
-  .overflow-warning {
-    background: #fef3cd;
-    color: #856404;
-    font-size: 0.75rem;
-    text-align: center;
-    padding: 4px 12px;
-    border-radius: 0 0 var(--radius-md) var(--radius-md);
-    margin-top: -1px;
-    max-width: 960px;
-    width: 100%;
-    border: 1px solid #ffc107;
-    border-top: none;
   }
 </style>
