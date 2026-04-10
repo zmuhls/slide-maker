@@ -1,22 +1,19 @@
 # Slide Maker
 
-Chat-driven slide builder for the CUNY AI Lab. Create presentation decks through AI conversation and direct on-canvas editing.
+Chat-driven slide builder for the CUNY AI Lab. Create presentation decks through AI conversation and direct on-canvas editing. Three-panel UI: chat + outline (left), canvas (center), resources (right). Exports self-contained HTML decks matching the CUNY AI Lab deck framework.
 
 ## Quickstart
 
 ```bash
 pnpm install
-cp .env.example .env.development
+cp .env.example .env
+ln -s ../../.env apps/api/.env
+pnpm db:push
 pnpm db:seed
-pnpm seed:admin -- alice@example.com --password changeme
 pnpm dev
 ```
 
-Then go to http://localhost:5173, log in with the seeded admin, open a deck, and start chatting.
-
-## Contributor Guide
-
-See Repository Guidelines in `AGENTS.md` for project structure, local dev commands, coding style, testing, and commit conventions.
+Open http://localhost:5173, log in with a seeded admin account, create a deck, and start chatting.
 
 ## Prerequisites
 
@@ -33,27 +30,28 @@ See Repository Guidelines in `AGENTS.md` for project structure, local dev comman
 
 2. **Configure environment**
 
-   Copy the example env file and fill in your keys:
-
    ```bash
-   cp .env.example .env.development
+   cp .env.example .env
+   ln -s ../../.env apps/api/.env   # required — API loads env from its own CWD
    ```
 
-   Required variables:
-   - `SESSION_SECRET` — any random string for auth sessions
-   - One provider configured for AI chat (pick any):
-     - OpenRouter: set `OPENROUTER_API_KEY`
-     - Anthropic: set `ANTHROPIC_API_KEY`
-     - AWS Bedrock: set `AWS_REGION` and provide AWS credentials (env/CLI/profile)
-   - Optional: `TAVILY_API_KEY` — web search (`/search` command)
+   At minimum, set `SESSION_SECRET` and one AI provider:
 
-   The `.env` file at the root is symlinked into `apps/api/.env` and `apps/web/.env`.
+   | Provider | Required env vars |
+   |----------|-------------------|
+   | OpenRouter | `OPENROUTER_API_KEY` |
+   | Anthropic | `ANTHROPIC_API_KEY` |
+   | AWS Bedrock | `AWS_REGION` + valid AWS credentials |
+
+   Optional:
+   - `TAVILY_API_KEY` and/or `BRAVE_API_KEY` for web search (Tavily preferred)
+   - `PEXELS_API_KEY` for openly-licensed image search
 
 3. **Initialize the database**
 
    ```bash
-   pnpm db:push    # apply schema to SQLite
-   pnpm db:seed    # seed templates, default theme, admin users
+   pnpm db:push    # apply Drizzle schema to SQLite
+   pnpm db:seed    # seed templates, themes, and admin users
    ```
 
 ## Running
@@ -62,80 +60,135 @@ See Repository Guidelines in `AGENTS.md` for project structure, local dev comman
 pnpm dev
 ```
 
-This starts both services via Turborepo:
+Starts both services via Turborepo:
 
 | Service | URL |
 |---------|-----|
 | Web (SvelteKit) | http://localhost:5173 |
 | API (Hono) | http://localhost:3001 |
 
-## Provider Selection
+### Provider selection
 
-- Easiest commands:
-
-  - `pnpm dev:bedrock` — run web + API using AWS Bedrock
-  - `pnpm dev:anthropic` — run web + API using Anthropic SDK
-  - `pnpm dev:openrouter` — run web + API using OpenRouter
-
-- API-only commands (optional):
-
-  - `pnpm api:bedrock`
-  - `pnpm api:anthropic`
-  - `pnpm api:openrouter`
-
-- Or select via env var (works with `pnpm dev`):
-
-  - `AI_PROVIDER=bedrock pnpm dev`
-  - `AI_PROVIDER=anthropic pnpm dev`
-  - `AI_PROVIDER=openrouter pnpm dev`
-
-- Or pass a CLI flag when starting the API only:
-
-  - `pnpm start -- --provider bedrock`
-
-Notes
-- Bedrock requires `AWS_REGION` and valid AWS credentials. The SDK uses the default AWS credential chain.
-- Models exposed:
-  - Bedrock: Haiku 4.5 (`anthropic.claude-haiku-4-5-20251001-v1:0`). Sonnet 4.6 is admin-only; override ID with `BEDROCK_SONNET_46_MODEL_ID` if needed.
-  - Anthropic SDK: Sonnet 4 and Haiku 4.5. Sonnet 4.6 can be enabled admin-only via `ANTHROPIC_SONNET_46_MODEL_ID`.
-- If `AI_PROVIDER` is set, the UI model list and chat streaming are limited to that provider.
-
-## Project Structure
-
-```
-apps/api/        -- Hono API server (Node, SQLite, Drizzle ORM, Lucia auth)
-apps/web/        -- SvelteKit frontend (Svelte 5, TipTap editor)
-packages/shared/ -- Shared TypeScript types and constants
-templates/       -- Seeded slide template JSON files
-```
-
-## Architecture Overview
-
-```
-[Browser UI]
-  └─ apps/web (SvelteKit, Svelte 5)
-       • Fetches API with credentials → /api/*
-       • Admin-only SSE → /api/debug/stream
-       • Renders artifacts in sandboxed iframes (strict CSP)
-
-[Server API]
-  └─ apps/api (Hono, Lucia auth)
-       • Drizzle ORM → SQLite (local)
-       • AI providers: Anthropic | OpenRouter | Bedrock
-
-[Shared]
-  └─ packages/shared (types, mutations)
-```
-
-## Other Commands
+Run with a specific AI provider:
 
 ```bash
-pnpm build       # production build (both apps)
-pnpm db:push     # push Drizzle schema changes to SQLite
-pnpm db:seed     # re-seed templates and themes
-pnpm seed:admin  # seed admin users only
+pnpm dev:anthropic    # Anthropic SDK
+pnpm dev:bedrock      # AWS Bedrock
+pnpm dev:openrouter   # OpenRouter
+```
+
+Or set `AI_PROVIDER=bedrock|anthropic|openrouter` in your `.env`.
+
+### Available models
+
+| Provider | Models |
+|----------|--------|
+| Anthropic | Claude Sonnet 4, Haiku 4.5 (Sonnet 4.6 admin-only) |
+| Bedrock | Haiku 4.5 (Sonnet 4.6 admin-only) |
+| OpenRouter | Kimi K2.5, GLM 5, Gemini 3.1 Flash, Qwen 3.5 Flash |
+
+## Features
+
+### AI chat
+
+Conversational slide creation with SSE streaming. The AI emits structured mutations (addSlide, updateBlock, setTheme, etc.) applied live during streaming. Upload PDFs and DOCX files for context. Select models per conversation via dropdown.
+
+Rich text formatting in the chat input: bold, italic, links, lists.
+
+### Canvas editor
+
+Two-mode canvas (view / edit). Edit mode provides:
+- Format toolbar (heading levels, font size, bold, italic, link, lists, alignment)
+- Drag-and-drop reorder within and across zones (svelte-dnd-action)
+- Corner-drag resize for images and artifacts (pointer capture, shift for aspect lock)
+- Module picker overlay per zone
+- Split-panel resize handle for `layout-split`
+- Step-reveal ordering (1-5) per module
+- Undo/redo (`Ctrl+Z` / `Ctrl+Shift+Z`)
+
+### Slide layouts (7)
+
+| Layout | Zones | Use |
+|--------|-------|-----|
+| `title-slide` | hero | Cover slide |
+| `layout-split` | content, stage | Two-column (resizable ratio) |
+| `layout-content` | main | Full-width single column |
+| `layout-grid` | main | Card grid |
+| `layout-full-dark` | main | Dark background |
+| `layout-divider` | hero | Section break |
+| `closing-slide` | hero | Final slide |
+
+### Content modules (14)
+
+`heading` `text` `card` `label` `tip-box` `prompt-block` `image` `carousel` `comparison` `card-grid` `flow` `stream-list` `artifact` `video`
+
+Modules flow vertically within zones. TipTap rich text editing for text and heading modules. 35 seeded templates across all layouts.
+
+### Interactive artifacts
+
+14 built-in artifacts rendered natively (no iframe):
+
+A* Pathfinding, Boids, Flow Field, Harmonograph, Langton's Ant, Leaflet Map, Lorenz Attractor, Molnar, Nake, Rossler, Sprott, Timeline, Truchet Tiles, Flow Diagram
+
+Each artifact has a configurable parameter schema (numbers, colors, selects). Artifacts auto-size with aspect ratio preservation.
+
+### Web and image search
+
+`/search <query>` in chat searches the web (Tavily or Brave) and auto-downloads the first image into the active slide. Dedicated image search via Pexels for openly-licensed photos. SSRF protection on all URL downloads.
+
+### Themes
+
+9 built-in themes: Studio Dark, Studio Light, CUNY AI Lab, CUNY Dark, CUNY Light, Warm Academic, Slate Minimal, Midnight, Forest. Users can create custom themes and fork existing ones. Theme-driven rendering via CSS custom properties.
+
+### Export
+
+Exports a self-contained ZIP with:
+- `index.html` — full presentation with section nav, step reveals, carousel sync
+- `css/styles.css` — framework layout and module styles
+- `js/engine.js` — keyboard navigation, step system, scrubber, ARIA announcements
+- `js/artifacts.js` — native artifact renderers
+- `assets/` — bundled uploaded images
+- `artifacts/` — extracted iframe-based artifact HTML (if any)
+
+### Auth
+
+Email/password with `*.cuny.edu` domain gating. Registration, email verification, admin approval. Lucia v3 session cookies. Rate-limited login (5/15min) and registration (3/hr).
+
+### Admin dashboard
+
+User management, role assignment, token usage tracking with monthly charts and per-user caps (default 1M tokens, annual reset).
+
+## Project structure
+
+```
+apps/api/        — Hono API (Node, SQLite via better-sqlite3 + Drizzle, Lucia auth)
+apps/web/        — SvelteKit frontend (Svelte 5 runes, TipTap editor)
+packages/shared/ — Shared TypeScript types, constants, framework CSS
+templates/       — Seeded slide and artifact template JSON (35 files)
+tests/           — Vitest unit/integration tests (427 tests, 15 files)
+e2e/             — Playwright E2E tests
+```
+
+## Commands
+
+```bash
+pnpm install          # install all deps
+pnpm dev              # run API + web via Turborepo
+pnpm build            # production build
+pnpm db:push          # push Drizzle schema to SQLite
+pnpm db:seed          # seed templates, themes, admin users
+pnpm seed:admin       # seed admin users only
+pnpm audit:a11y       # WCAG AA/AAA contrast audit
+npx vitest run        # run all tests
+npx vitest --watch    # watch mode
 ```
 
 ## Deployment
 
-Staging deploys to `tools.cuny.qzz.io/slide-maker` via `./deploy-staging.sh` (requires Tailscale/CUNY VPN).
+Staging at `tools.cuny.qzz.io/slide-maker`. Deploy via `./deploy-staging.sh` (requires Tailscale/CUNY VPN). Traffic: Cloudflare -> Caddy (TLS) -> Nginx -> PM2 (API on 3004, web on 4173).
+
+See `CLAUDE.md` for full deployment details and server layout.
+
+## Contributing
+
+See `AGENTS.md` for coding style, testing guidelines, and commit conventions.
