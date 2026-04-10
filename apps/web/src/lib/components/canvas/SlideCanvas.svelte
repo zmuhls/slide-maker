@@ -25,22 +25,30 @@
   let activeEditor: Editor | null = $state(null)
   let editorToken = 0
 
-  // Overflow detection — warn when slide content exceeds the frame
+  // Overflow detection — the slide-frame uses a fixed pixel height (width * 9/16).
+  // We measure the inner content via a wrapper div to detect overflow.
   let slideFrameEl: HTMLDivElement | undefined = $state()
+  let slideInnerEl: HTMLDivElement | undefined = $state()
   let overflowing = $state(false)
+  let frameHeight = $state<number | undefined>(undefined)
 
   $effect(() => {
-    const el = slideFrameEl
-    if (!el) { overflowing = false; return }
+    const outer = slideFrameEl
+    const inner = slideInnerEl
+    if (!outer || !inner) { overflowing = false; return }
     const check = () => {
-      if (!el) return
-      // With contain:size, scrollHeight reflects content even when clipped
-      overflowing = el.scrollHeight > el.clientHeight + 4
+      if (!outer || !inner) return
+      const w = outer.clientWidth
+      const h = Math.floor(w * 9 / 16)
+      frameHeight = h
+      // Inner content height vs the 16:9 frame height
+      overflowing = inner.scrollHeight > h + 4
     }
     const ro = new ResizeObserver(check)
-    ro.observe(el)
+    ro.observe(outer)
+    ro.observe(inner)
     const mo = new MutationObserver(() => requestAnimationFrame(check))
-    mo.observe(el, { childList: true, subtree: true, attributes: true })
+    mo.observe(inner, { childList: true, subtree: true })
     requestAnimationFrame(check)
     return () => { ro.disconnect(); mo.disconnect() }
   })
@@ -182,8 +190,10 @@
     {#if activeSlide}
       {#if canvasMode === 'edit'}
         <div class="slide-frame-outer">
-          <div class="slide-frame" data-theme={themeMode} style={themeStyle} bind:this={slideFrameEl}>
-            <SlideRenderer slide={activeSlide} {editable} onEditorReady={handleEditorReady} onEditorBlur={handleEditorBlur} />
+          <div class="slide-frame" data-theme={themeMode} style="{themeStyle}; {frameHeight ? `height: ${frameHeight}px` : ''}" bind:this={slideFrameEl}>
+            <div bind:this={slideInnerEl}>
+              <SlideRenderer slide={activeSlide} {editable} onEditorReady={handleEditorReady} onEditorBlur={handleEditorBlur} />
+            </div>
           </div>
           {#if overflowing}
             <div class="overflow-warning" role="alert">
@@ -272,7 +282,6 @@
     border: 1px solid var(--color-border);
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
     overflow: hidden;
-    contain: size layout;
   }
   .no-slide {
     color: var(--color-text-muted);
