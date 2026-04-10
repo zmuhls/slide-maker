@@ -104,6 +104,7 @@
 </script>
 
 <div class="editor-outer">
+  <a href="#slide-canvas" class="skip-link">Skip to slide canvas</a>
   <div class="editor-wrapper">
     {#if !leftCollapsed}
       <div class="left-panel" style:width="{leftWidth}px" style:min-width="{leftWidth}px">
@@ -129,7 +130,7 @@
             onclick={() => leftTab = 'slides'}
           >Slides</button>
         </div>
-        <div class="left-tab-content">
+        <div class="left-tab-content" role="tabpanel" aria-label={leftTab === 'chat' ? 'Chat' : 'Slides'}>
           {#if leftTab === 'chat'}
             <ChatPanel />
           {:else}
@@ -148,9 +149,9 @@
         {leftCollapsed ? '▶' : '◀'}
       </button>
 
-      <div class="center-panel">
+      <main id="slide-canvas" class="center-panel">
         <SlideCanvas {editable} bind:canvasMode />
-      </div>
+      </main>
 
       <button class="collapse-btn right-collapse" onclick={() => { if (canvasMode === 'view') { canvasMode = 'edit' } else { rightCollapsed = !rightCollapsed } }} title={rightCollapsed ? 'Show panels & edit' : 'Hide right panel'}>
         {rightCollapsed ? '◀' : '▶'}
@@ -172,6 +173,24 @@
 </div>
 
 <style>
+  .skip-link {
+    position: absolute;
+    top: -100%;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 8px 16px;
+    background: var(--color-primary);
+    color: #fff;
+    border-radius: 4px;
+    text-decoration: none;
+    z-index: 1000;
+    font-size: 14px;
+  }
+
+  .skip-link:focus {
+    top: 8px;
+  }
+
   .editor-outer {
     display: flex;
     flex-direction: column;
@@ -229,7 +248,7 @@
   }
 
   .brand-wiz {
-    color: #5a8fd4;
+    color: #3a6fb4;
   }
 
   .title-logo-link {

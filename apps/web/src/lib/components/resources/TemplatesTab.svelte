@@ -164,7 +164,7 @@
                             : tmpl.layout === 'layout-grid' ? (dark ? gridVariants[i % gridVariants.length] : gridVariantsLight[i % gridVariantsLight.length])
                             : dark ? base : (layoutMetaLight[tmpl.layout] ?? base)}
             <div class="template-card-wrap">
-              <button class="template-card" onclick={() => applyTemplate(tmpl)}>
+              <button class="template-card" onclick={() => applyTemplate(tmpl)} aria-label="Add {tmpl.name} template">
                 <div class="thumbnail" style:background={meta.bg}>
                 {#if tmpl.layout === 'title-slide' || tmpl.layout === 'closing-slide'}
                   <div class="thumb-zones thumb-center">
@@ -459,6 +459,7 @@
   }
 
   .act-btn {
+    position: relative;
     flex-shrink: 0;
     display: inline-flex;
     align-items: center;
@@ -472,6 +473,12 @@
     color: var(--color-text-secondary, #6b7280);
     cursor: pointer;
     transition: background 0.12s, color 0.12s, border-color 0.12s;
+  }
+  /* Enlarge tap target to 44x44 */
+  .act-btn::after {
+    content: '';
+    position: absolute;
+    inset: -12px;
   }
 
   .act-btn:hover {

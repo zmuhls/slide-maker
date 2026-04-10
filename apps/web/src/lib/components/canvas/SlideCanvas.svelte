@@ -7,7 +7,7 @@
   import { API_URL } from '$lib/api'
   import { currentDeck } from '$lib/stores/deck'
   import { activeSlideId, activeModuleControls, setActiveSlide } from '$lib/stores/ui'
-  import { activeTheme, ensureThemesLoaded, isDark } from '$lib/stores/themes'
+  import { activeTheme, ensureThemesLoaded, isDark, darkenHex } from '$lib/stores/themes'
   import CanvasToolbar from './CanvasToolbar.svelte'
   import FormatToolbar from './FormatToolbar.svelte'
   import SlideRenderer from './SlideRenderer.svelte'
@@ -73,8 +73,9 @@
       const active = document.activeElement
       if (active?.closest('[contenteditable]') || active?.tagName === 'INPUT' || active?.tagName === 'TEXTAREA' || active?.tagName === 'SELECT') return
 
-      // Escape → back to gallery
+      // Escape → back to gallery (skip if a dialog/overlay is open)
       if (e.key === 'Escape') {
+        if (document.querySelector('[role="dialog"]')) return
         e.preventDefault()
         goto(`${base}/`)
         return
@@ -116,6 +117,9 @@
 
     const splitBg = dark ? '#172a45' : '#e8eef6'
     const gridBg = dark ? '#0f3444' : '#e9f5f7'
+    // On light backgrounds, darken accent/secondary for WCAG AA label contrast
+    const accentLabel = dark ? accent : darkenHex(accent, 0.55)
+    const secondaryLabel = dark ? secondary : darkenHex(secondary, 0.7)
 
     return [
       `--theme-bg: ${bg}`,
@@ -126,6 +130,8 @@
       `--theme-primary-text-muted: ${primaryTextMuted}`,
       `--theme-secondary: ${secondary}`,
       `--theme-accent: ${accent}`,
+      `--theme-accent-label: ${accentLabel}`,
+      `--theme-secondary-label: ${secondaryLabel}`,
       `--theme-heading-font: ${headingFont}`,
       `--theme-body-font: ${bodyFont}`,
       `--theme-card-bg: ${cardBg}`,

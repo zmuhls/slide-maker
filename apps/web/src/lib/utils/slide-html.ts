@@ -7,7 +7,7 @@
 import DOMPurify from 'dompurify'
 import { FRAMEWORK_CSS } from './framework-css-client'
 import { buildSourceWithConfig } from './artifact-config'
-import { isDark } from '$lib/stores/themes'
+import { isDark, darkenHex } from '$lib/stores/themes'
 import {
   buildInlineArtifactSrcdoc,
   containsHtmlMarkup,
@@ -309,6 +309,8 @@ function buildThemeCss(theme: Theme | null | undefined): string {
   const border = dark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.08)'
   const splitBg = dark ? '#172a45' : '#e8eef6'
   const gridBg = dark ? '#0f3444' : '#e9f5f7'
+  const accentLabel = dark ? accent : darkenHex(accent, 0.55)
+  const secondaryLabel = dark ? secondary : darkenHex(secondary, 0.7)
 
   return `
     :root {
@@ -335,11 +337,18 @@ function buildThemeCss(theme: Theme | null | undefined): string {
     html, body { background: ${bg}; color: ${text}; font-family: '${bodyFont}', sans-serif; }
     h1, h2, h3, h4 { font-family: '${headingFont}', sans-serif; }
     .title-slide, .layout-divider, .closing-slide { background: ${primary}; color: ${primaryText}; }
+    .title-slide h1, .title-slide h2, .title-slide h3, .title-slide h4,
+    .layout-divider h1, .layout-divider h2, .layout-divider h3,
+    .closing-slide h1, .closing-slide h2, .closing-slide h3 { color: ${primaryText}; }
+    .title-slide p, .title-slide .text-body, .layout-divider p, .closing-slide p, .closing-slide .text-body { color: ${isDarkPrimary ? 'rgba(255,255,255,0.7)' : 'rgba(26,26,46,0.7)'}; }
+    .layout-full-dark { background: #0d1117; color: #f0f0f0; }
+    .layout-full-dark h1, .layout-full-dark h2, .layout-full-dark h3, .layout-full-dark h4 { color: #f0f0f0; }
+    .layout-full-dark p, .layout-full-dark .text-body { color: rgba(240,240,240,0.65); }
     .card { background: ${cardBg}; border-color: ${border}; }
     .card-cyan { border-left-color: ${accent}; }
     .card-navy { border-left-color: ${primary}; }
-    .label-cyan { color: ${accent}; }
-    .label-blue { color: ${secondary}; }
+    .label-cyan { color: ${accentLabel}; }
+    .label-blue { color: ${secondaryLabel}; }
     .tip-box { background: ${accent}0d; border-color: ${accent}1f; }
     .tip-box strong { color: ${accent}; }
     .stream-list li { border-left-color: ${accent}; background: ${cardBg}; color: ${textMuted}; }

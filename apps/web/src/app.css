@@ -3,7 +3,7 @@
 :root {
   /* Brand Colors */
   --navy: #1D3A83;
-  --blue: #3B73E6;
+  --blue: #3564d0;
   --blue-hover: #2A6FB8;
   --teal: #2FB8D6;
   --gold: #ffb81c;
@@ -21,7 +21,7 @@
   --color-bg-tertiary: #f1f5f9;
   --color-text: var(--stone);
   --color-text-secondary: #64748b;
-  --color-text-muted: #6b7280;
+  --color-text-muted: #636b75;
   --color-border: #e2e8f0;
   --color-border-focus: var(--blue);
   --color-ghost-bg: rgba(59, 115, 230, 0.08);

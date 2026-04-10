@@ -48,6 +48,13 @@
 
     editor = new Editor({
       element: editorEl,
+      editorProps: {
+        attributes: {
+          'aria-label': 'Chat message',
+          role: 'textbox',
+          'aria-multiline': 'true',
+        },
+      },
       extensions: [
         StarterKit.configure({
           heading: { levels: [1, 2, 3] },

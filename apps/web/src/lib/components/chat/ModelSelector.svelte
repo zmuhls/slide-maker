@@ -50,15 +50,15 @@
 
 <div class="model-selector">
   {#if loading}
-    <select disabled>
+    <select disabled aria-label="AI model">
       <option>Loading models...</option>
     </select>
   {:else if models.length === 0}
-    <select disabled>
+    <select disabled aria-label="AI model">
       <option>No models available</option>
     </select>
   {:else}
-    <select value={$selectedModelId} onchange={handleChange}>
+    <select value={$selectedModelId} onchange={handleChange} aria-label="AI model">
       {#each Object.entries(grouped) as [provider, providerModels]}
         <optgroup label={provider.charAt(0).toUpperCase() + provider.slice(1)}>
           {#each providerModels as model}

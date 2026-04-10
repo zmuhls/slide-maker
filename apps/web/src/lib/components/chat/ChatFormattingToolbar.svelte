@@ -120,6 +120,7 @@
   }
 
   .chat-fmt-btn {
+    position: relative;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -133,6 +134,12 @@
     cursor: pointer;
     padding: 0;
     transition: background 120ms, color 120ms;
+  }
+  /* Enlarge tap target to 44x44 */
+  .chat-fmt-btn::after {
+    content: '';
+    position: absolute;
+    inset: -11px;
   }
 
   .chat-fmt-btn:hover {

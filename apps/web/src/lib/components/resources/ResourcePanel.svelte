@@ -55,7 +55,7 @@
     {/each}
   </div>
 
-  <div class="tab-content">
+  <div class="tab-content" role="tabpanel" aria-label={$activeResourceTab}>
     {#if $activeResourceTab === 'files'}
       <FilesTab {deckId} />
     {:else if $activeResourceTab === 'templates'}

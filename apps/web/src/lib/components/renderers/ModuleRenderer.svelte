@@ -370,6 +370,12 @@
     padding: 0;
     backdrop-filter: blur(6px);
   }
+  /* Enlarge tap target to 44x44 without changing visual size */
+  .module-trigger::after {
+    content: '';
+    position: absolute;
+    inset: -14px;
+  }
   .module-trigger.active {
     opacity: 1;
     pointer-events: auto;
