@@ -3,6 +3,7 @@
   import { Editor } from '@tiptap/core'
   import StarterKit from '@tiptap/starter-kit'
   import Link from '@tiptap/extension-link'
+  import { TextStyleKit } from '@tiptap/extension-text-style'
   import Placeholder from '@tiptap/extension-placeholder'
 
   let {
@@ -63,6 +64,12 @@
           openOnClick: false,
           protocols: ['http', 'https', 'mailto'],
           validate: (href: string) => /^https?:\/\/|^mailto:/i.test(href),
+        }),
+        TextStyleKit.configure({
+          backgroundColor: false,
+          color: false,
+          fontFamily: false,
+          lineHeight: false,
         }),
         Placeholder.configure({ placeholder }),
       ],

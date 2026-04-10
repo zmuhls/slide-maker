@@ -12,6 +12,7 @@
   let isLink = $state(false)
   let isBulletList = $state(false)
   let isOrderedList = $state(false)
+  let activeFontSize = $state('default')
 
   function update() {
     if (!editor) return
@@ -20,6 +21,8 @@
     isLink = editor.isActive('link')
     isBulletList = editor.isActive('bulletList')
     isOrderedList = editor.isActive('orderedList')
+    const attrs = editor.getAttributes('textStyle')
+    activeFontSize = attrs?.fontSize || 'default'
   }
 
   $effect(() => {
@@ -70,16 +73,12 @@
       <option value="3">H3</option>
       <option value="4">H4</option>
     </select>
-    <select class="font-size-select" onchange={(e) => {
+    <select class="font-size-select" value={activeFontSize} onchange={(e) => {
       const size = (e.target as HTMLSelectElement).value
       if (size === 'default') {
-        editor?.chain().focus().run()
-        const el = editor?.view.dom
-        if (el) el.style.fontSize = ''
+        editor?.chain().focus().unsetFontSize().run()
       } else {
-        editor?.chain().focus().run()
-        const el = editor?.view.dom
-        if (el) el.style.fontSize = size
+        editor?.chain().focus().setFontSize(size).run()
       }
     }} title="Font Size">
       <option value="default">Size</option>

@@ -22,9 +22,14 @@ const SAFE_HTML_OPTIONS: sanitizeHtml.IOptions = {
     img: ['src', 'alt', 'loading'],
     a: ['href', 'target', 'rel'],
     code: ['class'],
-    span: ['class'],
+    span: ['class', 'style'],
   },
   allowedSchemes: ['http', 'https', 'mailto'],
+  allowedStyles: {
+    span: {
+      'font-size': [/^\d+(?:px|em|rem|%)$/],
+    },
+  },
 }
 
 function sanitize(html: string): string {
