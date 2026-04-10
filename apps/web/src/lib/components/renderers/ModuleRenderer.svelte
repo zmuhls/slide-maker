@@ -119,7 +119,7 @@
   }
 
   // Corner resize — pointer events with capture, shift-drag aspect lock
-  const PERSISTABLE_RESIZE_TYPES = ['artifact', 'image', 'text', 'heading', 'card', 'tip-box', 'prompt-block', 'comparison', 'card-grid', 'flow', 'stream-list', 'carousel', 'label', 'video']
+  const PERSISTABLE_RESIZE_TYPES = ['artifact', 'image', 'video']
   let wrapperEl: HTMLDivElement | undefined = $state()
   let customW = $state<number | null>(null)
   let customH = $state<number | null>(null)
@@ -198,8 +198,8 @@
   class:is-step={module.stepOrder != null}
   class:resizing
   bind:this={wrapperEl}
-  style:width={customW ? `${customW}px` : (module.data?.width as string) || undefined}
-  style:height={customH ? `${customH}px` : (module.data?.height as string) || undefined}
+  style:width={customW ? `${customW}px` : (PERSISTABLE_RESIZE_TYPES.includes(module.type) && module.data?.width ? (module.data.width as string) : undefined)}
+  style:height={customH ? `${customH}px` : (PERSISTABLE_RESIZE_TYPES.includes(module.type) && module.data?.height ? (module.data.height as string) : undefined)}
 >
   {#if editable}
     <span class="canvas-drag-handle" use:dragHandle aria-label="Drag to reorder">⠿</span>
@@ -288,8 +288,6 @@
     position: relative;
     width: 100%;
     overflow: visible;
-    display: flex;
-    flex-direction: column;
   }
   .module-wrapper.editable {
     border-radius: var(--radius-sm, 6px);
@@ -326,9 +324,6 @@
 
   .module-content {
     width: 100%;
-    min-height: 0;
-    flex: 1;
-    overflow: hidden;
   }
   .module-wrapper.editable > .module-content {
     padding-top: 20px;
