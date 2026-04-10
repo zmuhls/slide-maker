@@ -63,13 +63,6 @@ export async function* streamBedrock(
 }
 
 export const BEDROCK_MODELS = [
-  { id: 'anthropic.claude-haiku-4-5-20251001-v1:0', name: 'Claude Haiku 4.5 (AWS)', provider: 'bedrock' },
+  { id: 'us.anthropic.claude-haiku-4-5-20251001-v1:0', name: 'Claude Haiku 4.5 (AWS)', provider: 'bedrock' },
+  { id: 'us.anthropic.claude-sonnet-4-6', name: 'Claude Sonnet 4.6 (AWS)', provider: 'bedrock' },
 ]
-
-// Expose Sonnet 4.6 via Bedrock as admin-only.
-;(BEDROCK_MODELS as any).push({
-  id: env.bedrockSonnet46ModelId || 'anthropic.claude-sonnet-4-6',
-  name: 'Claude Sonnet 4.6 (AWS)',
-  provider: 'bedrock',
-  adminOnly: true,
-})
