@@ -254,14 +254,14 @@
     font-size: 12px;
     border: 1px solid var(--color-border, #e5e7eb);
     border-radius: 3px;
-    background: white;
+    background: var(--color-bg);
     outline: none;
     font-family: inherit;
     box-sizing: border-box;
   }
   .field-input:focus,
   .field-textarea:focus {
-    border-color: #3b82f6;
+    border-color: var(--color-border-focus);
   }
 
   .field-textarea {
@@ -274,7 +274,7 @@
     font-size: 12px;
     border: 1px solid var(--color-border, #e5e7eb);
     border-radius: 3px;
-    background: white;
+    background: var(--color-bg);
     outline: none;
   }
 
@@ -294,9 +294,9 @@
     transition: color 0.12s ease, transform 0.06s ease;
   }
 
-  .block-header:hover .delete-block-btn { color: #6b7280; }
+  .block-header:hover .delete-block-btn { color: var(--color-text-muted); }
 
-  .delete-block-btn:hover { color: #ef4444; background: rgba(239, 68, 68, 0.1); }
+  .delete-block-btn:hover { color: var(--color-error); background: color-mix(in srgb, var(--color-error) 10%, transparent); }
   .delete-block-btn:active { transform: translateY(1px); }
 
   .delete-block-btn:disabled { opacity: 0.5; cursor: not-allowed; }

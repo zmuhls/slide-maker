@@ -246,14 +246,14 @@
   }
 
   @keyframes module-glow {
-    0% { box-shadow: 0 0 0 3px rgba(59, 115, 230, 0.5); }
-    100% { box-shadow: 0 0 0 0 rgba(59, 115, 230, 0); }
+    0% { box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary) 50%, transparent); }
+    100% { box-shadow: 0 0 0 0 transparent; }
   }
 
   /* DnD shadow element (drop placeholder) */
   .zone-drop-list :global([data-is-dnd-shadow-item-internal]) {
-    background: rgba(59, 115, 230, 0.08);
-    border: 2px dashed rgba(59, 115, 230, 0.35);
+    background: var(--color-ghost-bg);
+    border: 2px dashed color-mix(in srgb, var(--color-primary) 35%, transparent);
     border-radius: 6px;
     opacity: 0.6;
     min-height: 40px;
@@ -261,10 +261,10 @@
 
   /* Zone highlight when dragging over */
   :global(.zone-drop-active) {
-    outline: 2px solid rgba(59, 115, 230, 0.25);
+    outline: 2px solid color-mix(in srgb, var(--color-primary) 25%, transparent);
     outline-offset: 2px;
     border-radius: 8px;
-    background: rgba(59, 115, 230, 0.03);
+    background: color-mix(in srgb, var(--color-primary) 3%, transparent);
   }
 
   .add-module-row {
@@ -276,9 +276,9 @@
   .add-module-btn {
     font-size: 0.8125rem;
     padding: 3px 10px;
-    background: rgba(59, 130, 246, 0.15);
-    color: rgba(59, 130, 246, 0.9);
-    border: 1px dashed rgba(59, 130, 246, 0.3);
+    background: var(--color-ghost-bg);
+    color: var(--color-primary);
+    border: 1px dashed color-mix(in srgb, var(--color-primary) 30%, transparent);
     border-radius: 4px;
     cursor: pointer;
     font-weight: 500;
@@ -286,8 +286,8 @@
   }
 
   .add-module-btn:hover {
-    background: rgba(59, 130, 246, 0.25);
-    border-color: rgba(59, 130, 246, 0.5);
+    background: var(--color-ghost-bg-hover);
+    border-color: color-mix(in srgb, var(--color-primary) 50%, transparent);
   }
 
   .add-module-btn.empty-add {

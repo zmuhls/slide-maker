@@ -470,15 +470,15 @@
     padding: 5px 8px;
     font-size: 11px;
     font-weight: 500;
-    color: rgba(255, 120, 120, 0.85);
+    color: color-mix(in srgb, var(--color-error) 85%, transparent);
     justify-content: center;
   }
   .pop-delete:hover:not(:disabled) {
-    background: rgba(239, 68, 68, 0.15);
-    color: #ff6b6b;
+    background: color-mix(in srgb, var(--color-error) 15%, transparent);
+    color: var(--color-error);
   }
   .pop-delete.confirming {
-    background: #ef4444;
+    background: var(--color-error);
     color: white;
     font-weight: 600;
   }

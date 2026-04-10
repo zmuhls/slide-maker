@@ -27,6 +27,7 @@
   --color-ghost-bg: rgba(59, 115, 230, 0.08);
   --color-ghost-bg-hover: rgba(59, 115, 230, 0.12);
   --color-success: #166534;
+  --color-success-accent: #10b981;
   --color-error: #ef4444;
   --color-warning: var(--gold);
 
@@ -58,6 +59,7 @@ html[data-editor-dark] {
   --color-ghost-bg: rgba(59, 115, 230, 0.12);
   --color-ghost-bg-hover: rgba(59, 115, 230, 0.18);
   --color-success: #4ade80;
+  --color-success-accent: #34d399;
   --color-error: #f87171;
 }
 

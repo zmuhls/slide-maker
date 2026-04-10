@@ -475,15 +475,15 @@
   .accept-all-btn {
     padding: 3px 8px;
     font-size: 10px;
-    border: 1px solid #10b981;
+    border: 1px solid var(--color-success-accent);
     border-radius: var(--radius-sm);
     background: transparent;
-    color: #10b981;
+    color: var(--color-success-accent);
     cursor: pointer;
     transition: background 0.15s;
   }
   .accept-all-btn:hover {
-    background: rgba(16, 185, 129, 0.1);
+    background: color-mix(in srgb, var(--color-success-accent) 10%, transparent);
   }
 
   /* Confirmation UI removed: reset is one-click by design */

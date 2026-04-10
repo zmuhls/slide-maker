@@ -41,12 +41,12 @@
   }
 
   .mutation-card.accepted {
-    border-left-color: #10b981;
+    border-left-color: var(--color-success-accent);
     opacity: 0.7;
   }
 
   .mutation-card.rejected {
-    border-left-color: #ef4444;
+    border-left-color: var(--color-error);
     opacity: 0.45;
   }
 
@@ -76,21 +76,21 @@
   }
 
   .ghost-btn.accept {
-    color: #10b981;
+    color: var(--color-success-accent);
   }
 
   .ghost-btn.accept:hover {
-    background: rgba(16, 185, 129, 0.1);
-    border-color: #10b981;
+    background: color-mix(in srgb, var(--color-success-accent) 10%, transparent);
+    border-color: var(--color-success-accent);
   }
 
   .ghost-btn.reject {
-    color: #ef4444;
+    color: var(--color-error);
   }
 
   .ghost-btn.reject:hover {
-    background: rgba(239, 68, 68, 0.1);
-    border-color: #ef4444;
+    background: color-mix(in srgb, var(--color-error) 10%, transparent);
+    border-color: var(--color-error);
   }
 
   .mutation-status-badge {
