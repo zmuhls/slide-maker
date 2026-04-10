@@ -25,17 +25,42 @@
   let activeEditor: Editor | null = $state(null)
   let editorToken = 0
 
+  // Overflow detection — warn when slide content exceeds the frame
+  let slideFrameEl: HTMLDivElement | undefined = $state()
+  let overflowing = $state(false)
+
+  $effect(() => {
+    const el = slideFrameEl
+    if (!el) { overflowing = false; return }
+    // Check after a short delay to let content render
+    const check = () => {
+      if (!el) return
+      overflowing = el.scrollHeight > el.clientHeight + 4
+    }
+    const ro = new ResizeObserver(check)
+    ro.observe(el)
+    // Also observe mutations (new modules added)
+    const mo = new MutationObserver(check)
+    mo.observe(el, { childList: true, subtree: true })
+    check()
+    return () => { ro.disconnect(); mo.disconnect() }
+  })
+
   function handleEditorReady(editor: unknown) {
     editorToken++
     activeEditor = editor as Editor
   }
 
   function handleEditorBlur() {
-    // Small delay so toolbar clicks still work (mousedown on toolbar fires before blur resolves)
+    // Delay so toolbar interactions (dropdowns, buttons) don't kill the editor
     const token = editorToken
     setTimeout(() => {
-      if (editorToken === token) activeEditor = null
-    }, 200)
+      if (editorToken !== token) return
+      // Don't clear if focus moved to the format toolbar (e.g., Size dropdown)
+      const focused = document.activeElement
+      if (focused?.closest('.format-toolbar')) return
+      activeEditor = null
+    }, 300)
   }
 
   // Load themes on mount so activeTheme can resolve
@@ -157,9 +182,14 @@
   <div class="canvas-area">
     {#if activeSlide}
       {#if canvasMode === 'edit'}
-        <div class="slide-frame" data-theme={themeMode} style={themeStyle}>
+        <div class="slide-frame" data-theme={themeMode} style={themeStyle} bind:this={slideFrameEl}>
           <SlideRenderer slide={activeSlide} {editable} onEditorReady={handleEditorReady} onEditorBlur={handleEditorBlur} />
         </div>
+        {#if overflowing}
+          <div class="overflow-warning" role="alert">
+            Content extends beyond the slide — some modules may not be visible in the presentation
+          </div>
+        {/if}
       {:else}
         <div class="slide-frame view-mode" data-theme={themeMode} style={themeStyle}>
           <SlideRenderer slide={activeSlide} editable={false} />
@@ -242,5 +272,18 @@
     color: var(--color-text-muted);
     font-size: 0.9rem;
     font-style: italic;
+  }
+  .overflow-warning {
+    background: #fef3cd;
+    color: #856404;
+    font-size: 0.75rem;
+    text-align: center;
+    padding: 4px 12px;
+    border-radius: 0 0 var(--radius-md) var(--radius-md);
+    margin-top: -1px;
+    max-width: 960px;
+    width: 100%;
+    border: 1px solid #ffc107;
+    border-top: none;
   }
 </style>
