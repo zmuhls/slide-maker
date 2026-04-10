@@ -118,18 +118,14 @@
     }
   }
 
-  // Corner resize — two modes:
-  // 1. Dimension resize (artifact, image, video) — persists width/height
-  // 2. Font-size resize (text modules) — scales font size up/down
-  const DIMENSION_RESIZE_TYPES = ['artifact', 'image', 'video']
-  const TEXT_RESIZE_TYPES = ['heading', 'text', 'card', 'tip-box', 'prompt-block', 'stream-list', 'label', 'comparison', 'card-grid', 'flow']
+  // Corner resize — pointer events with capture, shift-drag aspect lock
+  const PERSISTABLE_RESIZE_TYPES = ['artifact', 'image']
   let wrapperEl: HTMLDivElement | undefined = $state()
   let customW = $state<number | null>(null)
   let customH = $state<number | null>(null)
   let resizing = $state(false)
   let scaleFactor = $state(1)
   let resizeLabel = $state('')
-  let liveFontSize = $state<number | null>(null)
 
   // Captured at drag start
   let _resizeStartX = 0
@@ -139,14 +135,11 @@
   let _resizeNaturalW = 0
   let _resizeNaturalH = 0
   let _resizeAspect = 1
-  let _resizeStartFontSize = 16
-  let _resizeCorner: 'tl' | 'tr' | 'bl' | 'br' = 'br'
 
   function handleResizeDown(e: PointerEvent) {
     e.preventDefault()
     e.stopPropagation()
     ;(e.currentTarget as HTMLElement).setPointerCapture(e.pointerId)
-    _resizeCorner = ((e.currentTarget as HTMLElement).dataset.corner as typeof _resizeCorner) || 'br'
     resizing = true
     _resizeStartX = e.clientX
     _resizeStartY = e.clientY
@@ -156,65 +149,41 @@
     _resizeNaturalW = wrapperEl!.scrollWidth
     _resizeNaturalH = wrapperEl!.scrollHeight
     _resizeAspect = _resizeStartW / Math.max(_resizeStartH, 1)
-    // Capture starting font size for text resize mode
-    const current = Number(module.data?.fontSize) || parseFloat(getComputedStyle(wrapperEl!).fontSize) || 16
-    _resizeStartFontSize = current
   }
 
   function handleResizeMove(e: PointerEvent) {
     if (!resizing) return
-    const dx = e.clientX - _resizeStartX
-    const dy = e.clientY - _resizeStartY
-    const sx = _resizeCorner.includes('l') ? -1 : 1
-    const sy = _resizeCorner.includes('t') ? -1 : 1
-
-    if (TEXT_RESIZE_TYPES.includes(module.type)) {
-      // Font-size mode: vertical drag scales font size
-      const delta = dy * sy
-      const scale = 1 + delta / 200
-      const newSize = Math.round(Math.max(8, Math.min(96, _resizeStartFontSize * scale)))
-      liveFontSize = newSize
-      resizeLabel = `${newSize}px`
-    } else {
-      // Dimension mode (artifact/image/video)
-      let newW = Math.max(160, _resizeStartW + dx * sx)
-      let newH = Math.max(60, _resizeStartH + dy * sy)
-      if (e.shiftKey) {
-        newH = newW / _resizeAspect
-        if (newH < 60) { newH = 60; newW = newH * _resizeAspect }
-      }
-      customW = newW
-      customH = newH
-      resizeLabel = `${Math.round(newW)} × ${Math.round(newH)}${e.shiftKey ? ' ⊟' : ''}`
-      const scaleX = newW / Math.max(_resizeNaturalW, 1)
-      const scaleY = newH / Math.max(_resizeNaturalH, 1)
-      scaleFactor = Math.min(scaleX, scaleY, 1)
+    let newW = Math.max(160, _resizeStartW + (e.clientX - _resizeStartX))
+    let newH = Math.max(60, _resizeStartH + (e.clientY - _resizeStartY))
+    // Shift-drag locks aspect ratio
+    if (e.shiftKey) {
+      newH = newW / _resizeAspect
+      if (newH < 60) { newH = 60; newW = newH * _resizeAspect }
     }
+    customW = newW
+    customH = newH
+    resizeLabel = `${Math.round(newW)} × ${Math.round(newH)}${e.shiftKey ? ' ⊟' : ''}`
+    // Scale content down only — enlarging gives more reflow space instead of zooming
+    const scaleX = newW / Math.max(_resizeNaturalW, 1)
+    const scaleY = newH / Math.max(_resizeNaturalH, 1)
+    scaleFactor = Math.min(scaleX, scaleY, 1)
   }
 
   function handleResizeUp(e: PointerEvent) {
     if (!resizing) return
     resizing = false
     resizeLabel = ''
-
-    if (TEXT_RESIZE_TYPES.includes(module.type) && liveFontSize) {
-      // Persist font size
-      onchange?.({ ...module.data, fontSize: `${liveFontSize}px` })
-      liveFontSize = null
-    } else if (customW && customH && DIMENSION_RESIZE_TYPES.includes(module.type)) {
+    // Persist resize for artifact/image via mutation-routed callback
+    if (customW && customH && PERSISTABLE_RESIZE_TYPES.includes(module.type)) {
       const next: Record<string, unknown> = { ...module.data, width: `${Math.round(customW)}px`, height: `${Math.round(customH)}px` }
       if (module.type === 'artifact') next.autoSize = false
       onresize?.(next)
     }
+    // Always reset visual state — non-persisted types lose resize on release
     customW = null
     customH = null
     scaleFactor = 1
   }
-
-  // Resolved font size: live drag value > persisted value > default
-  const resolvedFontSize = $derived(
-    liveFontSize ? `${liveFontSize}px` : (module.data?.fontSize as string) || undefined
-  )
 </script>
 
 <div
@@ -223,8 +192,8 @@
   class:is-step={module.stepOrder != null}
   class:resizing
   bind:this={wrapperEl}
-  style:width={customW ? `${customW}px` : (PERSISTABLE_RESIZE_TYPES.includes(module.type) && module.data?.width ? (module.data.width as string) : undefined)}
-  style:height={customH ? `${customH}px` : (PERSISTABLE_RESIZE_TYPES.includes(module.type) && module.data?.height ? (module.data.height as string) : undefined)}
+  style:width={customW ? `${customW}px` : undefined}
+  style:height={customH ? `${customH}px` : undefined}
 >
   {#if editable}
     <span class="canvas-drag-handle" use:dragHandle aria-label="Drag to reorder">⠿</span>
@@ -277,7 +246,7 @@
     <span class="step-badge">Step {module.stepOrder + 1}</span>
   {/if}
 
-  <div class="module-content" style:transform={scaleFactor !== 1 ? `scale(${scaleFactor})` : undefined} style:transform-origin={scaleFactor !== 1 ? 'top center' : undefined} style:font-size={resolvedFontSize}>
+  <div class="module-content" style:transform={scaleFactor !== 1 ? `scale(${scaleFactor})` : undefined} style:transform-origin={scaleFactor !== 1 ? 'top center' : undefined}>
     {#if Renderer}
       {#if module.type === 'artifact'}
         <ArtifactModule data={module.data} moduleId={module.id} {slideId} {editable} {onchange} />
@@ -290,18 +259,15 @@
   </div>
 
   {#if editable}
-    {#each ['tl', 'tr', 'bl', 'br'] as corner (corner)}
-      <div
-        class="corner-resize corner-{corner}"
-        data-corner={corner}
-        role="separator"
-        aria-label="Resize module"
-        onpointerdown={handleResizeDown}
-        onpointermove={handleResizeMove}
-        onpointerup={handleResizeUp}
-        onpointercancel={handleResizeUp}
-      ></div>
-    {/each}
+    <div
+      class="corner-resize"
+      role="separator"
+      aria-label="Resize module"
+      onpointerdown={handleResizeDown}
+      onpointermove={handleResizeMove}
+      onpointerup={handleResizeUp}
+      onpointercancel={handleResizeUp}
+    ></div>
     {#if resizeLabel}
       <div class="resize-tooltip">{resizeLabel}</div>
     {/if}
@@ -535,11 +501,14 @@
     border-color: var(--color-error);
   }
 
-  /* Corner resize handles — all four corners, fade in on hover */
+  /* Corner resize — fade in on hover */
   .corner-resize {
     position: absolute;
+    bottom: 0;
+    right: 0;
     width: 16px;
     height: 16px;
+    cursor: nwse-resize;
     z-index: 10;
     opacity: 0;
     transition: opacity 0.15s ease;
@@ -548,19 +517,15 @@
   .corner-resize::after {
     content: '';
     position: absolute;
+    bottom: 2px;
+    right: 2px;
     width: 8px;
     height: 8px;
+    border-right: 2px solid var(--color-primary);
+    border-bottom: 2px solid var(--color-primary);
     opacity: 0.5;
     transition: opacity 0.1s;
   }
-  .corner-br { bottom: 0; right: 0; cursor: nwse-resize; }
-  .corner-br::after { bottom: 2px; right: 2px; border-right: 2px solid var(--color-primary); border-bottom: 2px solid var(--color-primary); }
-  .corner-bl { bottom: 0; left: 0; cursor: nesw-resize; }
-  .corner-bl::after { bottom: 2px; left: 2px; border-left: 2px solid var(--color-primary); border-bottom: 2px solid var(--color-primary); }
-  .corner-tr { top: 0; right: 0; cursor: nesw-resize; }
-  .corner-tr::after { top: 2px; right: 2px; border-right: 2px solid var(--color-primary); border-top: 2px solid var(--color-primary); }
-  .corner-tl { top: 0; left: 0; cursor: nwse-resize; }
-  .corner-tl::after { top: 2px; left: 2px; border-left: 2px solid var(--color-primary); border-top: 2px solid var(--color-primary); }
   .module-wrapper.editable:hover .corner-resize {
     opacity: 1;
   }
