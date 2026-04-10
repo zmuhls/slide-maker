@@ -75,7 +75,11 @@ function renderModule(mod: Module, slide: Slide): string {
   switch (mod.type) {
     case 'heading': {
       const level = Math.min(Math.max(Number(d.level) || 1, 1), 4)
-      return `<h${level}>${esc(String(d.text || ''))}</h${level}>`
+      const raw = String(d.text || '')
+      const inner = containsHtmlMarkup(raw)
+        ? sanitize(raw).replace(/^<p>(.*)<\/p>$/s, '$1')
+        : esc(raw)
+      return `<h${level}>${inner}</h${level}>`
     }
 
     case 'text': {
@@ -94,7 +98,11 @@ function renderModule(mod: Module, slide: Slide): string {
 
     case 'label': {
       const color = d.color ? ` label-${esc(String(d.color))}` : ''
-      return `<span class="label${color}">${esc(String(d.text || ''))}</span>`
+      const raw = String(d.text || '')
+      const inner = containsHtmlMarkup(raw)
+        ? sanitize(raw).replace(/^<p>(.*)<\/p>$/s, '$1')
+        : esc(raw)
+      return `<span class="label${color}">${inner}</span>`
     }
 
     case 'tip-box': {

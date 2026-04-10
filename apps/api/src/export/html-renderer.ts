@@ -177,7 +177,11 @@ function renderModule(mod: Module, files?: ExportFile[], opts?: RenderOptions): 
       if (d.fontSize) styles.push(`font-size: ${esc(String(d.fontSize))}`)
       if (d.align) styles.push(`text-align: ${esc(String(d.align))}`)
       const styleAttr = styles.length ? ` style="${styles.join('; ')}"` : ''
-      return `<h${level}${step}${styleAttr}>${esc(String(d.text || ''))}</h${level}>`
+      const raw = String(d.text || '')
+      const inner = containsHtmlMarkup(raw)
+        ? sanitize(raw).replace(/^<p>(.*)<\/p>$/s, '$1')
+        : esc(raw)
+      return `<h${level}${step}${styleAttr}>${inner}</h${level}>`
     }
 
     case 'text': {
@@ -198,7 +202,11 @@ function renderModule(mod: Module, files?: ExportFile[], opts?: RenderOptions): 
 
     case 'label': {
       const color = d.color ? ` label-${esc(String(d.color))}` : ''
-      return `<span class="label${color}"${step}>${esc(String(d.text || ''))}</span>`
+      const raw = String(d.text || '')
+      const inner = containsHtmlMarkup(raw)
+        ? sanitize(raw).replace(/^<p>(.*)<\/p>$/s, '$1')
+        : esc(raw)
+      return `<span class="label${color}"${step}>${inner}</span>`
     }
 
     case 'tip-box': {

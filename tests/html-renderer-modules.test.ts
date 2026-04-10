@@ -18,10 +18,10 @@ describe('renderModule — per-type HTML output', () => {
       expect(renderModule(mod('heading', { text: 'T', level: 99 }))).toMatch(/^<h4/)
     })
 
-    it('escapes text content', () => {
+    it('strips dangerous HTML from text content', () => {
       const html = renderModule(mod('heading', { text: '<script>xss</script>', level: 2 }))
-      expect(html).toContain('&lt;script&gt;')
       expect(html).not.toContain('<script>')
+      expect(html).not.toContain('xss')
     })
 
     it('applies fontSize and align styles', () => {
