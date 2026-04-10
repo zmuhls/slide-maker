@@ -118,9 +118,12 @@ function applyMarks(text: string, marks?: JSONContent['marks']): string {
       case 'code':
         result = `\`${result}\``
         break
-      case 'link':
-        result = `[${result}](${mark.attrs?.href ?? ''})`
+      case 'link': {
+        const safeText = result.replace(/[\[\]]/g, '\\$&')
+        const safeHref = (mark.attrs?.href ?? '').replace(/[()]/g, '\\$&')
+        result = `[${safeText}](${safeHref})`
         break
+      }
     }
   }
   return result

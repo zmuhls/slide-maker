@@ -18,6 +18,11 @@ const search = new Hono<AuthEnv>()
 
 search.use('*', authMiddleware)
 
+/** Strip HTML tags from external API response strings (Brave returns <strong> highlights, etc.) */
+function stripHtmlTags(s: string): string {
+  return s.replace(/<[^>]*>/g, '')
+}
+
 const BLOCKED_SEARCH_DOMAINS = [
   'pornhub.com', 'xvideos.com', 'xnxx.com', 'xhamster.com',
   'redtube.com', 'youporn.com', 'rule34.xxx', 'e621.net',
@@ -54,9 +59,9 @@ async function searchViaTavily(query: string): Promise<SearchResult> {
   return {
     answer: data.answer ?? null,
     results: (data.results ?? []).map((r: any) => ({
-      title: r.title,
-      url: r.url,
-      content: r.content?.slice(0, 200),
+      title: stripHtmlTags(r.title ?? ''),
+      url: r.url ?? '',
+      content: stripHtmlTags((r.content ?? '').slice(0, 200)),
     })),
     images: (data.images ?? []).slice(0, 8),
   }
@@ -100,9 +105,9 @@ async function searchViaBrave(query: string): Promise<SearchResult> {
   const webResults = (webData.web?.results ?? [])
     .filter((r: any) => !BLOCKED_SEARCH_DOMAINS.some(d => r.url?.toLowerCase().includes(d)))
     .map((r: any) => ({
-      title: r.title ?? '',
+      title: stripHtmlTags(r.title ?? ''),
       url: r.url ?? '',
-      content: (r.description ?? '').slice(0, 200),
+      content: stripHtmlTags((r.description ?? '').slice(0, 200)),
     }))
 
   let images: string[] = []
