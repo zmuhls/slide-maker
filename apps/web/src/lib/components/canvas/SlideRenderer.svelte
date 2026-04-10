@@ -20,6 +20,7 @@ import { applyMutation } from '$lib/utils/mutations'
     slide,
     editable = false,
     onEditorReady,
+    onEditorBlur,
   }: {
     slide: {
       id: string
@@ -30,6 +31,7 @@ import { applyMutation } from '$lib/utils/mutations'
     }
     editable?: boolean
     onEditorReady?: (editor: unknown) => void
+    onEditorBlur?: () => void
   } = $props()
 
   let splitRatio = $state(0.5)
@@ -145,6 +147,7 @@ import { applyMutation } from '$lib/utils/mutations'
         onModuleStepChange={handleModuleStepChange}
         onMoveToZone={handleMoveToZone}
         {onEditorReady}
+        {onEditorBlur}
       />
     </div>
   {:else if layoutType === 'layout-split'}
@@ -200,6 +203,7 @@ import { applyMutation } from '$lib/utils/mutations'
         onModuleStepChange={handleModuleStepChange}
         onMoveToZone={handleMoveToZone}
         {onEditorReady}
+        {onEditorBlur}
       />
     </div>
   {/if}

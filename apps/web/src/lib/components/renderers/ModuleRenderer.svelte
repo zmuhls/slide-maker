@@ -18,13 +18,14 @@
   import { dragHandle } from 'svelte-dnd-action'
   import { activeModuleControls } from '$lib/stores/ui'
 
-  let { module, slideId = '', editable = false, onchange, onresize, oneditorready, ondelete, onstepchange }: {
+  let { module, slideId = '', editable = false, onchange, onresize, oneditorready, oneditorblur, ondelete, onstepchange }: {
     module: { id: string; type: string; data: Record<string, unknown>; stepOrder?: number | null };
     slideId?: string;
     editable: boolean;
     onchange?: (newData: Record<string, unknown>) => void;
     onresize?: (newData: Record<string, unknown>) => void;
     oneditorready?: (editor: Editor) => void;
+    oneditorblur?: () => void;
     ondelete?: () => void;
     onstepchange?: (stepOrder: number | null) => void;
   } = $props()
@@ -250,7 +251,7 @@
       {#if module.type === 'artifact'}
         <ArtifactModule data={module.data} moduleId={module.id} {slideId} {editable} {onchange} />
       {:else}
-        <Renderer data={module.data} {editable} {onchange} {oneditorready} />
+        <Renderer data={module.data} {editable} {onchange} {oneditorready} {oneditorblur} />
       {/if}
     {:else}
       <div class="unknown-module">Unknown: {module.type}</div>

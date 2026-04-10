@@ -11,6 +11,7 @@
     placeholder = 'Type here...',
     onchange,
     oneditorready,
+    oneditorblur,
     initialClickCoords,
     class: className = '',
   }: {
@@ -19,6 +20,7 @@
     placeholder?: string
     onchange?: (html: string) => void
     oneditorready?: (editor: Editor) => void
+    oneditorblur?: () => void
     initialClickCoords?: { x: number; y: number } | null
     class?: string
   } = $props()
@@ -77,8 +79,12 @@
       onSelectionUpdate: () => {
         positionToolbar()
       },
+      onFocus: () => {
+        oneditorready?.(editor!)
+      },
       onBlur: () => {
         updateToolbarState()
+        oneditorblur?.()
       },
     })
 

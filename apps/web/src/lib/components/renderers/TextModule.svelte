@@ -4,7 +4,7 @@
   import { renderRichTextData } from '@slide-maker/shared'
 
   import type { Editor } from '@tiptap/core'
-  let { data = {}, editable = false, onchange, oneditorready }: { data: Record<string, unknown>; editable: boolean; onchange?: (newData: Record<string, unknown>) => void; oneditorready?: (editor: Editor) => void } = $props()
+  let { data = {}, editable = false, onchange, oneditorready, oneditorblur }: { data: Record<string, unknown>; editable: boolean; onchange?: (newData: Record<string, unknown>) => void; oneditorready?: (editor: Editor) => void; oneditorblur?: () => void } = $props()
 
   let column = $derived(typeof data.column === 'string' ? data.column : '')
 
@@ -32,6 +32,7 @@
       placeholder="Type text here..."
       onchange={handleRichTextChange}
       {oneditorready}
+      {oneditorblur}
       initialClickCoords={clickCoords}
     />
   {:else}

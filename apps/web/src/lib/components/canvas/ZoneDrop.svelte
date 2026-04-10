@@ -28,6 +28,7 @@
     onModuleStepChange,
     onMoveToZone,
     onEditorReady,
+    onEditorBlur,
   }: {
     modules: Module[]
     zone: string
@@ -41,6 +42,7 @@
     onModuleStepChange?: (moduleId: string, stepOrder: number | null) => void
     onMoveToZone?: (blockId: string, fromZone: string, toZone: string, newOrder: string[]) => void
     onEditorReady?: (editor: unknown) => void
+    onEditorBlur?: () => void
   } = $props()
 
   let items = $state<Module[]>([])
@@ -169,6 +171,7 @@
           ondelete={() => onModuleDelete?.(mod.id)}
           onstepchange={(step) => onModuleStepChange?.(mod.id, step)}
           oneditorready={onEditorReady}
+          oneditorblur={onEditorBlur}
         />
       </div>
     {/each}
@@ -273,6 +276,10 @@
     padding: 0.25rem 0;
   }
 
+  /* Hide the add button by default to avoid visual clutter
+     inside tight layouts (e.g., stacked cards). Reveal on
+     zone hover/focus, but keep it visible when the zone
+     has no items (button gets .empty-add). */
   .add-module-btn {
     font-size: 0.8125rem;
     padding: 3px 10px;
@@ -283,6 +290,8 @@
     cursor: pointer;
     font-weight: 500;
     transition: background 0.15s, border-color 0.15s;
+    opacity: 0;
+    pointer-events: none;
   }
 
   .add-module-btn:hover {
@@ -290,9 +299,19 @@
     border-color: color-mix(in srgb, var(--color-primary) 50%, transparent);
   }
 
+  /* When the zone is empty, keep the button visible */
   .add-module-btn.empty-add {
     padding: 6px 14px;
     font-size: 0.875rem;
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  /* Reveal add button on hover or when any child is focused */
+  .zone-drop:hover .add-module-btn,
+  .zone-drop:focus-within .add-module-btn {
+    opacity: 1;
+    pointer-events: auto;
   }
 
   .picker-overlay {

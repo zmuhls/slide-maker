@@ -356,9 +356,15 @@
   appearance: menulist !important;
 }
 .slide-frame .add-module-btn {
-  background: color-mix(in srgb, var(--theme-text, #f0f0f0) 10%, transparent) !important;
-  color: var(--theme-text, #f0f0f0) !important;
-  border-color: color-mix(in srgb, var(--theme-text, #f0f0f0) 25%, transparent) !important;
+  /* Always-high-contrast on white slide background */
+  background: #f3f4f6 !important; /* gray-100 */
+  color: #1f2937 !important;      /* slate-800 */
+  border-color: #d1d5db !important; /* gray-300 */
+  color-scheme: light !important; /* prevent OS dark-mode inversion */
+}
+.slide-frame .add-module-btn:hover {
+  background: #e5e7eb !important; /* gray-200 */
+  border-color: #9ca3af !important; /* gray-400 */
 }
 
 /* ── Inline code ─────────────────────────────────────────────────── */

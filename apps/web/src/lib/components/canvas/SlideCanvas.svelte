@@ -23,14 +23,19 @@
 
   // Track the active TipTap editor for the format toolbar
   let activeEditor: Editor | null = $state(null)
+  let editorToken = 0
 
   function handleEditorReady(editor: unknown) {
+    editorToken++
     activeEditor = editor as Editor
   }
 
   function handleEditorBlur() {
-    // Small delay so toolbar clicks still work
-    setTimeout(() => { activeEditor = null }, 300)
+    // Small delay so toolbar clicks still work (mousedown on toolbar fires before blur resolves)
+    const token = editorToken
+    setTimeout(() => {
+      if (editorToken === token) activeEditor = null
+    }, 200)
   }
 
   // Load themes on mount so activeTheme can resolve
@@ -40,6 +45,7 @@
 
   // Derive theme
   let theme = $derived($activeTheme)
+  let themeMode = $derived(isDark(theme?.colors?.bg ?? '#111827') ? 'dark' : 'light')
 
   function openPreview() {
     if (!$currentDeck) return
@@ -151,11 +157,11 @@
   <div class="canvas-area">
     {#if activeSlide}
       {#if canvasMode === 'edit'}
-        <div class="slide-frame" style={themeStyle}>
-          <SlideRenderer slide={activeSlide} {editable} onEditorReady={handleEditorReady} />
+        <div class="slide-frame" data-theme={themeMode} style={themeStyle}>
+          <SlideRenderer slide={activeSlide} {editable} onEditorReady={handleEditorReady} onEditorBlur={handleEditorBlur} />
         </div>
       {:else}
-        <div class="slide-frame view-mode" style={themeStyle}>
+        <div class="slide-frame view-mode" data-theme={themeMode} style={themeStyle}>
           <SlideRenderer slide={activeSlide} editable={false} />
           {#if editable}
             <div
@@ -222,6 +228,7 @@
   }
   .slide-frame {
     width: 100%;
+    max-width: 960px;
     height: auto;
     max-height: 100%;
     aspect-ratio: 16 / 9;
