@@ -10,6 +10,6 @@ export function setActiveSlide(id: string | null, slideNumber?: number) {
     logAction(`Selected slide ${slideNumber}`)
   }
 }
-export const activeResourceTab = writable<'files' | 'templates' | 'artifacts' | 'themes'>('templates')
+export const activeResourceTab = writable<'files' | 'templates' | 'artifacts' | 'themes'>('files')
 export const rightPanelOpen = writable(true)
 export const activeModuleControls = writable<string | null>(null)

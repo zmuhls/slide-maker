@@ -8,6 +8,7 @@
   import { dragHandleZone } from 'svelte-dnd-action'
   import { history } from '$lib/stores/history'
   import { undo, redo, applyMutation } from '$lib/utils/mutations'
+  import { planWizardOpen } from '$lib/stores/plan-wizard'
 
   let { onCollapse }: { onCollapse?: () => void } = $props()
 
@@ -74,7 +75,10 @@
 
   {#if dragItems.length === 0}
     <div class="slide-list">
-      <div class="empty">No slides yet</div>
+      <div class="empty">
+        <span>No slides yet</span>
+        <button class="import-outline-btn" onclick={() => planWizardOpen.set(true)}>Import Outline</button>
+      </div>
     </div>
   {:else}
     <div
@@ -156,11 +160,28 @@
 
   .empty {
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
     height: 100%;
     font-size: 13px;
-    color: var(--color-text-muted, #9ca3af);
+    color: var(--color-text-muted, #636b75);
     padding: 20px;
+    gap: 12px;
+  }
+
+  .import-outline-btn {
+    padding: 6px 14px;
+    font-size: 12px;
+    font-weight: 500;
+    border: 1px solid var(--color-primary, #3564d0);
+    border-radius: var(--radius-sm, 6px);
+    background: transparent;
+    color: var(--color-primary, #3564d0);
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .import-outline-btn:hover {
+    background: var(--color-ghost-bg, rgba(59, 115, 230, 0.08));
   }
 </style>
