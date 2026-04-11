@@ -21,11 +21,11 @@ import debugRouter from './routes/debug.js'
 const app = new Hono()
 
 app.use('/*', cors({
-  origin: env.publicUrl,
+  origin: env.allowedOrigins,
   credentials: true,
 }))
 
-app.use('/*', csrf({ origin: env.publicUrl }))
+app.use('/*', csrf({ origin: env.allowedOrigins }))
 // 11MB for file upload routes (10MB file + overhead)
 app.use('/api/decks/:id/files', bodyLimit({ maxSize: 11 * 1024 * 1024 }))
 // Apply a 2MB limit to all other routes, but explicitly skip the upload endpoint

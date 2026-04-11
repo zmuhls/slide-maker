@@ -331,6 +331,12 @@
   .module-wrapper.editable > .module-content {
     padding-top: 26px;
   }
+  .module-wrapper.is-step > .module-content {
+    padding-top: 18px;
+  }
+  .module-wrapper.editable.is-step > .module-content {
+    padding-top: 44px;
+  }
 
   /* Drag handle — top-left, appears on hover */
   .canvas-drag-handle {

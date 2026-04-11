@@ -38,10 +38,6 @@
     margin: 0 auto;
   }
   figcaption {
-    font-size: clamp(0.7rem, 1cqi, 0.85rem);
-    color: var(--color-text-secondary);
-    text-align: center;
-    margin-top: 0.5rem;
     font-style: italic;
     font-family: var(--font-body);
   }

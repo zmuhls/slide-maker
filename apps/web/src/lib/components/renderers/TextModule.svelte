@@ -54,8 +54,9 @@
 <style>
   .text-block {
     font-family: var(--font-body);
-    font-size: clamp(0.85rem, 1.5cqi, 1.1rem);
-    line-height: 1.7;
+    /* Inherit typography from framework CSS for parity */
+    font-size: inherit;
+    line-height: inherit;
     color: inherit;
     outline: none;
   }

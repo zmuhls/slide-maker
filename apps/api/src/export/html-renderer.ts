@@ -505,6 +505,12 @@ export function renderDeckHtml(
     }
     html, body { background: ${bg}; color: ${text}; font-family: '${bodyFont}', sans-serif; }
     h1, h2, h3, h4 { font-family: '${headingFont}', sans-serif; }
+    /* Ensure dark layout uses light text regardless of global theme */
+    .layout-full-dark {
+      --text-muted: rgba(240,240,240,0.65);
+      --text-primary: #f0f0f0;
+      color: #f0f0f0;
+    }
     .title-slide, .layout-divider, .closing-slide {
       background: ${primary}; color: ${primaryText};
       --theme-text: ${primaryText};
@@ -520,16 +526,13 @@ export function renderDeckHtml(
     .label-blue { color: ${secondary}; }
     .tip-box { background: ${accent}0d; border-color: ${accent}1f; }
     .tip-box strong { color: ${accent}; }
-    .stream-list li { border-left-color: ${accent}; background: ${cardBg}; color: ${textMuted}; }
-    .text-body { color: ${textMuted}; }
+    /* Text colors use var() so title-slide/divider/closing-slide
+       --text-muted/--text-primary overrides cascade correctly. */
+    .stream-list li { border-left-color: ${accent}; background: ${cardBg}; color: var(--text-muted); }
     .comparison-panel { background: ${cardBg}; border-color: ${border}; }
-    .comparison-panel p { color: ${textMuted}; }
-    .card p { color: ${textMuted}; }
     .flow-node { background: ${cardBg}; border-color: ${border}; }
-    .flow-arrow { color: ${textMuted}; }
-    .prompt-block { color: ${text}; }
-    blockquote { color: ${text}; }
-    figcaption { color: ${textMuted}; }
+    .prompt-block { color: var(--text-primary); }
+    blockquote { color: var(--text-primary); }
   `
 
   // Include fonts from theme

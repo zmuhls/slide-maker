@@ -43,6 +43,20 @@ export const env = {
   braveApiKey: process.env.BRAVE_API_KEY ?? '',
   pexelsApiKey: process.env.PEXELS_API_KEY ?? '',
   publicUrl: process.env.PUBLIC_URL ?? 'http://localhost:5173',
+  /** All origins accepted by CORS and CSRF. In non-production mode,
+   *  localhost dev/preview ports are always included so local dev
+   *  works even when PUBLIC_URL points at staging. */
+  allowedOrigins: (() => {
+    const origins = new Set<string>()
+    const pub = process.env.PUBLIC_URL
+    if (pub) origins.add(pub.replace(/\/$/, ''))
+    if (process.env.NODE_ENV !== 'production') {
+      origins.add('http://localhost:5173')
+      origins.add('http://localhost:4173')
+    }
+    if (origins.size === 0) origins.add('http://localhost:5173')
+    return [...origins]
+  })(),
 } as const
 
 if (process.env.NODE_ENV === 'production' && !process.env.SESSION_SECRET) {

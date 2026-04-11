@@ -152,7 +152,6 @@
   }
   .video-caption {
     font-size: 0.8rem;
-    color: var(--color-text-muted, #6b7280);
     text-align: center;
     margin: 6px 0 0;
     font-style: italic;

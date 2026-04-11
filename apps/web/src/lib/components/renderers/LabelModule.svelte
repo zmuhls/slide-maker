@@ -54,7 +54,7 @@
   }
   .label, .label-preview {
     display: inline-block;
-    font-size: clamp(0.65rem, 1.2cqi, 0.85rem);
+    font-size: 0.85rem;
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.08em;
@@ -80,7 +80,7 @@
   }
   .label-wrapper :global(.tiptap),
   .label-wrapper :global(.tiptap p) {
-    font-size: clamp(0.65rem, 1.2cqi, 0.85rem);
+    font-size: 0.85rem;
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.08em;
