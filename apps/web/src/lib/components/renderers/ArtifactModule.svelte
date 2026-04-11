@@ -463,7 +463,7 @@
     width: 100%;
     border: 1px solid var(--theme-border, rgba(17, 24, 39, 0.12));
     border-radius: 8px;
-    overflow: visible;
+    overflow: hidden;
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.03));
     position: relative;
   }
