@@ -86,26 +86,28 @@ previewRouter.get('/:id/preview', async (c) => {
     theme = await db.select().from(themes).where(eq(themes.id, deck.themeId)).get() || null
   }
 
-  // Render HTML — use same-origin artifact endpoint so previews send Referer
-  const publicUrl = process.env.PUBLIC_URL || ''
-  const apiBase = publicUrl ? `${publicUrl}/slide-maker` : ''
-  const htmlTemplate = renderDeckHtml(deck.name, slidesWithBlocks, theme, undefined, { artifactEndpoint: `${apiBase}/api/artifact` })
+  // Render HTML — use same-origin artifact endpoint so previews send Referer.
+  // Derive the base path from PUBLIC_URL (same logic as svelte.config.js).
+  // In dev PUBLIC_URL is the frontend origin (no /slide-maker) so basePath = ''.
+  // On staging PUBLIC_URL includes /slide-maker so basePath = '/slide-maker'.
+  const basePath = process.env.PUBLIC_URL?.includes('/slide-maker') ? '/slide-maker' : ''
+  const htmlTemplate = renderDeckHtml(deck.name, slidesWithBlocks, theme, undefined, { artifactEndpoint: `${basePath}/api/artifact` })
 
   // Replace the external CSS link with an inline <style> block
-  // Rewrite /api/ URLs to include the base path so images resolve behind the /slide-maker/ proxy
+  // Rewrite /api/ URLs to include the base path so images resolve behind the proxy
   let html = htmlTemplate.replace(
     '<link rel="stylesheet" href="css/styles.css">',
     `<style>${FRAMEWORK_CSS}</style>`
   )
-  if (apiBase) {
-    html = html.replace(/src="\/api\//g, `src="${apiBase}/api/`)
+  if (basePath) {
+    html = html.replace(/src="\/api\//g, `src="${basePath}/api/`)
   }
 
 
   return new Response(html, {
     headers: {
       'Content-Type': 'text/html; charset=utf-8',
-      'Content-Security-Policy': "default-src 'self'; script-src 'unsafe-inline'; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https:; frame-src 'self' blob:; object-src 'none'; frame-ancestors 'none';",
+      'Content-Security-Policy': "default-src 'self'; script-src 'unsafe-inline'; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https: http://localhost:*; frame-src 'self' blob: https://www.youtube.com https://player.vimeo.com https://www.loom.com; object-src 'none'; frame-ancestors 'none';",
       'X-Frame-Options': 'DENY',
       'X-Content-Type-Options': 'nosniff',
     },
