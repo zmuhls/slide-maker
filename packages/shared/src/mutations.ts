@@ -9,6 +9,7 @@ export type Mutation =
   | { action: 'reorderSlides'; payload: { order: string[] } }
   | { action: 'reorderBlocks'; payload: { slideId: string; zone: string; order: string[] } }
   | { action: 'moveBlockToZone'; payload: { slideId: string; blockId: string; fromZone: string; toZone: string; order: string[] } }
+  | { action: 'moveBlockToSlide'; payload: { fromSlideId: string; toSlideId: string; blockId: string; toZone: Zone; toIndex?: number } }
   | { action: 'applyTemplate'; payload: { slideId?: string; templateId: string } }
   | { action: 'setTheme'; payload: { themeId: string } }
   | { action: 'updateMetadata'; payload: { name?: string } }

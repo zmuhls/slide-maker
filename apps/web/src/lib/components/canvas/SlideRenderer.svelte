@@ -262,7 +262,8 @@ import { applyMutation } from '$lib/utils/mutations'
     flex-direction: column;
     justify-content: center;
     min-width: 0;
-    overflow: hidden;
+    overflow-y: auto;
+    overflow-x: hidden;
     gap: 16px;
   }
 
@@ -272,7 +273,8 @@ import { applyMutation } from '$lib/utils/mutations'
     justify-content: center;
     align-items: center;
     min-width: 0;
-    overflow: hidden;
+    overflow-y: auto;
+    overflow-x: hidden;
     gap: 16px;
   }
 

@@ -174,22 +174,22 @@
     let aborted = false
     let queueIdle: Promise<void> = Promise.resolve()
 
-    async function drainQueue() {
-      if (processingQueue) return
-      processingQueue = true
-      queueIdle = (async () => {
-        while (mutationQueue.length > 0 && !aborted) {
-          const mut = mutationQueue.shift()!
-          try {
-            await applyMutation(mut)
-          } catch (err) {
-            console.error('Failed to apply mutation:', err, mut)
-          }
+  async function drainQueue() {
+    if (processingQueue) return
+    processingQueue = true
+    queueIdle = (async () => {
+      while (mutationQueue.length > 0 && !aborted) {
+        const mut = mutationQueue.shift()!
+        try {
+          await applyMutation(mut)
+        } catch (err) {
+          console.error('Failed to apply mutation:', err, mut)
         }
-        processingQueue = false
-      })()
-      await queueIdle
-    }
+      }
+      processingQueue = false
+    })()
+    await queueIdle
+  }
 
     // Snapshot autoApply at stream start — don't let mid-stream toggles split mutations
     const liveApply = get(autoApply)
@@ -228,8 +228,12 @@
         while (appliedMutationCount < mutations.length) {
           const mut = mutations[appliedMutationCount]
           if (liveApply) {
-            mutationQueue.push(mut)
-            drainQueue()
+            if (isRiskyMutation(mut)) {
+              addPendingMutation(assistantId, mut)
+            } else {
+              mutationQueue.push(mut)
+              drainQueue()
+            }
           } else {
             addPendingMutation(assistantId, mut)
           }
@@ -258,6 +262,19 @@
       actions,
       agentSlideId,
     )
+  }
+
+  function isRiskyMutation(m: any): boolean {
+    const action = m?.action
+    if (!action) return true
+    // Destructive or deck-wide changes require approval
+    if (action === 'removeSlide' || action === 'reorderSlides' || action === 'setTheme') return true
+    if (action === 'applyTemplate') {
+      // Replacing an existing slide is riskier than creating a new one
+      return Boolean(m?.payload?.slideId)
+    }
+    if (action === 'removeBlock') return true
+    return false
   }
 
   function stopStreaming() {

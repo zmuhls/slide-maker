@@ -4,9 +4,8 @@
   import { applyMutation } from '$lib/utils/mutations'
   import { get } from 'svelte/store'
   import { API_URL } from '$lib/api'
-  import { chatDraft } from '$lib/stores/chat'
+  import { chatDraft, switchToChat } from '$lib/stores/chat'
   import {
-    buildAtRef,
     getResolvedConfig,
     type ArtifactRef,
   } from '$lib/utils/artifact-config'
@@ -165,7 +164,8 @@
   }
 
   function injectAtRef(artifact: Artifact) {
-    chatDraft.set(buildAtRef(artifact))
+    chatDraft.set(`@artifact:${artifact.name}`)
+    switchToChat.set(true)
   }
 
   function hasConfig(artifact: Artifact): boolean {

@@ -14,6 +14,9 @@ export const selectedModelId = writable('google/gemini-3.1-flash-lite-preview')
 /** Set from any component to inject text into the chat input without sending. */
 export const chatDraft = writable<string>('')
 
+/** Set to true from any component to switch the left panel to the chat tab. */
+export const switchToChat = writable(false)
+
 let msgCounter = 0
 
 export function addUserMessage(content: string): string {

@@ -586,6 +586,9 @@ decksRouter.patch('/:id/slides/:slideId/blocks/:blockId', async (c) => {
   if (blockData !== undefined) {
     const incomingBlockData = isRecord(blockData) ? blockData : {}
     const mergedData = { ...(existing.data as Record<string, unknown>), ...incomingBlockData }
+    if (existing.type === 'text' && 'markdown' in incomingBlockData) {
+      delete mergedData.html
+    }
     try {
       updates.data = await normalizeBlockData(existing.type, mergedData, incomingBlockData)
     } catch (err) {
@@ -721,4 +724,108 @@ decksRouter.post('/:id/slides/reorder', async (c) => {
   await db.update(decks).set({ updatedAt: new Date() }).where(eq(decks.id, deckId))
 
   return c.json({ message: 'Slides reordered' })
+})
+
+// POST /:id/blocks/:blockId/move — Atomically move a block to another slide (and/or zone)
+decksRouter.post('/:id/blocks/:blockId/move', async (c) => {
+  const user = c.get('user')
+  const deckId = c.req.param('id')
+  const blockId = c.req.param('blockId')
+
+  const access = await db
+    .select()
+    .from(deckAccess)
+    .where(and(eq(deckAccess.deckId, deckId), eq(deckAccess.userId, user.id)))
+    .get()
+
+  if (!access || access.role === 'viewer') {
+    return c.json({ error: 'No permission to move blocks' }, 403)
+  }
+
+  const body = await c.req.json().catch(() => ({}))
+  const toSlideId = String(body?.toSlideId || '')
+  const toZone = String(body?.toZone || '')
+  let toIndex = typeof body?.toIndex === 'number' ? (body.toIndex as number) : undefined
+
+  if (!toSlideId || !toZone) {
+    return c.json({ error: 'toSlideId and toZone are required' }, 400)
+  }
+
+  // Verify block and slide ownership and gather positions
+  const existing = await db.select().from(contentBlocks).where(eq(contentBlocks.id, blockId)).get()
+  if (!existing) {
+    return c.json({ error: 'Block not found' }, 404)
+  }
+
+  const srcSlide = await db.select().from(slides).where(eq(slides.id, existing.slideId)).get()
+  const destSlide = await db.select().from(slides).where(eq(slides.id, toSlideId)).get()
+  if (!srcSlide || !destSlide || srcSlide.deckId !== deckId || destSlide.deckId !== deckId) {
+    return c.json({ error: 'Block or target slide not found' }, 404)
+  }
+
+  const { sqlite } = await import('../db/index.js')
+
+  const moveTx = sqlite.transaction(() => {
+    const srcOrder = existing.order
+    const srcZone = existing.zone || 'content'
+
+    // Clamp destination index within the destination zone length
+    if (toIndex === undefined || toIndex === null) {
+      const row = sqlite.prepare(
+        'SELECT COUNT(1) as cnt FROM content_blocks WHERE slide_id = ? AND zone = ?'
+      ).get(toSlideId, toZone) as { cnt: number }
+      toIndex = row?.cnt ?? 0
+    } else if (toIndex < 0) {
+      toIndex = 0
+    } else {
+      const row = sqlite.prepare(
+        'SELECT COUNT(1) as cnt FROM content_blocks WHERE slide_id = ? AND zone = ?'
+      ).get(toSlideId, toZone) as { cnt: number }
+      const max = row?.cnt ?? 0
+      if (toIndex > max) toIndex = max
+    }
+
+    if (existing.slideId === toSlideId && srcZone === toZone) {
+      // Intra-slide reorder within same zone
+      if (toIndex === srcOrder) return
+      if (toIndex > srcOrder) {
+        sqlite.prepare(
+          'UPDATE content_blocks SET "order" = "order" - 1 WHERE slide_id = ? AND zone = ? AND "order" > ? AND "order" <= ?'
+        ).run(toSlideId, toZone, srcOrder, toIndex)
+      } else {
+        sqlite.prepare(
+          'UPDATE content_blocks SET "order" = "order" + 1 WHERE slide_id = ? AND zone = ? AND "order" >= ? AND "order" < ?'
+        ).run(toSlideId, toZone, toIndex, srcOrder)
+      }
+      sqlite.prepare(
+        'UPDATE content_blocks SET "order" = ? WHERE id = ?'
+      ).run(toIndex, blockId)
+    } else {
+      // Cross-slide or cross-zone move
+      // Make room in destination zone
+      sqlite.prepare(
+        'UPDATE content_blocks SET "order" = "order" + 1 WHERE slide_id = ? AND zone = ? AND "order" >= ?'
+      ).run(toSlideId, toZone, toIndex)
+      // Compact source zone after removal
+      sqlite.prepare(
+        'UPDATE content_blocks SET "order" = "order" - 1 WHERE slide_id = ? AND zone = ? AND "order" > ?'
+      ).run(existing.slideId, srcZone, srcOrder)
+      // Move the block
+      sqlite.prepare(
+        'UPDATE content_blocks SET slide_id = ?, zone = ?, "order" = ? WHERE id = ?'
+      ).run(toSlideId, toZone, toIndex, blockId)
+    }
+
+    // Touch deck updated_at
+    sqlite.prepare('UPDATE decks SET updated_at = ? WHERE id = ?').run(Date.now(), deckId)
+  })
+
+  try {
+    moveTx()
+  } catch (err) {
+    return c.json({ error: 'Move failed' }, 500)
+  }
+
+  const updated = await db.select().from(contentBlocks).where(eq(contentBlocks.id, blockId)).get()
+  return c.json({ block: updated })
 })

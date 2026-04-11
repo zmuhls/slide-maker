@@ -3,17 +3,23 @@
   import { renderContent } from '$lib/utils/markdown'
   import type { Editor } from '@tiptap/core'
 
-  let { data = {}, editable = false, onchange, oneditorready }: {
+  let { data = {}, editable = false, onchange, oneditorready, oneditorblur }: {
     data: Record<string, unknown>;
     editable: boolean;
     onchange?: (newData: Record<string, unknown>) => void;
     oneditorready?: (editor: Editor) => void;
+    oneditorblur?: () => void;
   } = $props()
 
-  let content = $derived(renderContent(typeof data.content === 'string' ? data.content : ''))
+  let renderedContent = $derived(renderContent(typeof data.content === 'string' ? data.content : ''))
   let title = $derived(typeof data.title === 'string' ? data.title : '')
 
+  let editorActive = $state(false)
+  let editContent = $state('')
+  let clickCoords: { x: number; y: number } | null = $state(null)
+
   function handleRichTextChange(html: string) {
+    editContent = html
     onchange?.({ ...data, content: html })
   }
 </script>
@@ -23,16 +29,27 @@
     <strong>{title}</strong>
   {/if}
   <div class="tip-box-content">
-    {#if editable}
+    {#if editable && editorActive}
       <RichTextEditor
-        content={content}
+        content={editContent}
         {editable}
         placeholder="Tip content..."
         onchange={handleRichTextChange}
         {oneditorready}
+        {oneditorblur}
+        initialClickCoords={clickCoords}
       />
+    {:else if editable}
+      <button
+        type="button"
+        class="tip-preview editable"
+        onclick={(e) => { clickCoords = { x: e.clientX, y: e.clientY }; editContent = renderedContent; editorActive = true }}
+        onkeydown={(e) => { if (e.key === 'Enter') { editContent = renderedContent; editorActive = true } }}
+      >
+        {#if renderedContent}{@html renderedContent}{:else}<span class="placeholder-text">Tip content...</span>{/if}
+      </button>
     {:else}
-      {@html content}
+      {@html renderedContent}
     {/if}
   </div>
 </div>
@@ -55,5 +72,24 @@
   .tip-box-content {
     font-size: clamp(0.85rem, 1.3cqi, 1rem);
     line-height: 1.6;
+  }
+  .tip-preview.editable {
+    cursor: text;
+    background: transparent;
+    border: none;
+    padding: 0;
+    margin: 0;
+    color: inherit;
+    font: inherit;
+    text-align: inherit;
+    width: 100%;
+    display: block;
+  }
+  .tip-box-content :global(.tiptap-mount) {
+    padding-inline: 12px;
+  }
+  .placeholder-text {
+    opacity: 0.4;
+    font-style: italic;
   }
 </style>

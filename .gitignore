@@ -45,3 +45,6 @@ playwright-report/
 
 # Generated demo
 docs/demo.html
+
+# Project-local Claude agents
+.claude/agents/

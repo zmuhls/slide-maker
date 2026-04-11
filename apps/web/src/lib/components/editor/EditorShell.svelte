@@ -5,6 +5,7 @@
   import SlideCanvas from '$lib/components/canvas/SlideCanvas.svelte'
   import ResourcePanel from '$lib/components/resources/ResourcePanel.svelte'
   import { base } from '$app/paths'
+  import { switchToChat } from '$lib/stores/chat'
 
   let { editable = true }: { editable?: boolean } = $props()
 
@@ -31,6 +32,15 @@
         leftCollapsed = savedLeft
       }
     })
+  })
+
+  // Switch to chat tab when requested by other components
+  $effect(() => {
+    if ($switchToChat) {
+      leftTab = 'chat'
+      leftCollapsed = false
+      switchToChat.set(false)
+    }
   })
 
   const MIN_PANEL = 200

@@ -340,7 +340,7 @@ export const FRAMEWORK_CSS_EXPORT = FRAMEWORK_CSS_BASE + `
   width: 10px; height: 10px; border: none;
   border-radius: 50%; background: var(--accent-cyan); cursor: pointer;
 }
-#slide-counter { font-variant-numeric: tabular-nums; min-width: 50px; text-align: center; color: var(--text-muted); font-size: 12px; }
+#slide-counter { font-variant-numeric: tabular-nums; min-width: 50px; text-align: center; color: rgba(240,240,240,0.7); font-size: 12px; }
 
 /* ── Overview Mode ───────────────────────────────────────────────── */
 .overview-mode { overflow: auto; }

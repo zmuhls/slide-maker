@@ -367,13 +367,25 @@ chat.post('/', chatRateLimit, async (c) => {
         data: JSON.stringify({ type: 'done' }),
       })
 
-      // Save assistant message to DB
+      // Extract mutation blocks from assistant response (before persisting)
+      const mutations = (() => {
+        const blocks: string[] = []
+        const re = /```\s*mutation\s*\n([\s\S]*?)```/gi
+        let m: RegExpExecArray | null
+        while ((m = re.exec(fullResponse)) !== null) {
+          blocks.push(m[1].trim())
+        }
+        return blocks
+      })()
+
+      // Save assistant message to DB (persist extracted mutations)
       const assistantMsgId = createId()
       await db.insert(chatMessages).values({
         id: assistantMsgId,
         deckId,
         role: 'assistant',
         content: fullResponse,
+        mutations: mutations as unknown as any,
         provider,
         createdAt: new Date(),
       })
@@ -392,17 +404,6 @@ chat.post('/', chatRateLimit, async (c) => {
         outputTokens,
         createdAt: new Date(),
       })
-
-      // Extract mutation blocks from assistant response
-      const mutations = (() => {
-        const blocks: string[] = []
-        const re = /```\s*mutation\s*\n([\s\S]*?)```/gi
-        let m: RegExpExecArray | null
-        while ((m = re.exec(fullResponse)) !== null) {
-          blocks.push(m[1].trim())
-        }
-        return blocks
-      })()
 
       // Emit done event
       debugBus.emit('stream:done', {

@@ -36,12 +36,22 @@
     onstepchange?.(step)
   }
 
+  // Compact layout: when module is too short for vertically stacked controls
+  let compact = $state(false)
+  $effect(() => {
+    if (!wrapperEl || !editable) return
+    function check() { compact = wrapperEl!.offsetHeight < 50 }
+    check()
+    const ro = new ResizeObserver(check)
+    ro.observe(wrapperEl)
+    return () => ro.disconnect()
+  })
+
   // Popover controls state
   let triggerEl: HTMLButtonElement | undefined = $state()
   let popX = $state(0)
   let popY = $state(0)
   let isActive = $derived($activeModuleControls === module.id)
-
   function toggleControls(e: MouseEvent) {
     e.stopPropagation()
     if (isActive) {
@@ -195,6 +205,7 @@
 <div
   class="module-wrapper"
   class:editable
+  class:compact={editable && compact}
   class:is-step={module.stepOrder != null}
   class:resizing
   bind:this={wrapperEl}
@@ -321,28 +332,19 @@
     text-transform: uppercase;
     line-height: 14px;
   }
-  .module-wrapper.editable .step-badge {
-    top: 26px;
-  }
 
   .module-content {
     width: 100%;
   }
-  .module-wrapper.editable > .module-content {
-    padding-top: 26px;
-  }
   .module-wrapper.is-step > .module-content {
     padding-top: 18px;
   }
-  .module-wrapper.editable.is-step > .module-content {
-    padding-top: 44px;
-  }
 
-  /* Drag handle — top-left, appears on hover */
+  /* Drag handle — right side top, appears on hover */
   .canvas-drag-handle {
     position: absolute;
     top: 2px;
-    left: 2px;
+    right: 2px;
     width: 22px;
     height: 22px;
     display: flex;
@@ -367,10 +369,22 @@
     opacity: 1;
   }
 
-  /* Trigger dot — top-right, appears on hover */
+  /* Compact: both controls on the left, side by side */
+  .module-wrapper.compact .canvas-drag-handle {
+    top: 2px;
+    right: auto;
+    left: 2px;
+  }
+  .module-wrapper.compact .module-trigger {
+    top: 2px;
+    right: auto;
+    left: 26px;
+  }
+
+  /* Trigger dot — right side below drag handle, appears on hover */
   .module-trigger {
     position: absolute;
-    top: 2px;
+    top: 26px;
     right: 2px;
     width: 22px;
     height: 22px;
@@ -489,6 +503,8 @@
   }
   .pop-select:hover { border-color: rgba(17, 24, 39, 0.3); }
   .pop-select:focus-visible { border-color: rgba(59, 115, 230, 0.6); box-shadow: 0 0 0 2px rgba(59, 115, 230, 0.25); }
+  .pop-select option { font-size: 11px; }
+
 
   .pop-divider {
     height: 1px;

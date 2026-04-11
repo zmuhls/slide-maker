@@ -155,14 +155,14 @@ export async function applyMutation(mutation: Record<string, unknown>): Promise<
     }
 
     case 'removeSlide': {
-      const slideId = payload.slideId as string
+      const slideId = (resolveSlideRef(payload.slideId as string) || (payload.slideId as string))
       await apiCall(`/api/decks/${deck.id}/slides/${slideId}`, 'DELETE')
       removeSlideFromDeck(slideId)
       break
     }
 
     case 'updateSlide': {
-      const slideId = payload.slideId as string
+      const slideId = (resolveSlideRef(payload.slideId as string) || (payload.slideId as string))
       const updates: Record<string, unknown> = {}
       if (payload.notes !== undefined) updates.notes = payload.notes
       if (payload.splitRatio !== undefined) updates.splitRatio = payload.splitRatio
@@ -178,7 +178,7 @@ export async function applyMutation(mutation: Record<string, unknown>): Promise<
     }
 
     case 'addBlock': {
-      const slideId = payload.slideId as string
+      const slideId = (resolveSlideRef(payload.slideId as string) || (payload.slideId as string))
       const blockDef = payload.block as { type: string; zone?: string; data: Record<string, unknown>; stepOrder?: number }
 
       if (blockDef.type === 'artifact' && blockDef.data) {
@@ -209,7 +209,7 @@ export async function applyMutation(mutation: Record<string, unknown>): Promise<
     }
 
     case 'removeBlock': {
-      const slideId = payload.slideId as string
+      const slideId = (resolveSlideRef(payload.slideId as string) || (payload.slideId as string))
       const blockId = payload.blockId as string
       // Capture snapshot for undo/redo robustness
       const currentSlide = deck.slides.find((s) => s.id === slideId)
@@ -233,7 +233,7 @@ export async function applyMutation(mutation: Record<string, unknown>): Promise<
     }
 
     case 'updateBlock': {
-      const slideId = payload.slideId as string
+      const slideId = (resolveSlideRef(payload.slideId as string) || (payload.slideId as string))
       const blockId = payload.blockId as string
       const newData = payload.data as Record<string, unknown>
 
@@ -270,7 +270,7 @@ export async function applyMutation(mutation: Record<string, unknown>): Promise<
     }
 
     case 'updateBlockStep': {
-      const slideId = payload.slideId as string
+      const slideId = (resolveSlideRef(payload.slideId as string) || (payload.slideId as string))
       const blockId = payload.blockId as string
       const newStep = (payload.stepOrder as number | null) ?? null
       const currentSlide = deck.slides.find((s) => s.id === slideId)
@@ -326,7 +326,7 @@ export async function applyMutation(mutation: Record<string, unknown>): Promise<
     }
 
     case 'reorderBlocks': {
-      const slideId = payload.slideId as string
+      const slideId = (resolveSlideRef(payload.slideId as string) || (payload.slideId as string))
       const zone = payload.zone as string
       const order = payload.order as string[]
 
@@ -355,6 +355,76 @@ export async function applyMutation(mutation: Record<string, unknown>): Promise<
         action: 'reorderBlocks',
         payload: { slideId, zone, order: prevOrder },
       })
+      break
+    }
+
+    case 'moveBlockToSlide': {
+      const fromSlideId = (resolveSlideRef((payload as any).fromSlideId as string) || (payload as any).fromSlideId) as string
+      const toSlideId = (resolveSlideRef((payload as any).toSlideId as string) || (payload as any).toSlideId) as string
+      const blockId = (payload as any).blockId as string
+      const toZone = (payload as any).toZone as string
+      const toIndexRaw = (payload as any).toIndex as number | undefined
+
+      const source = deck.slides.find((s) => s.id === fromSlideId)
+      const dest = deck.slides.find((s) => s.id === toSlideId)
+      if (!source || !dest) break
+      const moved = source.blocks.find((b) => b.id === blockId)
+      if (!moved) break
+
+      // Compute destination index within zone
+      const destZoneBlocks = dest.blocks.filter((b) => b.zone === toZone).sort((a, b) => a.order - b.order)
+      let toIndex = toIndexRaw ?? destZoneBlocks.length
+      if (toIndex < 0) toIndex = 0
+      if (toIndex > destZoneBlocks.length) toIndex = destZoneBlocks.length
+
+      // Optimistic store update
+      currentDeck.update((d) => {
+        if (!d) return d
+        const slides = d.slides.map((s) => {
+          if (s.id === fromSlideId) {
+            // Remove from source and compact source zone order
+            const remaining = s.blocks.filter((b) => b.id !== blockId)
+            const srcZone = moved.zone
+            const compacted = remaining.map((b) =>
+              b.zone === srcZone
+                ? { ...b, order: b.order - (b.order > moved.order ? 1 : 0) }
+                : b,
+            )
+            return { ...s, blocks: compacted }
+          }
+          return s
+        })
+
+        // Insert into destination
+        const afterRemoval = slides
+        const destSlide = afterRemoval.find((s) => s.id === toSlideId)!
+        const updatedBlocks = (() => {
+          const before = destSlide.blocks.filter((b) => b.zone === toZone && b.order < toIndex)
+          const after = destSlide.blocks.filter((b) => b.zone === toZone && b.order >= toIndex)
+          const others = destSlide.blocks.filter((b) => b.zone !== toZone)
+          const movedBlock = { ...moved, slideId: toSlideId, zone: toZone, order: toIndex }
+          const reafter = after.map((b, i) => ({ ...b, order: toIndex + 1 + i }))
+          return [...others, ...before, movedBlock, ...reafter]
+        })()
+        const newSlides = afterRemoval.map((s) => (s.id === toSlideId ? { ...s, blocks: updatedBlocks } : s))
+        return { ...d, slides: newSlides }
+      })
+
+      // Persist move atomically via API
+      await apiCall(`/api/decks/${deck.id}/blocks/${blockId}/move`, 'POST', {
+        toSlideId,
+        toZone,
+        toIndex,
+      })
+
+      lastAgentSlideId.set(toSlideId)
+      logAction('AI: moved module to another slide')
+
+      // Record undo/redo entry
+      history.pushMutation(
+        mutation,
+        { action: 'moveBlockToSlide', payload: { fromSlideId: toSlideId, toSlideId: fromSlideId, blockId, toZone: moved.zone, toIndex: moved.order } }
+      )
       break
     }
 
@@ -413,6 +483,7 @@ export async function applyMutation(mutation: Record<string, unknown>): Promise<
     case 'applyTemplate': {
       const templateId = payload.templateId as string
       const slideId = payload.slideId as string | undefined
+      const resolvedSlideId = slideId ? (resolveSlideRef(slideId) || slideId) : undefined
 
       // Fetch template details
       const tmplData = await apiCall('/api/templates', 'GET')
@@ -422,21 +493,21 @@ export async function applyMutation(mutation: Record<string, unknown>): Promise<
         break
       }
 
-      if (slideId) {
+      if (resolvedSlideId) {
         // Replace slide content with template
-        const slide = deck.slides.find((s) => s.id === slideId)
+        const slide = deck.slides.find((s) => s.id === resolvedSlideId)
         if (slide) {
           // Snapshot old state for undo
           const oldLayout = slide.layout
           const oldBlocks = slide.blocks.map((b) => ({ type: b.type, zone: b.zone, data: { ...b.data }, stepOrder: b.stepOrder }))
 
           for (const block of slide.blocks) {
-            await apiCall(`/api/decks/${deck.id}/slides/${slideId}/blocks/${block.id}`, 'DELETE')
+            await apiCall(`/api/decks/${deck.id}/slides/${resolvedSlideId}/blocks/${block.id}`, 'DELETE')
           }
-          await apiCall(`/api/decks/${deck.id}/slides/${slideId}`, 'PATCH', { layout: template.layout })
+          await apiCall(`/api/decks/${deck.id}/slides/${resolvedSlideId}`, 'PATCH', { layout: template.layout })
           const newBlocks = []
           for (const mod of template.modules) {
-            const result = await apiCall(`/api/decks/${deck.id}/slides/${slideId}/blocks`, 'POST', {
+            const result = await apiCall(`/api/decks/${deck.id}/slides/${resolvedSlideId}/blocks`, 'POST', {
               type: mod.type,
               zone: mod.zone,
               data: mod.data || {},
@@ -444,7 +515,7 @@ export async function applyMutation(mutation: Record<string, unknown>): Promise<
             })
             if (result?.block) newBlocks.push(result.block)
           }
-          updateSlideInDeck(slideId, (s) => ({
+          updateSlideInDeck(resolvedSlideId, (s) => ({
             ...s,
             layout: template.layout,
             blocks: newBlocks,
@@ -453,7 +524,7 @@ export async function applyMutation(mutation: Record<string, unknown>): Promise<
           // Undo: restore old layout and blocks
           history.pushMutation(
             { action: 'applyTemplate', payload },
-            { action: '_restoreSlide', payload: { slideId, layout: oldLayout, modules: oldBlocks } }
+            { action: '_restoreSlide', payload: { slideId: resolvedSlideId, layout: oldLayout, modules: oldBlocks } }
           )
         }
       } else {
@@ -486,7 +557,7 @@ export async function applyMutation(mutation: Record<string, unknown>): Promise<
       // Resolve slideId: use provided ID if it matches a real slide, otherwise fall back to active slide.
       // This handles the case where AI emits addSlide + searchImage in the same response —
       // addSlide sets activeSlideId, so searchImage can find the new slide even with a placeholder ID.
-      let slideId = payload.slideId as string
+      let slideId = (resolveSlideRef(payload.slideId as string) || (payload.slideId as string))
       const slideExists = slideId && deck.slides.some((s) => s.id === slideId)
       if (!slideExists) {
         slideId = get(activeSlideId) ?? ''
@@ -558,6 +629,44 @@ export async function applyMutation(mutation: Record<string, unknown>): Promise<
     default:
       console.warn('Unhandled mutation action:', mutation.action)
   }
+}
+
+/** Resolve flexible slide references to concrete IDs.
+ * Supports:
+ *  - "active" → current active slide id
+ *  - "index:N" (1-based) → slide at position N
+ *  - "heading:<text>" → first slide whose heading module text matches (case-insensitive)
+ */
+function resolveSlideRef(ref?: string): string | null {
+  if (!ref || typeof ref !== 'string') return null
+  const deck = get(currentDeck)
+  if (!deck) return null
+
+  if (ref === 'active') {
+    const id = get(activeSlideId)
+    return id ?? null
+  }
+
+  if (ref.startsWith('index:')) {
+    const num = parseInt(ref.slice(6), 10)
+    if (!isNaN(num) && num >= 1 && num <= deck.slides.length) {
+      const s = deck.slides[num - 1]
+      return s?.id ?? null
+    }
+  }
+
+  if (ref.toLowerCase().startsWith('heading:')) {
+    const target = ref.slice(8).trim().toLowerCase()
+    for (const s of deck.slides) {
+      const h = (s.blocks as any[])?.find((b: any) => b.type === 'heading')
+      const text = String((h?.data as any)?.text ?? '').toLowerCase().trim()
+      if (text && text === target) return s.id
+    }
+  }
+
+  // Already a concrete id? Ensure it exists.
+  if (deck.slides.some((s) => s.id === ref)) return ref
+  return null
 }
 
 /** Apply a mutation without recording history (used for undo/redo) */

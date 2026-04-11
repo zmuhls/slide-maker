@@ -46,6 +46,8 @@
   } = $props()
 
   let items = $state<Module[]>([])
+  let zoneEl: HTMLDivElement | undefined = $state()
+  let isOverflowing = $state(false)
   let showPicker = $state(false)
   let pickerX = $state(0)
   let pickerY = $state(0)
@@ -139,6 +141,20 @@
     return () => window.removeEventListener('keydown', onKey)
   })
 
+  // Detect when zone content overflows its parent to hide the add-module button
+  $effect(() => {
+    if (!zoneEl) return
+    function check() {
+      const parent = zoneEl!.parentElement
+      if (!parent) return
+      isOverflowing = zoneEl!.scrollHeight > parent.clientHeight
+    }
+    check()
+    const ro = new ResizeObserver(check)
+    ro.observe(zoneEl)
+    return () => ro.disconnect()
+  })
+
   function transformDragPreview(el: HTMLElement) {
     el.style.opacity = '0.9'
     el.style.boxShadow = '0 8px 32px rgba(0,0,0,0.3)'
@@ -146,7 +162,7 @@
   }
 </script>
 
-<div class="zone-drop" class:editable aria-label="{zone} zone">
+<div class="zone-drop" class:editable aria-label="{zone} zone" bind:this={zoneEl}>
   <!-- svelte-ignore a11y_no_static_element_interactions -->
   <div
     class="zone-drop-list"
@@ -181,7 +197,7 @@
       </div>
     {/each}
   </div>
-  {#if editable && deckId && slideId}
+  {#if editable && deckId && slideId && !isOverflowing}
     <div class="add-module-row">
       <button class="add-module-btn" class:empty-add={items.length === 0} onclick={(e) => { lastTrigger = e.currentTarget as HTMLElement; togglePicker(e) }} aria-haspopup="dialog" aria-expanded={showPicker}>+ Module</button>
     </div>

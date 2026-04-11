@@ -107,7 +107,7 @@ Modules flow vertically within zones. No absolute x/y positioning.
 - Each module has a `zone` field
 - Modules reorder via drag-and-drop (svelte-dnd-action on canvas, grip handle at top-left)
 - Cross-zone drops supported in `layout-split` (content <-> stage). Scoped per-slide via `type: canvas-zone-${slideId}`
-- Modules resize via corner drag (bottom-right, pointer events with setPointerCapture) — image and artifact modules persist dimensions via `applyMutation` (supports undo/redo). Shift-drag locks aspect ratio. Other modules scale visually via CSS `transform: scale()` (session-local)
+- Modules resize via corner drag (bottom-left and bottom-right handles, pointer events with setPointerCapture) — image and artifact modules persist dimensions via `applyMutation` (supports undo/redo). Shift-drag locks aspect ratio. Other modules scale visually via CSS `transform: scale()` (session-local)
 
 ### Canvas Rendering (Two Modes)
 The canvas has two modes (`CanvasMode = 'edit' | 'view'`):
@@ -118,7 +118,7 @@ The canvas has two modes (`CanvasMode = 'edit' | 'view'`):
 ### Canvas Editing (Edit Mode)
 - **Format toolbar** (fixed above slide): heading levels (Normal/H1-H4), font size, bold, italic, link, bullet list, ordered list, align left/center/right
 - **Drag handle** (top-left grip `⠿`): drag to reorder within zone or across zones (layout-split)
-- **Corner resize** (bottom-right handle): drag to resize module. Image/artifact persist dimensions; others scale via `transform: scale()`. Shift-drag locks aspect ratio
+- **Corner resize** (bottom-left and bottom-right handles): drag to resize module. Image/artifact persist dimensions; others scale via `transform: scale()`. Shift-drag locks aspect ratio
 - **✕ button**: delete module (double-click to confirm)
 - **Step order dropdown**: set progressive reveal order (1-5) per module
 - **+ Module button**: opens module picker overlay per zone (fixed position, not constrained by slide frame)
@@ -350,7 +350,7 @@ Tests import directly from `packages/shared/src/` and `apps/web/src/lib/utils/`.
 - Step reveals render in both inline preview (via `slide-html.ts` `wrapStep()`) and full deck preview (via export `stepAttrs()`). The inline preview CSS overrides `step-hidden` to `opacity: 1` so all steps are visible; the full deck preview uses navigation JS to reveal steps on click/arrow.
 - Export doesn't include speaker notes panel yet.
 - No real-time collaborative editing — uses pessimistic locking (5-min TTL with heartbeat).
-- Font size in format toolbar applies to entire editor DOM, not per-selection (needs TipTap TextStyle extension).
+- Font size in format toolbar uses `TextStyleKit` (`@tiptap/extension-text-style`) for per-selection sizing via `setFontSize()`/`unsetFontSize()` chains.
 - `adapter-auto` warning on build — could switch to `adapter-node` for production.
 - Email verification (SMTP) not configured on staging — admin must manually approve users.
 - `.env` symlink (`apps/api/.env -> ../../.env`) must exist or the API won't load any API keys. If chat shows "No models available", recreate the symlink and restart `pnpm dev`.

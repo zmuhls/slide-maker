@@ -69,10 +69,10 @@
   }
   .heading-preview.editable {
     cursor: text;
-    border-radius: var(--radius-sm, 4px);
-    padding-inline: 12px;
     background: transparent;
     border: none;
+    padding: 0;
+    margin: 0;
     color: inherit;
     font: inherit;
     text-align: inherit;

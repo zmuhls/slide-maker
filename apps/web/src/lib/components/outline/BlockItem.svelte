@@ -69,7 +69,7 @@
   // Derive a preview string from the data
   let preview = $derived.by(() => {
     const d = block.data
-    if (block.type === 'heading') return String(d.text || '').slice(0, 40) || 'Untitled'
+    if (block.type === 'heading') return stripMd(String(d.text || '')).slice(0, 40) || 'Untitled'
     if (block.type === 'label') return String(d.text || '').slice(0, 30) || 'Label'
     if (block.type === 'text') return stripMd(String(d.markdown || d.text || d.html || '')).slice(0, 40) || 'Empty text'
     if (block.type === 'image') return String(d.alt || d.src || '').slice(0, 30) || 'Image'
@@ -168,14 +168,6 @@
             <option value={color}>{color}</option>
           {/each}
         </select>
-      {:else if block.type === 'text'}
-        <textarea
-          class="field-textarea"
-          value={stripMd(String(block.data.html || block.data.markdown || block.data.text || ''))}
-          placeholder="Text content"
-          oninput={(e) => handleTextInput('markdown', e)}
-          rows="3"
-        ></textarea>
       {:else if block.type === 'image'}
         <input
           class="field-input"
@@ -247,26 +239,20 @@
     padding: 2px 0 4px 14px;
   }
 
-  .field-input,
-  .field-textarea {
+  .field-input {
     width: 100%;
     padding: 3px 6px;
     font-size: 12px;
     border: 1px solid var(--color-border, #e5e7eb);
     border-radius: 3px;
-    background: var(--color-bg);
+    background: var(--color-bg-secondary);
+    color: var(--color-text);
     outline: none;
     font-family: inherit;
     box-sizing: border-box;
   }
-  .field-input:focus,
-  .field-textarea:focus {
+  .field-input:focus {
     border-color: var(--color-border-focus);
-  }
-
-  .field-textarea {
-    resize: vertical;
-    min-height: 40px;
   }
 
   .field-select {
@@ -274,7 +260,8 @@
     font-size: 12px;
     border: 1px solid var(--color-border, #e5e7eb);
     border-radius: 3px;
-    background: var(--color-bg);
+    background: var(--color-bg-secondary);
+    color: var(--color-text);
     outline: none;
   }
 
