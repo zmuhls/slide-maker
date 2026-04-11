@@ -145,15 +145,12 @@
 
   function handleSrcdocLoad() {
     clearRenderTimer()
-    const latest = get(renderDiagnostics)[moduleId]
-    if (!latest || latest.status === 'loading') {
-      markModuleRenderStatus({
-        moduleId,
-        slideId,
-        surface: 'edit',
-        status: 'ready',
-      })
-    }
+    markModuleRenderStatus({
+      moduleId,
+      slideId,
+      surface: 'edit',
+      status: 'ready',
+    })
   }
 
   function handleIframeLoad() {
@@ -253,13 +250,17 @@
     return clearResizeObserver
   })
 
+  // Only restart render tracking when the actual iframe content changes, not on
+  // every data-prop update (e.g. resize that doesn't alter the rendered source).
+  // startRenderTracking() already clears any pending timer internally, and
+  // onDestroy handles component cleanup, so no effect cleanup needed here.
+  let lastTrackedSource = ''
   $effect(() => {
-    void srcdocContent
-    void iframeSrc
-    void useSrcdoc
-    void hasRenderableSource
-    startRenderTracking()
-    return clearRenderTimer
+    const key = useSrcdoc ? srcdocContent : iframeSrc
+    if (key !== lastTrackedSource) {
+      lastTrackedSource = key
+      startRenderTracking()
+    }
   })
 
   $effect(() => {
