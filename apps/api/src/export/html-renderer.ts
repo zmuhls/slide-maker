@@ -478,6 +478,7 @@ export function renderDeckHtml(
   const text = isDarkBg ? '#f0f0f0' : '#1a1a2e'
   const textMuted = isDarkBg ? 'rgba(240,240,240,0.65)' : 'rgba(26,26,46,0.65)'
   const primaryText = isDarkPrimary ? '#ffffff' : '#1a1a2e'
+  const primaryTextMuted = isDarkPrimary ? 'rgba(255,255,255,0.85)' : 'rgba(26,26,46,0.7)'
   const cardBg = isDarkBg ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)'
   const border = isDarkBg ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.08)'
   const splitBg = isDarkBg ? '#172a45' : '#e8eef6'
@@ -490,6 +491,7 @@ export function renderDeckHtml(
       --theme-text-muted: ${textMuted};
       --theme-primary: ${primary};
       --theme-primary-text: ${primaryText};
+      --theme-primary-text-muted: ${primaryTextMuted};
       --theme-secondary: ${secondary};
       --theme-accent: ${accent};
       --theme-heading-font: '${headingFont}';
@@ -503,7 +505,15 @@ export function renderDeckHtml(
     }
     html, body { background: ${bg}; color: ${text}; font-family: '${bodyFont}', sans-serif; }
     h1, h2, h3, h4 { font-family: '${headingFont}', sans-serif; }
-    .title-slide, .layout-divider, .closing-slide { background: ${primary}; color: ${primaryText}; }
+    .title-slide, .layout-divider, .closing-slide {
+      background: ${primary}; color: ${primaryText};
+      --theme-text: ${primaryText};
+      --theme-text-muted: ${primaryTextMuted};
+      --theme-card-bg: rgba(255,255,255,0.06);
+      --theme-border: rgba(255,255,255,0.12);
+      --text-muted: ${primaryTextMuted};
+      --text-primary: ${primaryText};
+    }
     .card { background: ${cardBg}; border-color: ${border}; }
     .card-cyan { border-left-color: ${accent}; }
     .label-cyan { color: ${accent}; }

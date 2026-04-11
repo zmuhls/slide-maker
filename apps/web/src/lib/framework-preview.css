@@ -57,6 +57,11 @@
 .slide-frame .slide[data-layout="closing-slide"] {
   background: var(--theme-primary, #1e3a5f) !important;
   color: var(--theme-primary-text, #ffffff) !important;
+  /* Remap theme vars so ALL child modules get primary-bg-aware colors */
+  --theme-text: var(--theme-primary-text, #ffffff);
+  --theme-text-muted: var(--theme-primary-text-muted, rgba(255,255,255,0.85));
+  --theme-card-bg: rgba(255,255,255,0.06);
+  --theme-border: rgba(255,255,255,0.12);
 }
 
 /* Headings/text inside primary-bg slides use primary-text color */
@@ -97,6 +102,15 @@
 .slide-frame .slide[data-layout="closing-slide"] .label {
   background: rgba(255,255,255,0.15) !important;
   color: var(--theme-primary-text, #ffffff) !important;
+}
+
+/* Stream-list on primary-bg slides */
+.slide-frame .slide[data-layout="title-slide"] .stream-list li,
+.slide-frame .slide[data-layout="layout-divider"] .stream-list li,
+.slide-frame .slide[data-layout="closing-slide"] .stream-list li {
+  color: var(--theme-primary-text-muted, rgba(255,255,255,0.85)) !important;
+  background: rgba(255,255,255,0.06) !important;
+  border-left-color: var(--theme-primary-text, rgba(255,255,255,0.5)) !important;
 }
 
 /* ── Split layout: stage gets subtle treatment ───────────────────── */
