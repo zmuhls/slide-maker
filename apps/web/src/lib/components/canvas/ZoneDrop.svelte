@@ -234,6 +234,12 @@
     min-height: 2.5rem;
   }
 
+  /* Prevent native browser image drag from hijacking svelte-dnd-action gestures */
+  .zone-drop-list :global(img) {
+    -webkit-user-drag: none;
+    user-drag: none;
+  }
+
   .empty-hint {
     display: flex;
     align-items: center;

@@ -145,24 +145,55 @@ export async function applyMutation(mutation: Record<string, unknown>): Promise<
         lastAgentSlideId.set(slide.id)
         logAction(`AI: added slide (${(payload.layout as string) || 'layout-split'})`)
 
-        // Track reverse mutation
-        history.pushMutation(mutation, {
-          action: 'removeSlide',
-          payload: { slideId: slide.id },
-        })
+        // Track reverse mutation (use resolved IDs so redo works)
+        history.pushMutation(
+          { action: 'addSlide', payload: { layout: payload.layout || 'layout-split', splitRatio: payload.splitRatio, modules: moduleDefs, insertAfter: payload.insertAfter } },
+          { action: 'removeSlide', payload: { slideId: slide.id } },
+        )
       }
       break
     }
 
     case 'removeSlide': {
       const slideId = (resolveSlideRef(payload.slideId as string) || (payload.slideId as string))
+
+      // Snapshot slide for undo before deleting
+      const removedSlide = deck.slides.find((s) => s.id === slideId)
+      const slideIndex = deck.slides.indexOf(removedSlide!)
+      const prevSlideId = slideIndex > 0 ? deck.slides[slideIndex - 1]?.id : undefined
+
       await apiCall(`/api/decks/${deck.id}/slides/${slideId}`, 'DELETE')
       removeSlideFromDeck(slideId)
+
+      if (removedSlide) {
+        const snapshot = {
+          layout: removedSlide.layout,
+          splitRatio: removedSlide.splitRatio,
+          modules: removedSlide.blocks.map((b) => ({
+            type: b.type, zone: b.zone,
+            data: { ...b.data },
+            stepOrder: b.stepOrder ?? null,
+          })),
+          insertAfter: prevSlideId,
+        }
+        history.pushMutation(
+          { action: 'removeSlide', payload: { slideId } },
+          { action: 'addSlide', payload: snapshot },
+        )
+      }
       break
     }
 
     case 'updateSlide': {
       const slideId = (resolveSlideRef(payload.slideId as string) || (payload.slideId as string))
+
+      // Capture old values for undo
+      const oldSlide = deck.slides.find((s) => s.id === slideId)
+      const oldValues: Record<string, unknown> = {}
+      if (payload.notes !== undefined) oldValues.notes = (oldSlide as any)?.notes ?? null
+      if (payload.splitRatio !== undefined) oldValues.splitRatio = oldSlide?.splitRatio
+      if (payload.layout !== undefined) oldValues.layout = oldSlide?.layout
+
       const updates: Record<string, unknown> = {}
       if (payload.notes !== undefined) updates.notes = payload.notes
       if (payload.splitRatio !== undefined) updates.splitRatio = payload.splitRatio
@@ -174,6 +205,11 @@ export async function applyMutation(mutation: Record<string, unknown>): Promise<
         ...(payload.splitRatio !== undefined ? { splitRatio: payload.splitRatio as string } : {}),
         ...(payload.layout !== undefined ? { layout: payload.layout as string } : {}),
       }))
+
+      history.pushMutation(
+        { action: 'updateSlide', payload: { slideId, ...updates } },
+        { action: 'updateSlide', payload: { slideId, ...oldValues } },
+      )
       break
     }
 
@@ -200,10 +236,10 @@ export async function applyMutation(mutation: Record<string, unknown>): Promise<
         lastAgentSlideId.set(slideId)
         logAction(`AI: added ${blockDef.type} module`)
 
-        history.pushMutation(mutation, {
-          action: 'removeBlock',
-          payload: { slideId, blockId: result.block.id },
-        })
+        history.pushMutation(
+          { action: 'addBlock', payload: { slideId, block: { type: blockDef.type, zone: blockDef.zone || 'content', data: blockDef.data || {}, stepOrder: blockDef.stepOrder } } },
+          { action: 'removeBlock', payload: { slideId, blockId: result.block.id } },
+        )
       }
       break
     }
@@ -262,10 +298,10 @@ export async function applyMutation(mutation: Record<string, unknown>): Promise<
       lastAgentSlideId.set(slideId)
       logAction(`AI: updated ${oldBlock?.type || 'module'}`)
 
-      history.pushMutation(mutation, {
-        action: 'updateBlock',
-        payload: { slideId, blockId, data: oldData },
-      })
+      history.pushMutation(
+        { action: 'updateBlock', payload: { slideId, blockId, data: newData } },
+        { action: 'updateBlock', payload: { slideId, blockId, data: oldData } },
+      )
       break
     }
 
@@ -285,10 +321,10 @@ export async function applyMutation(mutation: Record<string, unknown>): Promise<
         blocks: s.blocks.map((b) => (b.id === blockId ? { ...b, stepOrder: newStep } : b)),
       }))
 
-      history.pushMutation(mutation, {
-        action: 'updateBlockStep',
-        payload: { slideId, blockId, stepOrder: prevStep },
-      })
+      history.pushMutation(
+        { action: 'updateBlockStep', payload: { slideId, blockId, stepOrder: newStep } },
+        { action: 'updateBlockStep', payload: { slideId, blockId, stepOrder: prevStep } },
+      )
       break
     }
 
@@ -317,11 +353,19 @@ export async function applyMutation(mutation: Record<string, unknown>): Promise<
 
     case 'reorderSlides': {
       const order = payload.order as string[]
+      const prevOrder = deck.slides
+        .slice()
+        .sort((a, b) => a.order - b.order)
+        .map((s) => s.id)
       await apiCall(`/api/decks/${deck.id}/slides/reorder`, 'POST', { order })
       currentDeck.update((d) => {
         if (!d) return d
         return { ...d, slides: reorderSlidesTransform(d.slides, order) }
       })
+      history.pushMutation(
+        { action: 'reorderSlides', payload: { order } },
+        { action: 'reorderSlides', payload: { order: prevOrder } },
+      )
       break
     }
 
@@ -351,10 +395,10 @@ export async function applyMutation(mutation: Record<string, unknown>): Promise<
       // Batch persist — single request, fire-and-forget
       apiCall(`/api/decks/${deck.id}/slides/${slideId}/blocks/reorder`, 'POST', { order })
 
-      history.pushMutation(mutation, {
-        action: 'reorderBlocks',
-        payload: { slideId, zone, order: prevOrder },
-      })
+      history.pushMutation(
+        { action: 'reorderBlocks', payload: { slideId, zone, order } },
+        { action: 'reorderBlocks', payload: { slideId, zone, order: prevOrder } },
+      )
       break
     }
 
@@ -422,8 +466,8 @@ export async function applyMutation(mutation: Record<string, unknown>): Promise<
 
       // Record undo/redo entry
       history.pushMutation(
-        mutation,
-        { action: 'moveBlockToSlide', payload: { fromSlideId: toSlideId, toSlideId: fromSlideId, blockId, toZone: moved.zone, toIndex: moved.order } }
+        { action: 'moveBlockToSlide', payload: { fromSlideId, toSlideId, blockId, toZone, toIndex } },
+        { action: 'moveBlockToSlide', payload: { fromSlideId: toSlideId, toSlideId: fromSlideId, blockId, toZone: moved.zone, toIndex: moved.order } },
       )
       break
     }
@@ -473,10 +517,10 @@ export async function applyMutation(mutation: Record<string, unknown>): Promise<
         apiCall(`/api/decks/${deck.id}/slides/${slideId}/blocks/reorder`, 'POST', { order: sourceOrder })
       }
 
-      history.pushMutation(mutation, {
-        action: 'moveBlockToZone',
-        payload: { slideId, blockId, fromZone: toZone, toZone: fromZone, order: prevOrder },
-      })
+      history.pushMutation(
+        { action: 'moveBlockToZone', payload: { slideId, blockId, fromZone, toZone, order } },
+        { action: 'moveBlockToZone', payload: { slideId, blockId, fromZone: toZone, toZone: fromZone, order: prevOrder } },
+      )
       break
     }
 
@@ -523,7 +567,7 @@ export async function applyMutation(mutation: Record<string, unknown>): Promise<
 
           // Undo: restore old layout and blocks
           history.pushMutation(
-            { action: 'applyTemplate', payload },
+            { action: 'applyTemplate', payload: { ...payload, slideId: resolvedSlideId } },
             { action: '_restoreSlide', payload: { slideId: resolvedSlideId, layout: oldLayout, modules: oldBlocks } }
           )
         }
@@ -820,6 +864,155 @@ async function applyMutationSilent(mutation: Record<string, unknown>): Promise<v
         .sort((a, b) => a.order - b.order)
       for (let i = 0; i < sourceBlocks.length; i++) {
         await apiCall(`/api/decks/${deck.id}/slides/${slideId}/blocks/${sourceBlocks[i].id}`, 'PATCH', { order: i })
+      }
+      break
+    }
+    case 'addBlock': {
+      const slideId = payload.slideId as string
+      const blockDef = payload.block as { type: string; zone?: string; data: Record<string, unknown>; stepOrder?: number | null }
+      if (blockDef.type === 'artifact' && blockDef.data) {
+        await resolveArtifactSource(blockDef.data)
+      }
+      const result = await apiCall(`/api/decks/${deck.id}/slides/${slideId}/blocks`, 'POST', {
+        type: blockDef.type,
+        zone: blockDef.zone || 'content',
+        data: blockDef.data || {},
+        stepOrder: blockDef.stepOrder,
+      })
+      if (result?.block) {
+        updateSlideInDeck(slideId, (s) => ({
+          ...s,
+          blocks: [...s.blocks, result.block],
+        }))
+      }
+      break
+    }
+    case 'addSlide': {
+      const moduleDefs = (payload.modules as any[]) || []
+      for (const mod of moduleDefs) {
+        if (mod.type === 'artifact' && mod.data) {
+          await resolveArtifactSource(mod.data)
+        }
+      }
+      const result = await apiCall(`/api/decks/${deck.id}/slides`, 'POST', {
+        layout: (payload.layout as string) || 'layout-split',
+        splitRatio: payload.splitRatio,
+        modules: moduleDefs,
+        insertAfter: payload.insertAfter || undefined,
+      })
+      const newSlide = result?.slide ?? result
+      if (newSlide?.id) {
+        addSlideToDeck({ ...newSlide, blocks: newSlide.blocks || newSlide.modules || [] })
+        activeSlideId.set(newSlide.id)
+      }
+      break
+    }
+    case 'reorderSlides': {
+      const order = payload.order as string[]
+      await apiCall(`/api/decks/${deck.id}/slides/reorder`, 'POST', { order })
+      currentDeck.update((d) => {
+        if (!d) return d
+        return { ...d, slides: reorderSlidesTransform(d.slides, order) }
+      })
+      break
+    }
+    case 'updateSlide': {
+      const slideId = payload.slideId as string
+      const updates: Record<string, unknown> = {}
+      if (payload.notes !== undefined) updates.notes = payload.notes
+      if (payload.splitRatio !== undefined) updates.splitRatio = payload.splitRatio
+      if (payload.layout !== undefined) updates.layout = payload.layout
+      await apiCall(`/api/decks/${deck.id}/slides/${slideId}`, 'PATCH', updates)
+      updateSlideInDeck(slideId, (s) => ({
+        ...s,
+        ...(payload.notes !== undefined ? { notes: payload.notes as string | null } : {}),
+        ...(payload.splitRatio !== undefined ? { splitRatio: payload.splitRatio as string } : {}),
+        ...(payload.layout !== undefined ? { layout: payload.layout as string } : {}),
+      }))
+      break
+    }
+    case 'moveBlockToSlide': {
+      const fromSlideId = (payload as any).fromSlideId as string
+      const toSlideId = (payload as any).toSlideId as string
+      const blockId = (payload as any).blockId as string
+      const toZone = (payload as any).toZone as string
+      const toIndexRaw = (payload as any).toIndex as number | undefined
+
+      const source = deck.slides.find((s) => s.id === fromSlideId)
+      const dest = deck.slides.find((s) => s.id === toSlideId)
+      if (!source || !dest) break
+      const moved = source.blocks.find((b) => b.id === blockId)
+      if (!moved) break
+
+      const destZoneBlocks = dest.blocks.filter((b) => b.zone === toZone).sort((a, b) => a.order - b.order)
+      let toIndex = toIndexRaw ?? destZoneBlocks.length
+      if (toIndex < 0) toIndex = 0
+      if (toIndex > destZoneBlocks.length) toIndex = destZoneBlocks.length
+
+      currentDeck.update((d) => {
+        if (!d) return d
+        const slides = d.slides.map((s) => {
+          if (s.id === fromSlideId) {
+            const remaining = s.blocks.filter((b) => b.id !== blockId)
+            const srcZone = moved.zone
+            const compacted = remaining.map((b) =>
+              b.zone === srcZone ? { ...b, order: b.order - (b.order > moved.order ? 1 : 0) } : b,
+            )
+            return { ...s, blocks: compacted }
+          }
+          return s
+        })
+        const afterRemoval = slides
+        const destSlide = afterRemoval.find((s) => s.id === toSlideId)!
+        const updatedBlocks = (() => {
+          const before = destSlide.blocks.filter((b) => b.zone === toZone && b.order < toIndex)
+          const after = destSlide.blocks.filter((b) => b.zone === toZone && b.order >= toIndex)
+          const others = destSlide.blocks.filter((b) => b.zone !== toZone)
+          const movedBlock = { ...moved, slideId: toSlideId, zone: toZone, order: toIndex }
+          const reafter = after.map((b, i) => ({ ...b, order: toIndex + 1 + i }))
+          return [...others, ...before, movedBlock, ...reafter]
+        })()
+        const newSlides = afterRemoval.map((s) => (s.id === toSlideId ? { ...s, blocks: updatedBlocks } : s))
+        return { ...d, slides: newSlides }
+      })
+
+      await apiCall(`/api/decks/${deck.id}/blocks/${blockId}/move`, 'POST', {
+        toSlideId, toZone, toIndex,
+      })
+      break
+    }
+    case 'applyTemplate': {
+      // Redo path: re-apply template to slide
+      const templateId = payload.templateId as string
+      const slideId = payload.slideId as string
+      const tmplData = await apiCall('/api/templates', 'GET')
+      const template = (tmplData?.templates ?? []).find((t: any) => t.id === templateId)
+      if (!template) break
+      if (slideId) {
+        const slide = deck.slides.find((s) => s.id === slideId)
+        if (slide) {
+          for (const block of slide.blocks) {
+            await apiCall(`/api/decks/${deck.id}/slides/${slideId}/blocks/${block.id}`, 'DELETE')
+          }
+          await apiCall(`/api/decks/${deck.id}/slides/${slideId}`, 'PATCH', { layout: template.layout })
+          const redoBlocks: any[] = []
+          for (const mod of template.modules) {
+            const result = await apiCall(`/api/decks/${deck.id}/slides/${slideId}/blocks`, 'POST', {
+              type: mod.type, zone: mod.zone, data: mod.data || {}, stepOrder: mod.stepOrder,
+            })
+            if (result?.block) redoBlocks.push(result.block)
+          }
+          updateSlideInDeck(slideId, (s) => ({ ...s, layout: template.layout, blocks: redoBlocks }))
+        }
+      } else {
+        const result = await apiCall(`/api/decks/${deck.id}/slides`, 'POST', {
+          layout: template.layout, modules: template.modules,
+        })
+        const newSlide = result?.slide ?? result
+        if (newSlide?.id) {
+          addSlideToDeck({ ...newSlide, blocks: newSlide.blocks || newSlide.modules || [] })
+          activeSlideId.set(newSlide.id)
+        }
       }
       break
     }

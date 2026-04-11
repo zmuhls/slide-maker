@@ -14,7 +14,7 @@
 
 <figure class="image-block">
   {#if src}
-    <img {src} {alt} style:width={imgWidth} style:max-height={imgHeight ?? '60vh'} />
+    <img {src} {alt} draggable="false" style:width={imgWidth} style:max-height={imgHeight ?? '60vh'} />
   {:else}
     <div class="placeholder">No image source</div>
   {/if}
