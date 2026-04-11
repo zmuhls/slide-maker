@@ -39,7 +39,13 @@
 
 <div class="deck-card" role="link" tabindex="0" onclick={handleClick} onkeydown={(e) => (e.key === 'Enter' || e.key === ' ') && handleClick()}>
   <div class="card-preview">
-    <span class="slide-icon">&#9655;</span>
+    <iframe
+      src="{base}/thumbnail/{deck.id}"
+      title="Preview of {deck.name}"
+      class="thumbnail-iframe"
+      loading="lazy"
+      tabindex="-1"
+    ></iframe>
   </div>
   <div class="card-info">
     <h3 class="card-title">{deck.name}</h3>
@@ -93,15 +99,21 @@
   .card-preview {
     height: 120px;
     background: var(--color-bg-tertiary);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 2rem;
-    color: var(--color-text-muted);
+    overflow: hidden;
+    position: relative;
   }
 
-  .slide-icon {
-    opacity: 0.4;
+  .thumbnail-iframe {
+    width: 960px;
+    height: 540px;
+    border: none;
+    transform: scale(0.222);
+    transform-origin: top left;
+    pointer-events: none;
+    position: absolute;
+    top: 0;
+    left: 50%;
+    margin-left: -106px;
   }
 
   .card-info {

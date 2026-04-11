@@ -6,6 +6,7 @@ import { decks, deckAccess, slides, contentBlocks, themes } from '../db/schema.j
 import { authMiddleware } from '../middleware/auth.js'
 import { renderDeckHtml } from '../export/html-renderer.js'
 import { FRAMEWORK_CSS } from '../export/framework-css.js'
+import { FRAMEWORK_CSS_PREVIEW } from '@slide-maker/shared'
 import { resolveArtifactSources } from '../utils/resolve-artifacts.js'
 
 type AuthEnv = {
@@ -112,6 +113,90 @@ previewRouter.get('/:id/preview', async (c) => {
       'Content-Type': 'text/html; charset=utf-8',
       'Content-Security-Policy': "default-src 'self'; script-src 'unsafe-inline'; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https: http://localhost:*; frame-src 'self' blob: https://www.youtube.com https://player.vimeo.com https://www.loom.com; object-src 'none'; frame-ancestors 'none';",
       'X-Frame-Options': 'DENY',
+      'X-Content-Type-Options': 'nosniff',
+    },
+  })
+})
+
+// GET /:id/thumbnail — Render first slide as minimal HTML for iframe thumbnail
+previewRouter.get('/:id/thumbnail', async (c) => {
+  const user = c.get('user')
+  const deckId = c.req.param('id')
+
+  const access = await db
+    .select()
+    .from(deckAccess)
+    .where(and(eq(deckAccess.deckId, deckId), eq(deckAccess.userId, user.id)))
+    .get()
+
+  if (!access) {
+    return c.json({ error: 'Not found or no access' }, 404)
+  }
+
+  const deck = await db.select().from(decks).where(eq(decks.id, deckId)).get()
+  if (!deck) {
+    return c.json({ error: 'Deck not found' }, 404)
+  }
+
+  // Fetch only the first slide
+  const firstSlide = await db
+    .select()
+    .from(slides)
+    .where(eq(slides.deckId, deckId))
+    .orderBy(slides.order)
+    .limit(1)
+    .then((rows) => rows[0])
+
+  if (!firstSlide) {
+    return new Response(
+      `<!DOCTYPE html><html><head><style>body{margin:0;display:flex;align-items:center;justify-content:center;height:100vh;background:#f8f9fa;color:#9ca3af;font-family:system-ui;font-size:1.5rem}</style></head><body>Empty deck</body></html>`,
+      { headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'private, max-age=60' } }
+    )
+  }
+
+  const blocks = await db
+    .select()
+    .from(contentBlocks)
+    .where(eq(contentBlocks.slideId, firstSlide.id))
+    .orderBy(contentBlocks.order)
+
+  const slidesWithBlocks = [{
+    ...firstSlide,
+    modules: blocks.map((b) => ({
+      type: b.type,
+      zone: b.zone || 'content',
+      data: (typeof b.data === 'string' ? JSON.parse(b.data) : b.data) as Record<string, unknown>,
+      order: b.order,
+      stepOrder: b.stepOrder ?? null,
+    })),
+  }]
+
+  await resolveArtifactSources(slidesWithBlocks.flatMap(s => s.modules))
+
+  let theme = null
+  if (deck.themeId) {
+    theme = await db.select().from(themes).where(eq(themes.id, deck.themeId)).get() || null
+  }
+
+  const apiUrl = process.env.PUBLIC_API_URL || ''
+  const basePath = (() => {
+    try { return new URL(apiUrl).pathname.replace(/\/+$/, '') } catch { return '' }
+  })()
+  const htmlTemplate = renderDeckHtml(deck.name, slidesWithBlocks, theme)
+
+  let html = htmlTemplate.replace(
+    '<link rel="stylesheet" href="css/styles.css">',
+    `<style>${FRAMEWORK_CSS_PREVIEW}</style>`
+  )
+  if (basePath) {
+    html = html.replace(/src="\/api\//g, `src="${basePath}/api/`)
+  }
+
+  return new Response(html, {
+    headers: {
+      'Content-Type': 'text/html; charset=utf-8',
+      'Content-Security-Policy': "default-src 'self'; script-src 'unsafe-inline'; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https: http://localhost:*; frame-src 'self' blob: https://www.youtube.com https://player.vimeo.com https://www.loom.com; object-src 'none'; frame-ancestors 'self';",
+      'Cache-Control': 'private, max-age=60',
       'X-Content-Type-Options': 'nosniff',
     },
   })
