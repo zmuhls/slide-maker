@@ -188,7 +188,7 @@ chat.post('/', chatRateLimit, async (c) => {
       if (block.type !== 'artifact') continue
       const d = block.data as Record<string, unknown>
       const registryId = typeof d.registryId === 'string' ? d.registryId : ''
-      const name = String(d.artifactName || artifactNamesById.get(registryId) || d.alt || '').trim()
+      const name = String(d.artifactName || artifactNamesById.get(registryId) || (registryId && !registryId.startsWith('artifact-') ? artifactNamesById.get(`artifact-${registryId}`) : '') || d.alt || '').trim()
       if (!name) continue
       const existing = activeArtifactsMap.get(name.toLowerCase())
       if (existing) {

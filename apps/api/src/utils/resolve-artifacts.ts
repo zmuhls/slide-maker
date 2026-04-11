@@ -25,7 +25,7 @@ export async function resolveArtifactSources(modules: ModuleData[]): Promise<voi
   for (const mod of pending) {
     const registryId = typeof mod.data.registryId === 'string' ? mod.data.registryId : ''
     const name = typeof mod.data.artifactName === 'string' ? mod.data.artifactName.toLowerCase() : ''
-    const def = byId.get(registryId) ?? byName.get(name)
+    const def = byId.get(registryId) ?? (registryId && !registryId.startsWith('artifact-') ? byId.get(`artifact-${registryId}`) : undefined) ?? byName.get(name)
     if (!def?.source) continue
     const built = buildArtifactBlockData(
       def,

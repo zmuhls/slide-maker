@@ -81,7 +81,7 @@ function buildArtifactsSection(opts: BuildPromptOptions): string {
   // Tier 1: Index — always present, one line per artifact
   const index = artifacts.map((a) => {
     const params = a.paramCount ?? (a.config ? Object.keys(a.config).length : 0)
-    return `${a.id.replace('artifact-', '')} | ${a.name} | ${a.description} | ${params} params`
+    return `${a.id} | ${a.name} | ${a.description} | ${params} params`
   }).join('\n')
 
   let section = `## Available Artifacts (${artifacts.length})\n| ID | Name | Description | Params |\n|-----|------|-------------|--------|\n${index}\n`

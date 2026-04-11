@@ -59,7 +59,10 @@ async function normalizeBlockData(
 
   const registryId = isNonEmptyString(normalized.registryId) ? normalized.registryId : null
   if (registryId) {
-    const artifact = await db.select().from(artifacts).where(eq(artifacts.id, registryId)).get()
+    let artifact = await db.select().from(artifacts).where(eq(artifacts.id, registryId)).get()
+    if (!artifact && !registryId.startsWith('artifact-')) {
+      artifact = await db.select().from(artifacts).where(eq(artifacts.id, `artifact-${registryId}`)).get()
+    }
     if (!artifact) {
       throw new Error(`artifact-not-found:${registryId}`)
     }
