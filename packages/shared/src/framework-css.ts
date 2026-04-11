@@ -47,7 +47,7 @@ h1, h2, h3, h4 { font-family: 'Outfit', sans-serif; line-height: 1.2; margin-bot
 h1 { font-size: clamp(2.5rem, 5vw, 4.5rem); font-weight: 600; }
 h2 { font-size: clamp(2rem, 3.8vw, 3.2rem); font-weight: 500; }
 h3 { font-size: clamp(1.5rem, 2.8vw, 2.2rem); font-weight: 500; }
-h4 { font-size: clamp(1.2rem, 2vw, 1.6rem); font-weight: 500; }
+h4 { font-size: clamp(1.2rem, 2vw, 1.6rem); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
 .text-body { font-size: clamp(1rem, 1.8vw, 1.5rem); line-height: 1.55; color: var(--text-muted); }
 code, pre { font-family: 'JetBrains Mono', monospace; }
 pre { background: rgba(0,0,0,0.3); border: 1px solid var(--border-subtle); border-radius: 8px; padding: 20px 24px; overflow-x: auto; font-size: 1.05rem; line-height: 1.5; }
@@ -110,27 +110,29 @@ pre { background: rgba(0,0,0,0.3); border: 1px solid var(--border-subtle); borde
 }
 .card-cyan { border-left: 3px solid var(--accent-cyan); }
 .card-navy { border-left: 3px solid var(--accent-navy); }
-.card h3 { font-size: 1.3rem; margin-bottom: 8px; }
+.card h3 { font-size: 1.3rem; font-weight: 650; margin-bottom: 8px; display: block; }
 .card p { font-size: 1rem; color: var(--text-muted); line-height: 1.45; }
 
 /* ── Module: Label ───────────────────────────────────────────────── */
 .label {
-  display: inline-block; padding: 0; background: none; border-radius: 0;
+  display: inline-block; padding: 4px 10px; background: none; border-radius: 4px;
   font-size: 0.85rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em;
+  line-height: 1.5;
 }
-.label-cyan { color: var(--accent-cyan); }
-.label-blue { color: var(--accent-blue); }
+.label-cyan { color: #79c0ff; }
+.label-blue { color: #3B73E6; }
 .label-navy { color: #7b9fd4; }
-.label-red { color: var(--accent-red); }
-.label-amber { color: var(--accent-amber); }
-.label-green { color: var(--accent-green); }
+.label-red { color: #ff6b6b; }
+.label-amber { color: #d4a017; }
+.label-green { color: #2d8a4e; }
 
 /* ── Module: Tip Box ─────────────────────────────────────────────── */
 .tip-box {
   background: rgba(100,181,246,0.05); border: 1px solid rgba(100,181,246,0.12);
   border-radius: 8px; padding: 20px 24px; font-size: 1rem; line-height: 1.6;
 }
-.tip-box strong { display: block; margin-bottom: 6px; color: var(--accent-cyan); font-weight: 500; }
+.tip-box strong { display: block; margin-bottom: 6px; color: var(--accent-cyan); font-weight: 500; font-size: 1rem; }
+.tip-box-content { font-size: 1rem; line-height: 1.6; }
 
 /* ── Module: Prompt Block ────────────────────────────────────────── */
 .prompt-block {
@@ -171,7 +173,8 @@ pre { background: rgba(0,0,0,0.3); border: 1px solid var(--border-subtle); borde
   flex: 1; background: rgba(255,255,255,0.02); border: 1px solid var(--border-subtle);
   border-radius: 10px; padding: 24px;
 }
-.comparison-panel h3 { font-size: 1.3rem; margin-bottom: 8px; }
+.comparison-panel h3 { font-size: 1.3rem; font-weight: 600; margin-bottom: 8px; }
+.panel-content { font-size: 1rem; line-height: 1.45; color: var(--text-muted); }
 .comparison-panel p { font-size: 1rem; color: var(--text-muted); line-height: 1.45; }
 
 /* ── Module: Card Grid ───────────────────────────────────────────── */
@@ -182,8 +185,19 @@ pre { background: rgba(0,0,0,0.3); border: 1px solid var(--border-subtle); borde
 .flow-node {
   background: rgba(255,255,255,0.03); border: 1px solid var(--border-subtle);
   border-radius: 8px; padding: 14px 22px; font-size: 1rem; text-align: center;
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
 }
+.flow-icon {
+  width: 1.8rem; height: 1.8rem; border-radius: 50%;
+  background: var(--accent-cyan); color: white;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; font-weight: 700; font-size: 0.7rem;
+}
+.flow-body { min-width: 0; }
+.flow-label { font-weight: 600; font-size: 1rem; line-height: 1.2; }
+.flow-desc { font-size: 0.85rem; color: var(--text-muted); line-height: 1.4; }
 .flow-arrow { font-size: 1.2rem; color: var(--text-muted); }
+.flow-arrow::after { content: '→'; }
 
 /* ── Module: Stream List ─────────────────────────────────────────── */
 .stream-list { list-style: none; padding: 0; }

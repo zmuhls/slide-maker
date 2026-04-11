@@ -213,7 +213,7 @@ function renderModule(mod: Module, files?: ExportFile[], opts?: RenderOptions): 
       const title = d.title ? `<strong>${esc(String(d.title))}</strong>` : ''
       const raw = String(d.content || d.text || '')
       const body = renderFormattedContent(raw, sanitize)
-      return `<div class="tip-box"${step}>${title}${body}</div>`
+      return `<div class="tip-box"${step}>${title}<div class="tip-box-content">${body}</div></div>`
     }
 
     case 'prompt-block': {
@@ -265,7 +265,7 @@ function renderModule(mod: Module, files?: ExportFile[], opts?: RenderOptions): 
         const raw = String(p.body || p.content || '')
         const body = renderFormattedContent(raw, sanitize)
         const bodyHtml = containsHtmlMarkup(raw) ? body : `<p>${body}</p>`
-        html += `<div class="comparison-panel">${title}${bodyHtml}</div>`
+        html += `<div class="comparison-panel">${title}<div class="panel-content">${bodyHtml}</div></div>`
       }
       html += `</div>`
       return html
@@ -292,8 +292,12 @@ function renderModule(mod: Module, files?: ExportFile[], opts?: RenderOptions): 
       const nodes = Array.isArray(d.nodes) ? d.nodes : []
       let html = `<div class="flow"${step}>`
       nodes.forEach((node: unknown, i: number) => {
-        if (i > 0) html += `<div class="flow-arrow">→</div>`
-        html += `<div class="flow-node">${esc(String((node as Record<string, unknown>).label || node))}</div>`
+        if (i > 0) html += `<div class="flow-arrow"></div>`
+        const n = node as Record<string, unknown>
+        const icon = typeof n.icon === 'string' ? n.icon : String(i + 1)
+        const label = esc(String(n.label || node))
+        const desc = typeof n.description === 'string' ? `<div class="flow-desc">${esc(n.description)}</div>` : ''
+        html += `<div class="flow-node"><div class="flow-icon">${esc(icon)}</div><div class="flow-body"><div class="flow-label">${label}</div>${desc}</div></div>`
       })
       html += `</div>`
       return html

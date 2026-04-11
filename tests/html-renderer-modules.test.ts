@@ -98,8 +98,9 @@ describe('renderModule — per-type HTML output', () => {
       expect(html).toContain('class="tip-box"')
     })
 
-    it('renders content', () => {
+    it('wraps body in tip-box-content div', () => {
       const html = renderModule(mod('tip-box', { content: 'important info' }))
+      expect(html).toContain('tip-box-content')
       expect(html).toContain('important info')
     })
 
@@ -202,6 +203,13 @@ describe('renderModule — per-type HTML output', () => {
       expect(html).toContain('<h3>Right</h3>')
     })
 
+    it('wraps panel body in panel-content div', () => {
+      const panels = [{ title: 'A', content: 'panel body' }]
+      const html = renderModule(mod('comparison', { panels }))
+      expect(html).toContain('panel-content')
+      expect(html).toContain('panel body')
+    })
+
     it('falls back from body to content field', () => {
       const panels = [{ title: 'A', body: 'from body' }]
       const html = renderModule(mod('comparison', { panels }))
@@ -243,6 +251,30 @@ describe('renderModule — per-type HTML output', () => {
       expect((html.match(/flow-node/g) || []).length).toBe(2)
       expect(html).toContain('Start')
       expect(html).toContain('End')
+    })
+
+    it('renders icon/label/description structure matching canvas', () => {
+      const nodes = [{ label: 'Step', icon: '✓', description: 'Do the thing' }]
+      const html = renderModule(mod('flow', { nodes }))
+      expect(html).toContain('flow-icon')
+      expect(html).toContain('flow-label')
+      expect(html).toContain('flow-body')
+      expect(html).toContain('flow-desc')
+      expect(html).toContain('✓')
+      expect(html).toContain('Do the thing')
+    })
+
+    it('defaults icon to node number when not specified', () => {
+      const nodes = [{ label: 'First' }, { label: 'Second' }]
+      const html = renderModule(mod('flow', { nodes }))
+      expect(html).toContain('>1<')
+      expect(html).toContain('>2<')
+    })
+
+    it('omits flow-desc when no description', () => {
+      const html = renderModule(mod('flow', { nodes: [{ label: 'Only label' }] }))
+      expect(html).not.toContain('flow-desc')
+      expect(html).toContain('flow-label')
     })
 
     it('renders arrows between nodes', () => {

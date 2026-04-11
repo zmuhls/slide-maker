@@ -236,3 +236,136 @@ describe('module CSS rules in base', () => {
     expect(getProperty(rules[0], 'margin')).toBe('0 auto')
   })
 })
+
+// ── Module CSS Parity ────────────────────────────────
+
+describe('module CSS parity — every HTML renderer class has a framework CSS rule', () => {
+  /**
+   * All CSS classes emitted by the HTML renderer that must have
+   * a corresponding rule in FRAMEWORK_CSS_BASE.
+   */
+  const requiredClasses = [
+    // heading — uses h1-h4 element selectors (covered by typography rules)
+    // text
+    'text-body',
+    // card
+    'card', 'card-cyan', 'card-navy',
+    // label
+    'label', 'label-cyan', 'label-blue', 'label-navy', 'label-red', 'label-amber', 'label-green',
+    // tip-box
+    'tip-box', 'tip-box-content',
+    // prompt-block
+    'prompt-block', 'prompt-good', 'prompt-mid', 'prompt-bad',
+    // carousel
+    'carousel', 'carousel-track', 'carousel-item', 'carousel-dot', 'carousel-prev', 'carousel-next',
+    // comparison
+    'comparison', 'comparison-panel', 'panel-content',
+    // card-grid
+    'card-grid',
+    // flow
+    'flow', 'flow-node', 'flow-icon', 'flow-body', 'flow-label', 'flow-desc', 'flow-arrow',
+    // stream-list
+    'stream-list',
+    // image
+    // (uses figure/figcaption elements, not classes)
+    // artifact
+    'artifact-wrapper', 'artifact-native',
+    // video
+    'video-wrapper', 'video-frame', 'video-caption',
+    // step reveal
+    'step-hidden',
+  ]
+
+  for (const cls of requiredClasses) {
+    it(`"${cls}" has a CSS rule in FRAMEWORK_CSS_BASE or FRAMEWORK_CSS_EXPORT`, () => {
+      const inBase = FRAMEWORK_CSS_BASE.includes(`.${cls}`)
+      const inExport = FRAMEWORK_CSS_EXPORT.includes(`.${cls}`)
+      expect(inBase || inExport).toBe(true)
+    })
+  }
+})
+
+// ── Module-Specific Parity ───────────────────────────
+
+describe('label parity', () => {
+  it('has padding and border-radius matching canvas', () => {
+    const rules = findRules(FRAMEWORK_CSS_BASE, '.label')
+    expect(rules.length).toBeGreaterThan(0)
+    expect(getProperty(rules[0], 'padding')).toBe('4px 10px')
+    expect(getProperty(rules[0], 'border-radius')).toBe('4px')
+  })
+
+  it('has line-height matching canvas', () => {
+    const rules = findRules(FRAMEWORK_CSS_BASE, '.label')
+    expect(rules.length).toBeGreaterThan(0)
+    expect(getProperty(rules[0], 'line-height')).toBe('1.5')
+  })
+})
+
+describe('heading h4 parity', () => {
+  it('has uppercase text-transform', () => {
+    expect(FRAMEWORK_CSS_BASE).toMatch(/h4\s*\{[^}]*text-transform:\s*uppercase/)
+  })
+
+  it('has letter-spacing', () => {
+    expect(FRAMEWORK_CSS_BASE).toMatch(/h4\s*\{[^}]*letter-spacing:\s*0\.05em/)
+  })
+})
+
+describe('flow module parity', () => {
+  it('has flow-icon with circular badge styling', () => {
+    const rules = findRules(FRAMEWORK_CSS_BASE, '.flow-icon')
+    expect(rules.length).toBeGreaterThan(0)
+    expect(getProperty(rules[0], 'border-radius')).toBe('50%')
+    expect(hasProperty(rules[0], 'width')).toBe(true)
+    expect(hasProperty(rules[0], 'height')).toBe(true)
+  })
+
+  it('has flow-label with font-weight', () => {
+    const rules = findRules(FRAMEWORK_CSS_BASE, '.flow-label')
+    expect(rules.length).toBeGreaterThan(0)
+    expect(getProperty(rules[0], 'font-weight')).toBe('600')
+  })
+
+  it('has flow-desc with muted color', () => {
+    const rules = findRules(FRAMEWORK_CSS_BASE, '.flow-desc')
+    expect(rules.length).toBeGreaterThan(0)
+    expect(hasProperty(rules[0], 'color')).toBe(true)
+  })
+
+  it('flow-arrow uses ::after pseudo-element', () => {
+    expect(FRAMEWORK_CSS_BASE).toContain('.flow-arrow::after')
+  })
+})
+
+describe('tip-box parity', () => {
+  it('has tip-box-content with font-size and line-height', () => {
+    const rules = findRules(FRAMEWORK_CSS_BASE, '.tip-box-content')
+    expect(rules.length).toBeGreaterThan(0)
+    expect(hasProperty(rules[0], 'font-size')).toBe(true)
+    expect(hasProperty(rules[0], 'line-height')).toBe(true)
+  })
+})
+
+describe('comparison parity', () => {
+  it('has panel-content with color and line-height', () => {
+    const rules = findRules(FRAMEWORK_CSS_BASE, '.panel-content')
+    expect(rules.length).toBeGreaterThan(0)
+    expect(hasProperty(rules[0], 'color')).toBe(true)
+    expect(hasProperty(rules[0], 'line-height')).toBe(true)
+  })
+
+  it('comparison-panel h3 has font-weight 600', () => {
+    const rules = findRules(FRAMEWORK_CSS_BASE, '.comparison-panel h3')
+    expect(rules.length).toBeGreaterThan(0)
+    expect(getProperty(rules[0], 'font-weight')).toBe('600')
+  })
+})
+
+describe('card-grid parity', () => {
+  it('card h3 has font-weight 650', () => {
+    const rules = findRules(FRAMEWORK_CSS_BASE, '.card h3')
+    expect(rules.length).toBeGreaterThan(0)
+    expect(getProperty(rules[0], 'font-weight')).toBe('650')
+  })
+})
