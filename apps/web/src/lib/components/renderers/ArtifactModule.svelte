@@ -239,7 +239,8 @@
 
     const availableHeight = Math.max(120, zoneRect.height - (editable ? 32 : 16))
     const availableWidth = Math.max(1, wrapperRect.width)
-    const nextHeight = Math.floor(Math.min(availableWidth / ratio, availableHeight))
+    const preferred = nativeController?.getPreferredHeight?.(availableWidth) ?? null
+    const nextHeight = Math.floor(Math.min(preferred ?? (availableWidth / ratio), availableHeight))
     if (!Number.isFinite(nextHeight) || nextHeight <= 0) return
     computedHeight = nextHeight
   }

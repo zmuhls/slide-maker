@@ -484,6 +484,22 @@ export const createTimeline: ArtifactFactory = (root: HTMLElement, initialConfig
       if (tooltip) { tooltip.remove(); tooltip = null }
       root.removeChild(svg)
     },
+    getPreferredHeight(_width: number): number | null {
+      const events = config.events || []
+      const n = events.length
+      if (n === 0) return 150
+      const categories = new Set(events.map(e => e.category || 'default'))
+      const legendExtra = categories.size > 1 ? 30 : 0
+      let h: number
+      if (config.orientation === 'vertical') {
+        h = 80 + n * 60 + legendExtra
+      } else if (config.style === 'cards') {
+        h = 280 + legendExtra
+      } else {
+        h = 180 + legendExtra
+      }
+      return Math.max(150, Math.min(800, h))
+    },
   }
 
   return controller

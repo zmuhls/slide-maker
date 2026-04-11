@@ -1,6 +1,7 @@
 export type ArtifactController = {
   update?: (config: any) => void
   destroy?: () => void
+  getPreferredHeight?: (width: number) => number | null
 }
 
 export type ArtifactFactory = (el: HTMLElement, config: any) => ArtifactController
