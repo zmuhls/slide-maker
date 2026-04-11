@@ -49,6 +49,8 @@ h2 { font-size: clamp(2rem, 3.8vw, 3.2rem); font-weight: 500; }
 h3 { font-size: clamp(1.5rem, 2.8vw, 2.2rem); font-weight: 500; }
 h4 { font-size: clamp(1.2rem, 2vw, 1.6rem); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
 .text-body { font-size: clamp(1rem, 1.8vw, 1.5rem); line-height: 1.55; color: var(--text-muted); }
+.text-body ul, .text-body ol { padding-left: 1.5em; margin: 0.4em 0; }
+.text-body li { margin-bottom: 0.5em; }
 code, pre { font-family: 'JetBrains Mono', monospace; }
 pre { background: rgba(0,0,0,0.3); border: 1px solid var(--border-subtle); border-radius: 8px; padding: 20px 24px; overflow-x: auto; font-size: 1.05rem; line-height: 1.5; }
 

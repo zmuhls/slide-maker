@@ -321,6 +321,9 @@
     text-transform: uppercase;
     line-height: 14px;
   }
+  .module-wrapper.editable .step-badge {
+    top: 26px;
+  }
 
   .module-content {
     width: 100%;
