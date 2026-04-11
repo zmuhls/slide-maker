@@ -22,7 +22,7 @@ templates/    — Seeded slide template JSON files (zone-based)
 **Stack:**
 - **Frontend:** SvelteKit 2, Svelte 5 (runes), TipTap rich text editor
 - **Backend:** Hono on Node (@hono/node-server), SQLite via better-sqlite3 + Drizzle ORM, Lucia v3 for auth
-- **AI:** Three providers — Anthropic SDK (Claude Sonnet 4, Haiku 4.5), OpenAI SDK for OpenRouter (Kimi K2.5, GLM 5, Gemini 3.1 Flash, Qwen 3.5 Flash), and AWS Bedrock (Haiku 4.5, admin-only Sonnet 4.6). Model selection via dropdown. SSE streaming for chat responses with live mutation application. Provider config at `apps/api/src/providers/`.
+- **AI:** Three providers — Anthropic SDK (Claude Sonnet 4, Haiku 4.5; optional admin-only Sonnet 4.6 via `ANTHROPIC_SONNET_46_MODEL_ID` env var), OpenAI SDK for OpenRouter (Kimi K2.5, GLM 5, Gemini 3.1 Flash, Qwen 3.5 Flash), and AWS Bedrock (Haiku 4.5, Sonnet 4.6). Model selection via dropdown. SSE streaming for chat responses with live mutation application. Provider config at `apps/api/src/providers/`.
 
 ## Dev Commands
 
@@ -96,7 +96,7 @@ Artifact config utilities: `apps/web/src/lib/utils/artifact-config.ts` (resolves
 
 ### Artifacts (Two Rendering Paths)
 Artifacts render interactive visualizations. Two paths:
-- **Native** — pure JS rendered into a div (no iframe). Registered in `apps/web/src/lib/modules/artifacts/` (client) and `apps/api/src/export/artifacts.ts` (export). Names listed in `NATIVE_ARTIFACT_NAMES`. Includes: A* Pathfinding, Boids, Flow Field, Harmonograph, Langton's Ant, Leaflet Map, Lorenz Attractor, Molnar, Nake, Rossler, Sprott, Timeline, Truchet Tiles.
+- **Native** — pure JS rendered into a div (no iframe). Registered in `apps/web/src/lib/modules/artifacts/` (client) and `apps/api/src/export/artifacts.ts` (export). Names listed in `NATIVE_ARTIFACT_NAMES`. Includes: A* Pathfinding, Boids, Flow Field, Harmonograph, Langton's Ant, Leaflet Map, Lorenz Attractor, Molnar, Nake, Rössler Attractor, Sprott Attractor, Timeline, Truchet Tiles.
 - **Iframe fallback** — for HTML-source artifacts with `rawSource`. Used when no native factory matches. Export extracts these to `artifacts/` folder in the zip.
 
 When adding a new artifact: create a factory in `apps/web/src/lib/modules/artifacts/`, import it in `ArtifactModule.svelte`, add the equivalent vanilla JS `register()` call in `apps/api/src/export/artifacts.ts`, and add the name to `NATIVE_ARTIFACT_NAMES`.
@@ -199,7 +199,8 @@ Key tables:
 - `content_blocks` — type, zone, data (JSON), order, stepOrder
 - `templates` — layout, modules (JSON)
 - `artifacts` — name, description, type (chart/map/diagram/visualization), source (URL or raw HTML), config (JSON), builtIn flag
-- `users`, `sessions`, `decks`, `deck_access`, `uploaded_files`, `chat_messages`, `deck_locks`
+- `themes` — name, colors, fonts, CSS, builtIn flag
+- `users`, `sessions`, `emailVerifications`, `decks`, `deck_access`, `uploaded_files`, `chat_messages`, `deck_locks`, `deckPresence`
 
 Push schema changes: `pnpm db:push` (runs `drizzle-kit push` from `apps/api/`).
 
@@ -249,6 +250,12 @@ Full admin panel at `/admin` with:
 - Vision: `slide-builder-prompt-pt1.md`
 - Specs: `docs/superpowers/specs/2026-03-28-slide-maker-v{1,2,3}-design.md`
 - Plans: `docs/superpowers/plans/2026-03-28-slide-maker-v{1,2,3}.md`
+- A11y audits: `docs/a11y-audit-*.md`
+- Security audit: `docs/security-audit-2026-03-28.md`
+- Block docs (AI prompt reference): `docs/JS_SLIDE_MAKER_BLOCKS.md`
+- Frontend roadmap: `docs/roadmap-frontend-optimization.md`
+- QA reports: `docs/qa-reports/`
+- Wireframes: `docs/wireframes/`
 
 ### Themes
 - 9 built-in themes (Studio Dark, Studio Light, CUNY AI Lab, CUNY Dark, CUNY Light, Warm Academic, Slate Minimal, Midnight, Forest)
@@ -273,6 +280,9 @@ Full admin panel at `/admin` with:
   - Login: 5 attempts per 15 minutes
   - Registration: 3 per hour
   - Chat: 30 messages per minute
+  - Password change: 3 per 15 minutes
+  - Heartbeat: excluded from rate limiting
+- Admin role middleware at `apps/api/src/middleware/admin.ts` — enforces admin role (403 if not admin)
 - Admin role check is client-side only (server-side guard removed — it broke on staging due to SvelteKit server not proxying to API)
 - Block ownership verification on CRUD endpoints
 - Export path traversal guard (`path.basename()`)
@@ -297,7 +307,7 @@ Buttons across the app follow a ghost pattern: transparent background, 1px borde
 
 ## Testing
 
-Vitest at root level. Config: `vitest.config.ts`. Tests: `tests/**/*.test.ts`. Currently 427 tests across 15 files.
+Vitest at root level. Config: `vitest.config.ts`. Tests: `tests/**/*.test.ts`. Currently 484 tests across 15 files. Shell check scripts (8) in `tests/*.sh` via `tests/run_all.sh`. Playwright E2E specs (5) in `e2e/`.
 
 - `tests/artifact-config.test.ts` — artifact config resolution (`getResolvedConfig`, `buildAtRef`)
 - `tests/artifact-runtime.test.ts` — artifact runtime helpers
@@ -315,6 +325,15 @@ Vitest at root level. Config: `vitest.config.ts`. Tests: `tests/**/*.test.ts`. C
 - `tests/system-prompt-*.test.ts` — system prompt docs and render diagnostics
 
 Tests import directly from `packages/shared/src/` and `apps/web/src/lib/utils/`. SvelteKit aliases (`$lib/`) don't resolve in vitest — test only pure TS utilities, not Svelte components.
+
+### Sharing & Collaboration API
+- `GET /api/decks/users/search` — search users by name/email for sharing
+- `POST /api/decks/:id/share` — share deck with another user
+- `DELETE /api/decks/:id/share/:userId` — revoke shared access
+- `GET /api/decks/:id/collaborators` — list deck collaborators
+- `POST /api/decks/:id/lock` — acquire pessimistic edit lock (5-min TTL)
+- `POST /api/decks/:id/heartbeat` — refresh lock TTL
+- Route file: `apps/api/src/routes/sharing.ts`
 
 ## Resources API
 

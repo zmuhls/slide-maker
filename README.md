@@ -83,8 +83,8 @@ Or set `AI_PROVIDER=bedrock|anthropic|openrouter` in your `.env`.
 
 | Provider | Models |
 |----------|--------|
-| Anthropic | Claude Sonnet 4, Haiku 4.5 (Sonnet 4.6 admin-only) |
-| Bedrock | Haiku 4.5 (Sonnet 4.6 admin-only) |
+| Anthropic | Claude Sonnet 4, Haiku 4.5 (Sonnet 4.6 admin-only, requires env var) |
+| Bedrock | Haiku 4.5, Sonnet 4.6 |
 | OpenRouter | Kimi K2.5, GLM 5, Gemini 3.1 Flash, Qwen 3.5 Flash |
 
 ## Features
@@ -122,13 +122,13 @@ Two-mode canvas (view / edit). Edit mode provides:
 
 `heading` `text` `card` `label` `tip-box` `prompt-block` `image` `carousel` `comparison` `card-grid` `flow` `stream-list` `artifact` `video`
 
-Modules flow vertically within zones. TipTap rich text editing for text and heading modules. 35 seeded templates across all layouts.
+Modules flow vertically within zones. TipTap rich text editing across all module renderers. 35 seeded templates across all layouts.
 
 ### Interactive artifacts
 
-14 built-in artifacts rendered natively (no iframe):
+13 built-in artifacts rendered natively (no iframe):
 
-A* Pathfinding, Boids, Flow Field, Harmonograph, Langton's Ant, Leaflet Map, Lorenz Attractor, Molnar, Nake, Rossler, Sprott, Timeline, Truchet Tiles, Flow Diagram
+A* Pathfinding, Boids, Flow Field, Harmonograph, Langton's Ant, Leaflet Map, Lorenz Attractor, Molnar, Nake, Rössler Attractor, Sprott Attractor, Timeline, Truchet Tiles
 
 Each artifact has a configurable parameter schema (numbers, colors, selects). Artifacts auto-size with aspect ratio preservation.
 
@@ -165,8 +165,8 @@ apps/api/        — Hono API (Node, SQLite via better-sqlite3 + Drizzle, Lucia 
 apps/web/        — SvelteKit frontend (Svelte 5 runes, TipTap editor)
 packages/shared/ — Shared TypeScript types, constants, framework CSS
 templates/       — Seeded slide and artifact template JSON (35 files)
-tests/           — Vitest unit/integration tests (427 tests, 15 files)
-e2e/             — Playwright E2E tests
+tests/           — Vitest unit tests (484 tests, 15 files) + 8 shell check scripts
+e2e/             — Playwright E2E tests (5 specs)
 ```
 
 ## Commands
@@ -179,7 +179,10 @@ pnpm db:push          # push Drizzle schema to SQLite
 pnpm db:seed          # seed templates, themes, admin users
 pnpm seed:admin       # seed admin users only
 pnpm audit:a11y       # WCAG AA/AAA contrast audit
-npx vitest run        # run all tests
+pnpm test             # run vitest + shell checks
+pnpm test:e2e         # run Playwright E2E tests
+pnpm test:e2e:ui      # Playwright UI mode
+npx vitest run        # run vitest only
 npx vitest --watch    # watch mode
 ```
 
