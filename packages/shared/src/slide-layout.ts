@@ -54,6 +54,9 @@ export function getSlideSections(slide: RenderSlide): SlideSections {
   const mainModules = modules.filter((module) => module.zone === 'main')
 
   if (layout === 'title-slide' || layout === 'layout-divider' || layout === 'closing-slide') {
+    // Render ALL modules regardless of zone — matches canvas behavior where
+    // single-zone layouts show every module to prevent data loss from
+    // mismatched zones (e.g. an image with zone='main' on a divider).
     return {
       layout,
       modules,
@@ -61,7 +64,7 @@ export function getSlideSections(slide: RenderSlide): SlideSections {
       contentModules,
       stageModules,
       mainModules,
-      primaryModules: heroModules.length > 0 ? heroModules : modules,
+      primaryModules: modules,
       primaryWrapperClass: 'hero',
       splitRatio: parseSplitRatio(slide.splitRatio),
     }
