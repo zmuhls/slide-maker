@@ -133,6 +133,12 @@ pre { background: rgba(0,0,0,0.3); border: 1px solid var(--border-subtle); borde
 .label-red { color: #ff6b6b; }
 .label-amber { color: #d4a017; }
 .label-green { color: #2d8a4e; }
+.title-slide .label,
+.layout-divider .label,
+.closing-slide .label {
+  background: rgba(255,255,255,0.15);
+  color: #ffffff;
+}
 
 /* ── Module: Tip Box ─────────────────────────────────────────────── */
 .tip-box {
@@ -299,9 +305,9 @@ export const FRAMEWORK_CSS_EXPORT = FRAMEWORK_CSS_BASE + `
 }
 .slide.active { display: flex; }
 
-/* ── Zone overflow: allow scrolling if content exceeds viewport ── */
+/* ── Zone overflow: clip content that exceeds zone bounds ── */
 .slide > .content, .slide > .stage, .slide > .main, .slide > .hero {
-  overflow: visible; min-height: 0; flex-shrink: 0;
+  overflow: hidden; min-height: 0; flex-shrink: 0;
 }
 
 /* ── Step Reveal ─────────────────────────────────────────────────── */
@@ -386,8 +392,19 @@ export const FRAMEWORK_CSS_PREVIEW = FRAMEWORK_CSS_BASE + `
 /* ── Slide Base (single-slide preview) ──────────────────────────── */
 .slide {
   display: flex; position: relative; width: 100%; min-height: 100vh;
-  padding: 60px 80px; overflow: visible; flex-direction: column; justify-content: flex-start;
+  padding: 60px 80px; overflow: visible;
+  flex-direction: column; justify-content: flex-start;
+  container-type: inline-size;
 }
+
+/* ── Typography overrides (cqi parity with canvas) ─────────────── */
+h1 { font-size: clamp(2.5rem, 5cqi, 4.5rem); }
+h2 { font-size: clamp(2rem, 3.8cqi, 3.2rem); }
+h3 { font-size: clamp(1.5rem, 2.8cqi, 2.2rem); }
+h4 { font-size: clamp(1.2rem, 2cqi, 1.6rem); }
+.text-body { font-size: clamp(1rem, 1.8cqi, 1.5rem); }
+.title-slide h1 { font-size: clamp(1.8rem, 4.5cqi, 3.8rem); }
+.title-slide .text-body { font-size: clamp(0.95rem, 1.6cqi, 1.3rem); }
 
 /* ── Step Reveal (all visible in preview, with step indicator) ──── */
 .step-hidden { opacity: 1; transform: none; position: relative; }

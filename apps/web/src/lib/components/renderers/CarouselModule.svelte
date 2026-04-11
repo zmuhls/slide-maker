@@ -160,7 +160,7 @@
     transition: background 0.15s;
   }
   .dot.active {
-    background: var(--teal, #2FB8D6);
+    background: var(--accent-cyan, #64b5f6);
   }
   .sync-steps-toggle {
     display: flex;

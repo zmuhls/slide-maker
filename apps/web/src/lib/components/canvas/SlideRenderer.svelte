@@ -240,7 +240,7 @@ import { applyMutation } from '$lib/utils/mutations'
     flex-direction: column;
     align-items: center;
     text-align: center;
-    gap: clamp(1rem, 2.5cqi, 2rem);
+    gap: clamp(12px, 2.5cqi, 2rem);
   }
 
   .zone-centered > :global(:only-child) {

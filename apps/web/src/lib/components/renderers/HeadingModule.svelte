@@ -15,14 +15,18 @@
   let text = $derived(typeof data.text === 'string' ? data.text : '')
   let headingTag = $derived(`h${level}` as 'h1' | 'h2' | 'h3' | 'h4')
   let fontSize = $derived(typeof data.fontSize === 'string' ? data.fontSize : '')
-  let sizeStyle = $derived(fontSize ? `font-size: ${fontSize}` : '')
+  let sizeStyle = $derived(fontSize ? `--heading-custom-size: ${fontSize}; font-size: ${fontSize} !important` : '')
 
   let editorActive = $state(false)
   let editContent = $state('')
   let clickCoords: { x: number; y: number } | null = $state(null)
 
-  // Sanitize for view mode
-  let sanitizedText = $derived(DOMPurify.sanitize(text))
+  // Sanitize for view mode — strip <p> wrappers since content renders inside <h1>-<h4>
+  // (block elements inside headings cause browsers to break the DOM structure)
+  function stripParagraphs(html: string): string {
+    return html.replace(/<p>/g, '').replace(/<\/p>/g, '').replace(/<p\s*\/>/g, '').trim()
+  }
+  let sanitizedText = $derived(stripParagraphs(DOMPurify.sanitize(text, { ADD_ATTR: ['style'] })))
 
   function handleRichTextChange(html: string) {
     editContent = html
@@ -31,7 +35,7 @@
   }
 </script>
 
-<div class="heading-wrapper heading-{level}" style={sizeStyle}>
+<div class="heading-wrapper heading-{level}" class:has-custom-size={!!fontSize} style={sizeStyle}>
   {#if editable && editorActive}
     <RichTextEditor
       content={editContent}
@@ -47,12 +51,13 @@
       <button
         type="button"
         class="heading-preview editable heading heading-{level}"
+        style={sizeStyle}
         onclick={(e) => { clickCoords = { x: e.clientX, y: e.clientY }; editContent = sanitizedText || text; editorActive = true }}
       >
         {@html sanitizedText || text}
       </button>
     {:else}
-      <svelte:element this={headingTag} class="heading heading-{level}">{@html sanitizedText}</svelte:element>
+      <svelte:element this={headingTag} class="heading heading-{level}" style={sizeStyle}>{@html sanitizedText}</svelte:element>
     {/if}
   {/if}
 </div>
@@ -88,6 +93,10 @@
     font-family: var(--font-display);
     line-height: 1.2;
     margin: 0;
+  }
+  .heading-wrapper.has-custom-size :global(.tiptap),
+  .heading-wrapper.has-custom-size :global(.tiptap p) {
+    font-size: var(--heading-custom-size) !important;
   }
 
   /* ── Level-specific weights only (sizes from framework) ── */

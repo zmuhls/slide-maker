@@ -12,7 +12,7 @@
   let editContent = $state('')
   let clickCoords: { x: number; y: number } | null = $state(null)
 
-  let renderedHtml = $derived(renderRichTextData(data, (html) => DOMPurify.sanitize(html)))
+  let renderedHtml = $derived(renderRichTextData(data, (html) => DOMPurify.sanitize(html, { ADD_ATTR: ['style'] })))
 
   function handleRichTextChange(html: string) {
     editContent = html

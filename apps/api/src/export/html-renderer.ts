@@ -179,7 +179,7 @@ function renderModule(mod: Module, files?: ExportFile[], opts?: RenderOptions): 
       const styleAttr = styles.length ? ` style="${styles.join('; ')}"` : ''
       const raw = String(d.text || '')
       const inner = containsHtmlMarkup(raw)
-        ? sanitize(raw).replace(/^<p>(.*)<\/p>$/s, '$1')
+        ? sanitize(raw).replace(/<\/?p>/g, '').trim()
         : esc(raw)
       return `<h${level}${step}${styleAttr}>${inner}</h${level}>`
     }
@@ -204,7 +204,7 @@ function renderModule(mod: Module, files?: ExportFile[], opts?: RenderOptions): 
       const color = d.color ? ` label-${esc(String(d.color))}` : ''
       const raw = String(d.text || '')
       const inner = containsHtmlMarkup(raw)
-        ? sanitize(raw).replace(/^<p>(.*)<\/p>$/s, '$1')
+        ? sanitize(raw).replace(/<\/?p>/g, '').trim()
         : esc(raw)
       return `<span class="label${color}"${step}>${inner}</span>`
     }

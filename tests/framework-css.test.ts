@@ -369,3 +369,18 @@ describe('card-grid parity', () => {
     expect(getProperty(rules[0], 'font-weight')).toBe('650')
   })
 })
+
+describe('carousel parity', () => {
+  it('active dot uses --accent-cyan (not --teal)', () => {
+    const rules = findRules(FRAMEWORK_CSS_BASE, '.carousel-dot.active')
+    expect(rules.length).toBeGreaterThan(0)
+    expect(getProperty(rules[0], 'background')).toBe('var(--accent-cyan)')
+  })
+})
+
+describe('hero zone parity', () => {
+  it('hero zone gap is 12px', () => {
+    // The canvas clamp lower bound must not exceed this value
+    expect(FRAMEWORK_CSS_BASE).toMatch(/\.title-slide > \.hero[^{]*\{[^}]*gap:\s*12px/)
+  })
+})
