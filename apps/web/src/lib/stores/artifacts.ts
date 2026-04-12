@@ -33,10 +33,9 @@ export async function ensureArtifactsLoaded(): Promise<ArtifactDef[]> {
   }
 }
 
-/** Find an artifact definition by name (case-insensitive partial match) */
+/** Find an artifact definition by exact name (case-insensitive) */
 export function findArtifactByName(name: string): ArtifactDef | undefined {
   const artifacts = get(artifactsStore)
   const lower = name.toLowerCase()
   return artifacts.find((a) => a.name.toLowerCase() === lower)
-    ?? artifacts.find((a) => a.name.toLowerCase().includes(lower))
 }

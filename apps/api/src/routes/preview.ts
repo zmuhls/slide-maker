@@ -81,7 +81,15 @@ previewRouter.get('/:id/preview', async (c) => {
   }))
 
   // Resolve artifact sources from catalog for blocks missing rawSource
-  await resolveArtifactSources(slidesWithBlocks.flatMap(s => s.modules))
+  try {
+    await resolveArtifactSources(slidesWithBlocks.flatMap(s => s.modules))
+  } catch (e: any) {
+    const msg = e?.message ?? ''
+    if (msg.startsWith('artifact-not-found:') || msg.startsWith('artifact-source-missing:')) {
+      return c.json({ error: msg }, 422)
+    }
+    throw e
+  }
 
   // Load theme
   let theme = null
@@ -173,7 +181,15 @@ previewRouter.get('/:id/thumbnail', async (c) => {
     })),
   }]
 
-  await resolveArtifactSources(slidesWithBlocks.flatMap(s => s.modules))
+  try {
+    await resolveArtifactSources(slidesWithBlocks.flatMap(s => s.modules))
+  } catch (e: any) {
+    const msg = e?.message ?? ''
+    if (msg.startsWith('artifact-not-found:') || msg.startsWith('artifact-source-missing:')) {
+      return c.json({ error: msg }, 422)
+    }
+    throw e
+  }
 
   let theme = null
   if (deck.themeId) {

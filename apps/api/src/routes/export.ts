@@ -78,7 +78,15 @@ exportRouter.post('/:id/export', exportRateLimit, async (c) => {
   }))
 
   // Resolve artifact sources from catalog for blocks missing rawSource
-  await resolveArtifactSources(slidesWithBlocks.flatMap(s => (s.blocks || [])))
+  try {
+    await resolveArtifactSources(slidesWithBlocks.flatMap(s => (s.blocks || [])))
+  } catch (e: any) {
+    const msg = e?.message ?? ''
+    if (msg.startsWith('artifact-not-found:') || msg.startsWith('artifact-source-missing:')) {
+      return c.json({ error: msg }, 422)
+    }
+    throw e
+  }
 
   // Load theme
   let theme = null
