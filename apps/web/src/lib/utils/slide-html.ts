@@ -5,6 +5,7 @@
  */
 
 import DOMPurify from 'dompurify'
+import { API_URL } from '$lib/api'
 import { FRAMEWORK_CSS } from './framework-css-client'
 import { buildSourceWithConfig } from './artifact-config'
 import { isDark, darkenHex } from '$lib/stores/themes'
@@ -16,8 +17,6 @@ import {
   renderFormattedContent,
   renderRichTextData,
 } from '@slide-maker/shared'
-
-const API_URL = (import.meta as any).env?.PUBLIC_API_URL ?? 'http://localhost:3001'
 
 const GOOGLE_FONTS_URL =
   'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap'

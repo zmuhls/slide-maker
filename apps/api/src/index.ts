@@ -21,6 +21,18 @@ import debugRouter from './routes/debug.js'
 
 const app = new Hono()
 
+// Global error handler — ensures CORS headers are present on unhandled exceptions
+// so the browser can read the error instead of showing "NetworkError"
+app.onError((err, c) => {
+  const origin = c.req.header('origin')
+  if (origin && env.allowedOrigins.includes(origin)) {
+    c.header('Access-Control-Allow-Origin', origin)
+    c.header('Access-Control-Allow-Credentials', 'true')
+  }
+  console.error('Unhandled error:', err.message, err.stack)
+  return c.json({ error: 'Internal server error' }, 500)
+})
+
 app.use('/*', cors({
   origin: env.allowedOrigins,
   credentials: true,

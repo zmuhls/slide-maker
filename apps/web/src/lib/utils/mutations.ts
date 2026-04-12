@@ -530,8 +530,8 @@ export async function applyMutation(mutation: Record<string, unknown>): Promise<
       const resolvedSlideId = slideId ? (resolveSlideRef(slideId) || slideId) : undefined
 
       // Fetch template details
-      const tmplData = await apiCall('/api/templates', 'GET')
-      const template = (tmplData?.templates ?? []).find((t: any) => t.id === templateId)
+      const templateData = await apiCall('/api/templates', 'GET')
+      const template = (templateData?.templates ?? []).find((t: any) => t.id === templateId)
       if (!template) {
         console.error('Template not found:', templateId)
         break
@@ -985,8 +985,8 @@ async function applyMutationSilent(mutation: Record<string, unknown>): Promise<v
       // Redo path: re-apply template to slide
       const templateId = payload.templateId as string
       const slideId = payload.slideId as string
-      const tmplData = await apiCall('/api/templates', 'GET')
-      const template = (tmplData?.templates ?? []).find((t: any) => t.id === templateId)
+      const templateData = await apiCall('/api/templates', 'GET')
+      const template = (templateData?.templates ?? []).find((t: any) => t.id === templateId)
       if (!template) break
       if (slideId) {
         const slide = deck.slides.find((s) => s.id === slideId)

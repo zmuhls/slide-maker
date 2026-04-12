@@ -34,15 +34,15 @@ async function seedTemplates() {
     const files = fs.readdirSync(dir).filter((f) => f.endsWith('.json'))
     for (const file of files) {
       const raw = fs.readFileSync(path.join(dir, file), 'utf-8')
-      const tmpl = JSON.parse(raw)
+      const template = JSON.parse(raw)
 
       await db
         .insert(templates)
         .values({
           id: createId(),
-          name: tmpl.name,
-          layout: tmpl.layout,
-          modules: tmpl.modules,
+          name: template.name,
+          layout: template.layout,
+          modules: template.modules,
           builtIn: true,
           createdBy: null,
         })
@@ -199,17 +199,17 @@ async function seedArtifacts() {
     const files = fs.readdirSync(artifactsDir).filter((f) => f.endsWith('.json'))
     for (const file of files) {
       const raw = fs.readFileSync(path.join(artifactsDir, file), 'utf-8')
-      const tmpl = JSON.parse(raw)
+      const template = JSON.parse(raw)
 
       await db
         .insert(artifacts)
         .values({
-          id: tmpl.id,
-          name: tmpl.name,
-          description: tmpl.description || '',
-          type: (tmpl.type ?? 'visualization') as 'chart' | 'diagram' | 'map' | 'visualization',
-          source: inlineStaticRefs(tmpl.source),
-          config: tmpl.config ?? {},
+          id: template.id,
+          name: template.name,
+          description: template.description || '',
+          type: (template.type ?? 'visualization') as 'chart' | 'diagram' | 'map' | 'visualization',
+          source: inlineStaticRefs(template.source),
+          config: template.config ?? {},
           builtIn: true,
           createdBy: null,
         })

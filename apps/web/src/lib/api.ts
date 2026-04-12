@@ -1,4 +1,4 @@
-export const API_URL = import.meta.env.PUBLIC_API_URL ?? 'http://localhost:3001'
+export const API_URL = import.meta.env.DEV ? '' : (import.meta.env.PUBLIC_API_URL ?? 'http://localhost:3001')
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
   const res = await fetch(`${API_URL}${path}`, {
@@ -89,7 +89,8 @@ export const api = {
   uploadFile: async (deckId: string, file: File) => {
     const formData = new FormData()
     formData.append('file', file)
-    const res = await fetch(`${API_URL}/api/decks/${deckId}/files`, {
+    const url = `${API_URL}/api/decks/${deckId}/files`
+    const res = await fetch(url, {
       method: 'POST',
       credentials: 'include',
       body: formData,

@@ -169,22 +169,22 @@
       <div class="group">
         <h3 class="group-header">{group.label}</h3>
         <div class="template-grid">
-          {#each group.templates as tmpl, i (tmpl.id)}
-            {@const base = layoutMeta[tmpl.layout] ?? { bg: '#e5e7eb', fg: 'rgba(0,0,0,0.1)', accent: 'rgba(0,0,0,0.05)' }}
+          {#each group.templates as template, i (template.id)}
+            {@const base = layoutMeta[template.layout] ?? { bg: '#e5e7eb', fg: 'rgba(0,0,0,0.1)', accent: 'rgba(0,0,0,0.05)' }}
             {@const dark = previewMode === 'dark'}
-            {@const meta = tmpl.layout === 'layout-split' ? (dark ? splitVariants[i % splitVariants.length] : splitVariantsLight[i % splitVariantsLight.length])
-                            : tmpl.layout === 'layout-content' ? (dark ? contentVariants[i % contentVariants.length] : contentVariantsLight[i % contentVariantsLight.length])
-                            : tmpl.layout === 'layout-grid' ? (dark ? gridVariants[i % gridVariants.length] : gridVariantsLight[i % gridVariantsLight.length])
-                            : dark ? base : (layoutMetaLight[tmpl.layout] ?? base)}
+            {@const meta = template.layout === 'layout-split' ? (dark ? splitVariants[i % splitVariants.length] : splitVariantsLight[i % splitVariantsLight.length])
+                            : template.layout === 'layout-content' ? (dark ? contentVariants[i % contentVariants.length] : contentVariantsLight[i % contentVariantsLight.length])
+                            : template.layout === 'layout-grid' ? (dark ? gridVariants[i % gridVariants.length] : gridVariantsLight[i % gridVariantsLight.length])
+                            : dark ? base : (layoutMetaLight[template.layout] ?? base)}
             <div class="template-card-wrap">
-              <button class="template-card" onclick={() => applyTemplate(tmpl)} aria-label="Add {tmpl.name} template">
+              <button class="template-card" onclick={() => applyTemplate(template)} aria-label="Add {template.name} template">
                 <div class="thumbnail" style:background={meta.bg}>
-                {#if tmpl.layout === 'title-slide' || tmpl.layout === 'closing-slide'}
+                {#if template.layout === 'title-slide' || template.layout === 'closing-slide'}
                   <div class="thumb-zones thumb-center">
                     <div class="z-bar z-wide" style:background={meta.fg}></div>
                     <div class="z-bar z-narrow" style:background={meta.accent}></div>
                   </div>
-                {:else if tmpl.layout === 'layout-split'}
+                {:else if template.layout === 'layout-split'}
                   <div class="thumb-zones thumb-split">
                     <div class="z-col z-left">
                       <div class="z-bar" style:background={meta.fg}></div>
@@ -195,7 +195,7 @@
                       <div class="z-block" style:background={meta.fg}></div>
                     </div>
                   </div>
-                {:else if tmpl.layout === 'layout-content' && tmpl.modules.some(m => m.type === 'comparison')}
+                {:else if template.layout === 'layout-content' && template.modules.some(m => m.type === 'comparison')}
                   <div class="thumb-zones thumb-comparison">
                     <div class="z-bar z-wide" style:background={meta.fg}></div>
                     <div class="z-panels">
@@ -203,7 +203,7 @@
                       <div class="z-panel" style:background={meta.fg}></div>
                     </div>
                   </div>
-                {:else if tmpl.layout === 'layout-content' && tmpl.modules.some(m => m.type === 'flow')}
+                {:else if template.layout === 'layout-content' && template.modules.some(m => m.type === 'flow')}
                   <div class="thumb-zones thumb-flow">
                     <div class="z-bar z-wide" style:background={meta.fg}></div>
                     <div class="z-flow-row">
@@ -214,25 +214,25 @@
                       <div class="z-flow-node" style:background={meta.fg}></div>
                     </div>
                   </div>
-                {:else if tmpl.layout === 'layout-content'}
+                {:else if template.layout === 'layout-content'}
                   <div class="thumb-zones thumb-full">
                     <div class="z-bar z-wide" style:background={meta.fg}></div>
                     <div class="z-bar" style:background={meta.accent}></div>
                     <div class="z-bar" style:background={meta.accent}></div>
                     <div class="z-bar z-narrow" style:background={meta.accent}></div>
                   </div>
-                {:else if tmpl.layout === 'layout-grid'}
+                {:else if template.layout === 'layout-grid'}
                   <div class="thumb-zones thumb-grid">
                     <div class="z-card" style:background={meta.fg}></div>
                     <div class="z-card" style:background={meta.fg}></div>
                     <div class="z-card" style:background={meta.fg}></div>
                   </div>
-                {:else if tmpl.layout === 'layout-full-dark'}
+                {:else if template.layout === 'layout-full-dark'}
                   <div class="thumb-zones thumb-full">
                     <div class="z-bar z-wide" style:background={meta.fg}></div>
                     <div class="z-bar" style:background={meta.accent}></div>
                   </div>
-                {:else if tmpl.layout === 'layout-divider'}
+                {:else if template.layout === 'layout-divider'}
                   <div class="thumb-zones thumb-center">
                     <div class="z-bar z-narrow" style:background={meta.fg}></div>
                   </div>
@@ -244,8 +244,8 @@
               </div>
               </button>
               <div class="template-info">
-                <span class="template-name">{tmpl.name}</span>
-                <button class="act-btn act-at" onclick={() => injectTemplateRef(tmpl)} title="Mention in chat (@template)" aria-label="Mention in chat">
+                <span class="template-name">{template.name}</span>
+                <button class="act-btn act-at" onclick={() => injectTemplateRef(template)} title="Mention in chat (@template)" aria-label="Mention in chat">
                   <svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"><circle cx="6" cy="6" r="2"/><path d="M8 4.5v2.3a1.2 1.2 0 002.4 0V6a4.4 4.4 0 10-2.2 3.8"/></svg>
                 </button>
               </div>

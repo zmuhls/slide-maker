@@ -1,4 +1,5 @@
 import { writable, derived } from 'svelte/store'
+import { API_URL } from '$lib/api'
 import { currentDeck } from './deck'
 
 export interface ThemeData {
@@ -27,7 +28,6 @@ let fetched = false
 export async function ensureThemesLoaded() {
   if (fetched) return
   fetched = true
-  const API_URL = (import.meta as any).env?.PUBLIC_API_URL ?? 'http://localhost:3001'
   try {
     const res = await fetch(`${API_URL}/api/themes`, { credentials: 'include' })
     const data = await res.json()
