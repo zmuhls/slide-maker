@@ -61,7 +61,7 @@
 
 <style>
   .prompt-block {
-    background: rgba(0, 0, 0, 0.3);
+    background: transparent;
     color: var(--text-primary, #f0f0f0);
     font-family: 'JetBrains Mono', monospace;
     padding: clamp(14px, 2.5cqi, 20px) clamp(16px, 3cqi, 24px);

@@ -104,6 +104,8 @@
 
 /* Split layout stage styling (match BASE intent) */
 .slide-frame .zone-right { background: var(--theme-card-bg, rgba(255,255,255,0.02)); border-left: 1px solid var(--theme-border, rgba(255,255,255,0.06)); }
+/* layout-content max-width parity (export: .layout-content > .content { max-width: 900px }) */
+.slide-frame .slide[data-layout="layout-content"] > .zone-main { max-width: 900px; width: 100%; }
 
 /* ── Typography (match BASE values; cqi scaling) ─────────────────── */
 .slide-frame h1, .slide-frame h2, .slide-frame h3, .slide-frame h4, .slide-frame .heading {
@@ -139,8 +141,8 @@
 .slide-frame .card { background: rgba(255,255,255,0.03) !important; border: 1px solid var(--border-subtle) !important; border-radius: 10px !important; padding: 24px !important; }
 .slide-frame .card-cyan, .slide-frame .card[class*="cyan"] { border-left: 3px solid var(--accent-cyan) !important; }
 .slide-frame .card-navy, .slide-frame .card[class*="navy"] { border-left: 3px solid var(--accent-navy) !important; }
-.slide-frame .card h3 { font-size: 1.3rem; font-weight: 650; margin-bottom: 8px; display: block; }
-.slide-frame .card p { font-size: 1rem; color: var(--text-muted) !important; line-height: 1.45; }
+.slide-frame .card h3 { font-size: 1.3rem !important; font-weight: 650 !important; margin-bottom: 8px !important; display: block !important; }
+.slide-frame .card p { font-size: 1rem !important; color: var(--text-muted) !important; line-height: 1.45 !important; }
 
 /* ── Module: Label ──────────────────────────────────────────────── */
 .slide-frame .label { display: inline-block; padding: 4px 10px; background: none; border-radius: 4px; font-size: 0.85rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; line-height: 1.5; }
@@ -153,10 +155,11 @@
 
 /* ── Module: Tip Box ────────────────────────────────────────────── */
 .slide-frame .tip-box { background: rgba(100,181,246,0.05) !important; border: 1px solid rgba(100,181,246,0.12) !important; border-radius: 8px !important; padding: 20px 24px !important; font-size: 1rem !important; line-height: 1.6 !important; color: var(--text-muted) !important; }
-.slide-frame .tip-box strong, .slide-frame .tip-box-title { display: block; margin-bottom: 6px; color: var(--accent-cyan) !important; font-weight: 500; font-size: 1rem; }
+.slide-frame .tip-box strong, .slide-frame .tip-box-title { display: block !important; margin-bottom: 6px !important; color: var(--accent-cyan) !important; font-weight: 500 !important; font-size: 1rem !important; }
+.slide-frame .tip-box-content { font-size: 1rem !important; line-height: 1.6 !important; }
 
 /* ── Module: Prompt Block ───────────────────────────────────────── */
-.slide-frame .prompt-block { border-radius: 8px !important; padding: 20px 24px !important; font-size: 1.05rem !important; border: 1px solid var(--border-subtle) !important; }
+.slide-frame .prompt-block { background: transparent !important; border-radius: 8px !important; padding: 20px 24px !important; font-size: 1.05rem !important; border: 1px solid var(--border-subtle) !important; }
 .slide-frame .prompt-block pre { background: transparent !important; border: none !important; font-size: inherit !important; white-space: pre-wrap !important; color: var(--text-primary) !important; }
 .slide-frame .prompt-good { border-color: rgba(110,231,183,0.3) !important; background: rgba(110,231,183,0.04) !important; }
 .slide-frame .prompt-mid { border-color: rgba(251,191,36,0.3) !important; background: rgba(251,191,36,0.04) !important; }
@@ -176,7 +179,8 @@
 /* ── Module: Card Grid ──────────────────────────────────────────── */
 .slide-frame .card-grid { display: grid !important; gap: 20px !important; width: 100% !important; }
 .slide-frame .card-grid .card { background: rgba(255,255,255,0.03) !important; border: 1px solid var(--border-subtle) !important; color: var(--text-muted) !important; }
-.slide-frame .card-grid .card-title { color: var(--text-primary) !important; }
+.slide-frame .card-grid .card-title { color: var(--text-primary) !important; font-size: 1.3rem !important; font-weight: 650 !important; display: block !important; margin-bottom: 8px !important; }
+.slide-frame .card-grid .card-content { font-size: 1rem !important; color: var(--text-muted) !important; line-height: 1.45 !important; }
 
 /* ── Module: Flow ───────────────────────────────────────────────── */
 .slide-frame .flow { display: flex !important; align-items: center !important; gap: 8px !important; flex-wrap: wrap !important; justify-content: center !important; }

@@ -43,6 +43,7 @@
       src="{base}/thumbnail/{deck.id}"
       title="Preview of {deck.name}"
       class="thumbnail-iframe"
+      sandbox
       loading="lazy"
       tabindex="-1"
     ></iframe>

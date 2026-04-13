@@ -154,6 +154,10 @@ interface RenderOptions {
   // When provided, inline artifact HTML will be served via this endpoint as
   // `/path?b64=<base64(html)>`, which preserves a proper Referer header.
   artifactEndpoint?: string
+  // Thumbnail/preview flags — allow callers to strip heavier chrome
+  omitNav?: boolean
+  omitScripts?: boolean
+  omitFonts?: boolean
 }
 
 const extractedArtifacts: Map<string, string> = new Map()
@@ -538,9 +542,11 @@ export function renderDeckHtml(
   // Include fonts from theme
   const fontUrl = `https://fonts.googleapis.com/css2?family=${encodeURIComponent(bodyFont)}:wght@400;500;600;700&family=${encodeURIComponent(headingFont)}:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap`
 
-  const engineScripts = opts?.externalJs
-    ? '<script src="js/engine.js"></script>\n  <script src="js/artifacts.js"></script>'
-    : `<script>\n${NAVIGATION_JS}\n  </script>\n  <script>\n${CAROUSEL_JS}\n  </script>\n  <script>\n${ARTIFACTS_JS}\n  </script>`
+  const engineScripts = opts?.omitScripts
+    ? ''
+    : (opts?.externalJs
+        ? '<script src="js/engine.js"></script>\n  <script src="js/artifacts.js"></script>'
+        : `<script>\n${NAVIGATION_JS}\n  </script>\n  <script>\n${CAROUSEL_JS}\n  </script>\n  <script>\n${ARTIFACTS_JS}\n  </script>`)
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -548,7 +554,7 @@ export function renderDeckHtml(
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>${title}</title>
-  <link href="${fontUrl}" rel="stylesheet">
+  ${opts?.omitFonts ? '' : `<link href="${fontUrl}" rel="stylesheet">`}
   <link rel="stylesheet" href="css/styles.css">
   <style>${themeCss}</style>
 </head>
@@ -559,13 +565,13 @@ export function renderDeckHtml(
   <div id="deck">
 ${slidesHtml}
   </div>
-
+  ${opts?.omitNav ? '' : `
   <nav id="nav-bar">
     <button id="prev-btn" aria-label="Previous">&larr;</button>
     <input type="range" id="scrubber" min="0" max="${slideCount - 1}" value="0" aria-label="Slide progress">
     <span id="slide-counter">1 / ${slideCount}</span>
     <button id="next-btn" aria-label="Next">&rarr;</button>
-  </nav>
+  </nav>`}
 
   ${engineScripts}
 </body>
