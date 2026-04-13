@@ -29,6 +29,11 @@ export const env = {
     pass: process.env.SMTP_PASS ?? '',
     from: process.env.SMTP_FROM ?? 'noreply@ailab.gc.cuny.edu',
   },
+  ses: {
+    region: process.env.SES_REGION || process.env.AWS_REGION || '',
+    from: process.env.SES_FROM_EMAIL ?? 'ailab@gc.cuny.edu',
+    enabled: process.env.EMAIL_PROVIDER === 'ses',
+  },
   anthropicApiKey: process.env.ANTHROPIC_API_KEY ?? '',
   openrouterApiKey: process.env.OPENROUTER_API_KEY ?? '',
   // AWS Bedrock uses the standard AWS credential chain; we detect enablement via region
@@ -77,8 +82,11 @@ if (env.aiProvider === 'anthropic' && !env.anthropicApiKey) {
 if (env.aiProvider === 'bedrock' && !env.awsRegion) {
   warnings.push('AI_PROVIDER=bedrock but AWS_REGION is not set')
 }
-if (!env.smtp.host) {
-  warnings.push('SMTP_HOST not set — email verification will not work')
+if (!env.smtp.host && !env.ses.enabled) {
+  warnings.push('No email provider configured — set SMTP_HOST or EMAIL_PROVIDER=ses')
+}
+if (env.ses.enabled && !env.ses.region) {
+  warnings.push('EMAIL_PROVIDER=ses but no AWS region set (SES_REGION or AWS_REGION)')
 }
 if (!env.pexelsApiKey) {
   warnings.push('PEXELS_API_KEY not set — image search will not work')
