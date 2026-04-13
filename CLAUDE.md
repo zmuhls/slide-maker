@@ -42,7 +42,7 @@ npx vitest run tests/framework-css.test.ts  # run a single test file
 npx vitest --watch    # watch mode
 ```
 
-**Env:** `.env` at workspace root, must be symlinked to `apps/api/.env` (`ln -s ../../.env apps/api/.env`). The API loads env via `dotenv/config` from its own CWD — without the symlink, no API keys are found and chat won't work. See `.env.example` for all vars. At minimum set one provider: `OPENROUTER_API_KEY`, `ANTHROPIC_API_KEY`, or `AWS_REGION` (with valid AWS credentials). Provider can be forced via `AI_PROVIDER=bedrock|anthropic|openrouter` env var. For web search, set `BRAVE_API_KEY` and/or `TAVILY_API_KEY` (Tavily preferred when both set). For image search, set `PEXELS_API_KEY`.
+**Env:** `.env` at workspace root, must be symlinked to `apps/api/.env` (`ln -s ../../.env apps/api/.env`). The API loads env via `dotenv/config` from its own CWD — without the symlink, no API keys are found and chat won't work. See `.env.example` for all vars. At minimum set one provider: `OPENROUTER_API_KEY`, `ANTHROPIC_API_KEY`, or `AWS_REGION` (with valid AWS credentials). Provider can be forced via `AI_PROVIDER=bedrock|anthropic|openrouter` env var. For web search, set `BRAVE_API_KEY` and/or `TAVILY_API_KEY` (Tavily preferred when both set). For image search, set `PEXELS_API_KEY`. For email verification, set `EMAIL_PROVIDER=ses` to use Amazon SES (reuses AWS credentials), or configure `SMTP_HOST`/`SMTP_USER`/`SMTP_PASS` for SMTP. SES sender address (`SES_FROM_EMAIL`, default `ailab@gc.cuny.edu`) must be verified in the SES console.
 
 **Deploy to staging:** `./deploy-staging.sh` (requires Tailscale/CUNY VPN connection).
 
@@ -116,13 +116,16 @@ The canvas has two modes (`CanvasMode = 'edit' | 'view'`):
 - **Preview** — toolbar button opens `{API_URL}/api/decks/{id}/preview` in a new browser tab (full deck preview, not inline). Not a canvas mode — just a `window.open()` call.
 
 ### Canvas Editing (Edit Mode)
-- **Format toolbar** (fixed above slide): heading levels (Normal/H1-H4), font size, bold, italic, link, bullet list, ordered list, align left/center/right
+- **Format toolbar** (fixed above slide): heading levels (Normal/H1-H4), font size, bold, italic, link, bullet list, ordered list, align left/center/right. Appears when a TipTap editor is active (text, card, tip-box modules).
 - **Drag handle** (top-left grip `⠿`): drag to reorder within zone or across zones (layout-split)
-- **Corner resize** (bottom-left and bottom-right handles): drag to resize module. Image/artifact persist dimensions; others scale via `transform: scale()`. Shift-drag locks aspect ratio
+- **Corner resize** (bottom-left and bottom-right handles): drag to resize module. Image/artifact/video persist dimensions; others scale via `transform: scale()`. Shift-drag locks aspect ratio
 - **✕ button**: delete module (double-click to confirm)
 - **Step order dropdown**: set progressive reveal order (1-5) per module
 - **+ Module button**: opens module picker overlay per zone (fixed position, not constrained by slide frame)
 - **Split handle**: drag to resize left/right zone proportions in `layout-split`
+- **Keyboard navigation:** Left/Right arrows navigate slides (skips when in editable elements). Escape returns to gallery.
+- **Dark mode:** Moon icon in toolbar toggles editor dark mode (persists to localStorage). Slide themes are independent.
+- **Share button:** In toolbar, opens share dialog to add collaborators by email
 
 ### AI Chat Mutations
 The AI emits mutations in ` ```mutation ` fenced blocks. Applied **live during streaming** (not after).
@@ -214,6 +217,9 @@ Push schema changes: `pnpm db:push` (runs `drizzle-kit push` from `apps/api/`).
 
 - Email/password with `*.cuny.edu` domain gating
 - Registration → email verification → admin approval → login
+- Email sent via Amazon SES (`@aws-sdk/client-ses` through nodemailer SES transport). Sender: `ailab@gc.cuny.edu` (verified as individual email identity — no DNS/domain verification). Set `EMAIL_PROVIDER=ses` in `.env`. Falls back to SMTP if `EMAIL_PROVIDER` is unset and `SMTP_HOST` is configured. Email code at `apps/api/src/email/index.ts`.
+- Admins can create pre-approved users from the admin panel (`POST /api/admin/users`)
+- Users can change their own password from the gallery header (`POST /api/auth/change-password`, rate limited 5/15min)
 - Lucia v3 sessions (HTTP-only cookies)
 - Admins: Stefano Morello (smorello@gc.cuny.edu), Zach Muhlbauer (zmuhlbauer@gc.cuny.edu)
 
@@ -224,7 +230,8 @@ Full admin panel at `/admin` with:
 - **User table:** All users with name, email, role (editable dropdown), status, deck count, tokens used, cap (click-to-edit), last active, actions
 - **Sortable + filterable** by any column / status
 - **Token usage modal:** Monthly bar chart, model breakdown, cap progress bar
-- **API routes:** `GET /api/admin/users/all`, `PATCH /api/admin/users/:id`, `GET /api/admin/users/:id/usage`
+- **Create user:** `+ Add User` button — creates pre-approved, email-verified accounts (enforces CUNY email)
+- **API routes:** `GET /api/admin/users/all`, `POST /api/admin/users` (create), `PATCH /api/admin/users/:id`, `GET /api/admin/users/:id/usage`
 
 **Svelte 5 gotcha:** `$derived.by(() => { ... })` returns a VALUE. Don't call it as `filteredUsers()` in templates — use `filteredUsers` directly. `$derived(expr)` is for simple expressions only.
 
@@ -239,7 +246,7 @@ Full admin panel at `/admin` with:
 - **PM2 API start:** `pm2 start "pnpm --filter @slide-maker/api dev" --name slide-maker-api` (must use tsx/dev, not compiled dist — shared package exports raw .ts)
 - **PM2 Web start:** `pm2 start /usr/bin/node --name slide-maker-web -- <vite-bin-path> preview --host 0.0.0.0 --port 4173` (run from `apps/web/`, `npx` not available in sudo env)
 - **Nginx config:** `/etc/nginx/sites-enabled/alt-text.conf` contains routes for ALL apps (alt-text, asr, ocr, site-studio, agent-studio, hm-review, slide-maker). Never use `sed` on it — edit manually or append carefully. Always `nginx -t` before `systemctl reload nginx`.
-- **Root disk is only 8.9GB** — `/var/log` symlinked to `/data/var-log` to prevent disk-full crashes. Monitor with `df -h /`.
+- **Root disk is only 8.9GB** — `/var/log` symlinked to `/data/var-log`, `/home` contents moved to `/data/home-moved/` with symlinks. Monitor with `df -h /`. If disk fills, check `/var/cache/apt` and run `apt-get clean`.
 - **Debug routes:** Require `ENABLE_DEBUG_ROUTES=true` in `.env` (explicit opt-in). Exposes transcript viewer at `/api/debug/transcripts`.
 
 ### Other Apps on the Server
@@ -290,9 +297,15 @@ Full admin panel at `/admin` with:
 - Content filtering on web search (blocked domains)
 - Security audit: `docs/security-audit-2026-03-28.md`
 
+- `/artifact?b64=` endpoint requires auth cookie — prevents unauthenticated same-origin XSS
+- `postMessage` handler in ArtifactModule validates `event.origin` (same-origin or `null` for srcdoc only)
+- File serving (`/api/decks/:id/files/:fileId`) uses `Cache-Control: private` — prevents CDN caching of uploaded files
+- SSRF guard double-resolves DNS to mitigate rebinding TOCTOU attacks
+- Preview HTML response includes CSP + `X-Frame-Options: DENY`
 - Native artifacts (JS primitives) run unsandboxed in the main page DOM — no iframe isolation. This is safe because only hardcoded first-party factory functions in `apps/web/src/lib/modules/artifacts/` are registered. Do NOT open the artifact registry to user-supplied code without adding a sandbox boundary.
 - Debug routes (`/api/debug/*`) require `ENABLE_DEBUG_ROUTES=true` env var AND admin auth. Never enable on production.
 - Slide insertion uses raw better-sqlite3 sync transaction (not Drizzle's async wrapper) to prevent order race conditions.
+- In-memory rate limiter (`RateLimiterMemory`) resets on PM2 restart — known limitation, acceptable for staging.
 
 **Do not revert security changes in:** `decks.ts`, `files.ts`, `chat.ts`, `auth.ts`, `index.ts`, `export/index.ts`, `export/html-renderer.ts`, `lucia.ts`
 
@@ -331,7 +344,7 @@ Tests import directly from `packages/shared/src/` and `apps/web/src/lib/utils/`.
 
 ### Sharing & Collaboration API
 - `GET /api/decks/users/search` — search users by name/email for sharing
-- `POST /api/decks/:id/share` — share deck with another user
+- `POST /api/decks/:id/share` — share deck with another user (sends email notification via SES, fire-and-forget)
 - `DELETE /api/decks/:id/share/:userId` — revoke shared access
 - `GET /api/decks/:id/collaborators` — list deck collaborators
 - `POST /api/decks/:id/lock` — acquire pessimistic edit lock (5-min TTL)
@@ -365,7 +378,7 @@ All resources (templates, themes, artifacts) are managed through centralized Sve
 - No real-time collaborative editing — uses pessimistic locking (5-min TTL with heartbeat).
 - **TipTap font-size passthrough (UNSOLVED):** Font size set via FormatToolbar (`setFontSize()`) applies `<span style="font-size: Xpx">` within TipTap HTML content stored in `data.text`. This inline font-size does NOT render in the full deck preview (`/api/decks/:id/preview`). The preview uses `FRAMEWORK_CSS_EXPORT` (vw-based typography) via `apps/api/src/routes/preview.ts`. The html-renderer (`apps/api/src/export/html-renderer.ts`) sanitizes heading text and strips `<p>` wrappers, and `sanitize-html` config allows `font-size` on `<span style>`. The sanitized output contains the correct `<span style="font-size:32px">` inside `<h1>`, but the rendered preview still shows default clamp sizes. Root cause is unknown — needs browser DevTools inspection of the actual preview DOM to identify what CSS rule or DOM mutation is overriding the inline span font-size. Canvas-side DOMPurify was also updated to `ADD_ATTR: ['style']` but may have the same issue.
 - `adapter-auto` warning on build — could switch to `adapter-node` for production.
-- Email verification (SMTP) not configured on staging — admin must manually approve users.
+- Email verification is live on staging via Amazon SES (sender: `ailab@gc.cuny.edu`). Admin approval is still required after email verification.
 - `.env` symlink (`apps/api/.env -> ../../.env`) must exist or the API won't load any API keys. If chat shows "No models available", recreate the symlink and restart `pnpm dev`.
 - Undo for `applyTemplate` replace path uses a pre-template snapshot (`_restoreSlide`). If the user edits the slide after applying a template and then undoes, the intermediate edits are lost. Standard undo behavior, but a richer approach (e.g. per-block diffing or undo stack per slide) may be warranted if users report data loss.
 - **Drizzle + better-sqlite3 transactions:** `db.transaction()` rejects async callbacks AND sync callbacks containing Drizzle query builders (they return thenables). Use raw `sqlite.transaction()` from `apps/api/src/db/index.ts` for atomic operations. See `decks.ts` addSlide for the pattern.
