@@ -12,7 +12,7 @@
   } = $props()
 
   let fontSize = $derived(typeof data.fontSize === 'string' ? data.fontSize : '')
-  let sizeStyle = $derived(fontSize ? `font-size: ${fontSize} !important` : '')
+  let sizeStyle = $derived(fontSize ? `--card-custom-size: ${fontSize}; font-size: ${fontSize} !important` : '')
 
   let title = $derived(typeof data.title === 'string' ? data.title : '')
   let renderedContent = $derived(renderContent(typeof data.body === 'string' ? data.body : typeof data.content === 'string' ? data.content : ''))
@@ -28,7 +28,7 @@
   }
 </script>
 
-<div class="card" class:card-navy={variant === 'navy'} class:card-cyan={variant === 'cyan'} style={sizeStyle}>
+<div class="card" class:card-navy={variant === 'navy'} class:card-cyan={variant === 'cyan'} class:has-custom-size={!!fontSize} style={sizeStyle}>
   {#if title}
     <h3>{title}</h3>
   {/if}
@@ -89,6 +89,13 @@
     text-align: inherit;
     width: 100%;
     display: block;
+  }
+  .card.has-custom-size :global(p) {
+    font-size: var(--card-custom-size) !important;
+  }
+  .card.has-custom-size :global(.tiptap),
+  .card.has-custom-size :global(.tiptap p) {
+    font-size: var(--card-custom-size) !important;
   }
   .card :global(.tiptap-mount) {
     padding-inline: 12px;

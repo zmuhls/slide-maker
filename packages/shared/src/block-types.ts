@@ -37,14 +37,14 @@ export type ModuleType = (typeof MODULE_TYPES)[number]
 export interface HeadingData { text: string; level: 1 | 2 | 3 | 4; fontSize?: string; align?: string }
 export interface TextData { markdown?: string; html?: string; fontSize?: string }
 export interface CardData { title?: string; content?: string; body?: string; variant?: 'cyan' | 'navy' | 'default'; fontSize?: string }
-export interface LabelData { text: string; color: 'cyan' | 'blue' | 'navy' | 'red' | 'amber' | 'green' }
+export interface LabelData { text: string; color: 'cyan' | 'blue' | 'navy' | 'red' | 'amber' | 'green'; fontSize?: string }
 export interface TipBoxData { content: string; title?: string; fontSize?: string }
 export interface PromptBlockData { content: string; quality?: 'good' | 'mid' | 'bad'; language?: string; fontSize?: string }
 export interface ImageData { src: string; alt: string; caption?: string; fit?: 'cover' | 'contain'; width?: string; height?: string }
 export interface CarouselData { items: { src: string; caption?: string }[]; syncSteps?: boolean }
-export interface ComparisonData { panels: { title: string; content?: string; body?: string }[] }
-export interface CardGridData { cards: { title: string; content?: string; body?: string; icon?: string; color?: string; variant?: string }[]; columns?: 2 | 3 | 4 }
-export interface FlowData { nodes: { icon?: string; label: string; description?: string }[] }
+export interface ComparisonData { panels: { title: string; content?: string; body?: string }[]; fontSize?: string }
+export interface CardGridData { cards: { title: string; content?: string; body?: string; icon?: string; color?: string; variant?: string }[]; columns?: 2 | 3 | 4; fontSize?: string }
+export interface FlowData { nodes: { icon?: string; label: string; description?: string }[]; fontSize?: string }
 export interface StreamListData { items: string[]; fontSize?: string }
 export interface ArtifactData {
   registryId?: string

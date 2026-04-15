@@ -11,6 +11,9 @@
     oneditorblur?: () => void;
   } = $props()
 
+  let fontSize = $derived(typeof data.fontSize === 'string' ? data.fontSize : '')
+  let sizeStyle = $derived(fontSize ? `--mod-custom-size: ${fontSize}; font-size: ${fontSize} !important` : '')
+
   let text = $derived(typeof data.text === 'string' ? data.text : '')
   let color = $derived(typeof data.color === 'string' ? data.color : 'cyan')
 
@@ -26,7 +29,7 @@
   }
 </script>
 
-<div class="label-wrapper label-{color}">
+<div class="label-wrapper label-{color}" class:has-custom-size={!!fontSize} style={sizeStyle}>
   {#if editable && editorActive}
     <RichTextEditor
       content={editContent}
@@ -74,6 +77,8 @@
     font: inherit;
     text-align: inherit;
   }
+  .label-wrapper.has-custom-size .label,
+  .label-wrapper.has-custom-size .label-preview { font-size: var(--mod-custom-size) !important; }
   /* TipTap content inherits label styling */
   .label-wrapper :global(.tiptap-mount) {
     padding-inline: 10px;

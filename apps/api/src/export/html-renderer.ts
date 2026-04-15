@@ -216,7 +216,10 @@ function renderModule(mod: Module, files?: ExportFile[], opts?: RenderOptions): 
       const inner = containsHtmlMarkup(raw)
         ? sanitize(raw).replace(/<\/?p>/g, '').trim()
         : esc(raw)
-      return `<span class="label${color}"${step}>${inner}</span>`
+      const lStyles: string[] = []
+      if (d.fontSize) lStyles.push(`font-size: ${esc(String(d.fontSize))}`)
+      const lStyleAttr = lStyles.length ? ` style="${lStyles.join('; ')}"` : ''
+      return `<span class="label${color}"${step}${lStyleAttr}>${inner}</span>`
     }
 
     case 'tip-box': {
@@ -274,7 +277,10 @@ function renderModule(mod: Module, files?: ExportFile[], opts?: RenderOptions): 
 
     case 'comparison': {
       const panels = Array.isArray(d.panels) ? d.panels : []
-      let html = `<div class="comparison"${step}>`
+      const cpStyles: string[] = []
+      if (d.fontSize) cpStyles.push(`font-size: ${esc(String(d.fontSize))}`)
+      const cpStyleAttr = cpStyles.length ? ` style="${cpStyles.join('; ')}"` : ''
+      let html = `<div class="comparison"${step}${cpStyleAttr}>`
       for (const panel of panels) {
         const p = panel as Record<string, unknown>
         const title = p.title ? `<h3>${esc(String(p.title))}</h3>` : ''
@@ -290,7 +296,8 @@ function renderModule(mod: Module, files?: ExportFile[], opts?: RenderOptions): 
     case 'card-grid': {
       const cards = Array.isArray(d.cards) ? d.cards : []
       const cols = Number(d.columns || d.cols) || 3
-      let html = `<div class="card-grid" style="grid-template-columns: repeat(${cols}, 1fr)"${step}>`
+      const cgExtra = d.fontSize ? `; font-size: ${esc(String(d.fontSize))}` : ''
+      let html = `<div class="card-grid" style="grid-template-columns: repeat(${cols}, 1fr)${cgExtra}"${step}>`
       for (const card of cards) {
         const c = card as Record<string, unknown>
         const title = c.title ? `<h3 class="card-title">${esc(String(c.title))}</h3>` : ''
@@ -307,7 +314,10 @@ function renderModule(mod: Module, files?: ExportFile[], opts?: RenderOptions): 
 
     case 'flow': {
       const nodes = Array.isArray(d.nodes) ? d.nodes : []
-      let html = `<div class="flow"${step}>`
+      const fStyles: string[] = []
+      if (d.fontSize) fStyles.push(`font-size: ${esc(String(d.fontSize))}`)
+      const fStyleAttr = fStyles.length ? ` style="${fStyles.join('; ')}"` : ''
+      let html = `<div class="flow"${step}${fStyleAttr}>`
       nodes.forEach((node: unknown, i: number) => {
         if (i > 0) html += `<div class="flow-arrow"></div>`
         const n = node as Record<string, unknown>

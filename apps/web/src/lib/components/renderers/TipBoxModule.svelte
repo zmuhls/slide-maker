@@ -12,7 +12,7 @@
   } = $props()
 
   let fontSize = $derived(typeof data.fontSize === 'string' ? data.fontSize : '')
-  let sizeStyle = $derived(fontSize ? `font-size: ${fontSize} !important` : '')
+  let sizeStyle = $derived(fontSize ? `--tip-custom-size: ${fontSize}; font-size: ${fontSize} !important` : '')
 
   let renderedContent = $derived(renderContent(typeof data.content === 'string' ? data.content : ''))
   let title = $derived(typeof data.title === 'string' ? data.title : '')
@@ -27,7 +27,7 @@
   }
 </script>
 
-<div class="tip-box" style={sizeStyle}>
+<div class="tip-box" class:has-custom-size={!!fontSize} style={sizeStyle}>
   {#if title}
     <strong>{title}</strong>
   {/if}
@@ -88,6 +88,16 @@
     text-align: inherit;
     width: 100%;
     display: block;
+  }
+  .tip-box.has-custom-size strong {
+    font-size: var(--tip-custom-size) !important;
+  }
+  .tip-box.has-custom-size .tip-box-content {
+    font-size: var(--tip-custom-size) !important;
+  }
+  .tip-box.has-custom-size .tip-box-content :global(.tiptap),
+  .tip-box.has-custom-size .tip-box-content :global(.tiptap p) {
+    font-size: var(--tip-custom-size) !important;
   }
   .tip-box-content :global(.tiptap-mount) {
     padding-inline: 12px;

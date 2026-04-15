@@ -11,6 +11,9 @@
     oneditorblur?: () => void;
   } = $props()
 
+  let fontSize = $derived(typeof data.fontSize === 'string' ? data.fontSize : '')
+  let sizeStyle = $derived(fontSize ? `--mod-custom-size: ${fontSize}; font-size: ${fontSize} !important` : '')
+
   let nodes: Array<{ icon?: string; label: string; description?: string }> = $derived(
     Array.isArray(data.nodes)
       ? data.nodes.map((n: unknown) => {
@@ -41,7 +44,7 @@
   }
 </script>
 
-<div class="flow">
+<div class="flow" class:has-custom-size={!!fontSize} style={sizeStyle}>
   {#each nodes as node, i}
     <div class="flow-node">
       <div class="flow-icon">
@@ -185,6 +188,9 @@
     opacity: 0.4;
     font-style: italic;
   }
+  .flow.has-custom-size .flow-node { font-size: var(--mod-custom-size) !important; }
+  .flow.has-custom-size .flow-label { font-size: var(--mod-custom-size) !important; }
+  .flow.has-custom-size .flow-desc { font-size: var(--mod-custom-size) !important; }
   .flow-label :global(.tiptap),
   .flow-label :global(.tiptap p) {
     font-weight: 600;

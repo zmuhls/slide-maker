@@ -107,7 +107,10 @@ function renderModule(mod: Module, slide: Slide): string {
       const inner = containsHtmlMarkup(raw)
         ? sanitize(raw).replace(/^<p>(.*)<\/p>$/s, '$1')
         : esc(raw)
-      return `<span class="label${color}">${inner}</span>`
+      const lStyles: string[] = []
+      if (d.fontSize) lStyles.push(`font-size: ${esc(String(d.fontSize))}`)
+      const lStyleAttr = lStyles.length ? ` style="${lStyles.join('; ')}"` : ''
+      return `<span class="label${color}"${lStyleAttr}>${inner}</span>`
     }
 
     case 'tip-box': {
@@ -152,7 +155,10 @@ function renderModule(mod: Module, slide: Slide): string {
 
     case 'comparison': {
       const panels = Array.isArray(d.panels) ? d.panels : []
-      let html = '<div class="comparison">'
+      const cpStyles: string[] = []
+      if (d.fontSize) cpStyles.push(`font-size: ${esc(String(d.fontSize))}`)
+      const cpStyleAttr = cpStyles.length ? ` style="${cpStyles.join('; ')}"` : ''
+      let html = `<div class="comparison"${cpStyleAttr}>`
       for (const panel of panels) {
         const item = panel as Record<string, unknown>
         const title = item.title ? `<h3>${esc(String(item.title))}</h3>` : ''
@@ -168,7 +174,8 @@ function renderModule(mod: Module, slide: Slide): string {
     case 'card-grid': {
       const cards = Array.isArray(d.cards) ? d.cards : []
       const cols = Number(d.columns || d.cols) || 3
-      let html = `<div class="card-grid" style="grid-template-columns: repeat(${cols}, 1fr)">`
+      const cgExtra = d.fontSize ? `; font-size: ${esc(String(d.fontSize))}` : ''
+      let html = `<div class="card-grid" style="grid-template-columns: repeat(${cols}, 1fr)${cgExtra}">`
       for (const card of cards) {
         const item = card as Record<string, unknown>
         const title = item.title ? `<h3>${esc(String(item.title))}</h3>` : ''
@@ -185,7 +192,10 @@ function renderModule(mod: Module, slide: Slide): string {
 
     case 'flow': {
       const nodes = Array.isArray(d.nodes) ? d.nodes : []
-      let html = '<div class="flow">'
+      const fStyles: string[] = []
+      if (d.fontSize) fStyles.push(`font-size: ${esc(String(d.fontSize))}`)
+      const fStyleAttr = fStyles.length ? ` style="${fStyles.join('; ')}"` : ''
+      let html = `<div class="flow"${fStyleAttr}>`
       nodes.forEach((node: unknown, index: number) => {
         if (index > 0) html += '<div class="flow-arrow">→</div>'
         html += `<div class="flow-node">${esc(String((node as Record<string, unknown>).label || node))}</div>`

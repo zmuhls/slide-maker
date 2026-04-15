@@ -12,6 +12,9 @@
     oneditorblur?: () => void;
   } = $props()
 
+  let fontSize = $derived(typeof data.fontSize === 'string' ? data.fontSize : '')
+  let sizeStyle = $derived(fontSize ? `--mod-custom-size: ${fontSize}; font-size: ${fontSize} !important` : '')
+
   let columns = $derived(
     typeof data.columns === 'number' && data.columns >= 2 && data.columns <= 4
       ? data.columns
@@ -50,7 +53,7 @@
   }
 </script>
 
-<div class="card-grid" style="grid-template-columns: repeat({columns}, 1fr);">
+<div class="card-grid" class:has-custom-size={!!fontSize} style="grid-template-columns: repeat({columns}, 1fr);{sizeStyle ? ` ${sizeStyle}` : ''}">
   {#each cards as card, i}
     <div class="card" class:card-cyan={card.variant === 'cyan'} class:card-navy={card.variant === 'navy'} style={card.color && !card.variant ? `border-top: 3px solid ${card.color};` : ''}>
       {#if editable && activeField?.cardIndex === i && activeField.field === 'title'}
@@ -151,6 +154,8 @@
     opacity: 0.4;
     font-style: italic;
   }
+  .card-grid.has-custom-size .card-title { font-size: var(--mod-custom-size) !important; }
+  .card-grid.has-custom-size .card-content { font-size: var(--mod-custom-size) !important; }
   .card-title :global(.tiptap),
   .card-title :global(.tiptap p) {
     font-family: var(--font-display);

@@ -12,6 +12,9 @@
     oneditorblur?: () => void;
   } = $props()
 
+  let fontSize = $derived(typeof data.fontSize === 'string' ? data.fontSize : '')
+  let sizeStyle = $derived(fontSize ? `--mod-custom-size: ${fontSize}; font-size: ${fontSize} !important` : '')
+
   let panels: Array<{ title: string; content: string }> = $derived(
     Array.isArray(data.panels)
       ? data.panels.map((p: unknown) => {
@@ -42,7 +45,7 @@
   }
 </script>
 
-<div class="comparison">
+<div class="comparison" class:has-custom-size={!!fontSize} style={sizeStyle}>
   {#each panels as panel, i}
     <div class="comparison-panel">
       {#if editable && activeField?.panelIndex === i && activeField.field === 'title'}
@@ -144,6 +147,8 @@
     opacity: 0.4;
     font-style: italic;
   }
+  .comparison.has-custom-size .comparison-panel h3 { font-size: var(--mod-custom-size) !important; }
+  .comparison.has-custom-size .panel-content { font-size: var(--mod-custom-size) !important; }
   .comparison-panel h3 :global(.tiptap),
   .comparison-panel h3 :global(.tiptap p) {
     font-size: clamp(0.9rem, 1.6cqi, 1.3rem);

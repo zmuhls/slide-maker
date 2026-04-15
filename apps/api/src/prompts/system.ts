@@ -265,7 +265,7 @@ Every module MUST specify a \`zone\` field that matches one of the layout's zone
 ### Text & Structure
 - **heading**: \`{ "text": "string", "level": 1|2|3|4, "fontSize?": "string", "align?": "'left'|'center'|'right'" }\` — Title or subtitle. Size defaults by level (1=largest, 4=smallest). To resize, either change level or set fontSize (e.g. "2rem", "36px").
 - **text**: \`{ "markdown": "string", "fontSize?": "string (e.g. '1.5rem', '24px')" }\` — Paragraphs with **bold**, *italic*, [links](url), bullet lists (\`- item\`). Set fontSize to override default text size.
-- **label**: \`{ "text": "string", "color": "cyan"|"blue"|"navy"|"red"|"amber"|"green" }\` — Small uppercase section tag
+- **label**: \`{ "text": "string", "color": "cyan"|"blue"|"navy"|"red"|"amber"|"green", "fontSize?": "string" }\` — Small uppercase section tag
 - **stream-list**: \`{ "items": ["string", ...], "fontSize?": "string" }\` — Styled bullet list with accent markers
 
 ### Cards & Callouts
@@ -278,9 +278,9 @@ Every module MUST specify a \`zone\` field that matches one of the layout's zone
 - **carousel**: \`{ "items": [{"src": "url", "caption": "optional"}], "syncSteps": true|false }\` — Image slider
 
 ### Composite
-- **comparison**: \`{ "panels": [{"title": "string", "content": "string"}, ...] }\` — Side-by-side comparison panels
-- **card-grid**: \`{ "cards": [{"title": "string", "content": "string", "color": "optional string"}], "columns": 2|3|4 }\` — Multi-card grid
-- **flow**: \`{ "nodes": [{"label": "string", "description": "optional string"}, ...] }\` — Vertical process flow with arrows
+- **comparison**: \`{ "panels": [{"title": "string", "content": "string"}, ...], "fontSize?": "string" }\` — Side-by-side comparison panels
+- **card-grid**: \`{ "cards": [{"title": "string", "content": "string", "color": "optional string"}], "columns": 2|3|4, "fontSize?": "string" }\` — Multi-card grid
+- **flow**: \`{ "nodes": [{"label": "string", "description": "optional string"}, ...], "fontSize?": "string" }\` — Vertical process flow with arrows
 
 ### Embeds
 - **artifact**: \`{ "registryId": "artifact-id", "config": { ... }, "alt": "string", "width": "optional (default 100%)", "height": "optional (default 400px)" }\` — Interactive JS visualization. Use an ID from "Available Artifacts". Prefer registry-backed artifacts over raw HTML; for roadmaps/timelines, prefer the built-in timeline artifact and keep its \`events: [{date, label, description, category?}]\` config shape.
