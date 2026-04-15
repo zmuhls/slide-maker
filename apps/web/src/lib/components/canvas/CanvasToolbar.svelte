@@ -70,6 +70,7 @@
 
   // Group themes into families (light/dark pairs merged)
   interface ThemeFamily {
+    key: string
     name: string
     light: ThemeData | null
     dark: ThemeData | null
@@ -91,6 +92,7 @@
           .replace(/\s*\b(dark|light)\b\s*/i, ' ').trim()
           || theme.name
         result.push({
+          key: (thisIsDark ? pair : theme).id,
           name: familyName,
           light: thisIsDark ? pair : theme,
           dark: thisIsDark ? theme : pair,
@@ -99,6 +101,7 @@
       } else {
         matched.add(theme.id)
         result.push({
+          key: theme.id,
           name: theme.name,
           light: null,
           dark: null,
@@ -117,8 +120,15 @@
     const candidates: (ThemeData | null)[] = []
     if (/dark/i.test(name)) candidates.push(byName(name.replace(/dark/i, 'Light')))
     if (/light/i.test(name)) candidates.push(byName(name.replace(/light/i, 'Dark')))
-    if (/-dark$/i.test(id)) candidates.push(byId(id.replace(/-dark$/i, '-light')))
+    if (/-dark$/i.test(id)) {
+      candidates.push(byId(id.replace(/-dark$/i, '-light')))
+      candidates.push(byId(id.replace(/-dark$/i, '-default')))
+    }
     if (/-light$/i.test(id)) candidates.push(byId(id.replace(/-light$/i, '-dark')))
+    if (/-default$/i.test(id)) {
+      const base = id.replace(/-default$/i, '')
+      candidates.push(byId(`${base}-dark`))
+    }
     return (candidates.find(Boolean) as ThemeData) ?? null
   }
 
@@ -385,70 +395,68 @@
           {:else if families.length === 0}
             <div class="tp-empty">No themes available</div>
           {:else}
-            {#each families as family (family.name)}
+            {#each families as family (family.key)}
               {@const active = isActiveFamily(family)}
               {@const variant = getActiveVariant(family)}
               {@const hasPair = !!family.light && !!family.dark}
               {@const activeVar = activeFamilyVariant(family)}
               <div class="tp-row" class:active>
                 <button
-                  class="tp-row-apply"
+                  class="tp-row-main"
                   onclick={() => applyTheme(variant.id)}
                   disabled={applying !== null}
                 >
-                  <div class="tp-row-top">
-                    <span class="tp-row-name">{family.name}</span>
-                    {#if active}
-                      <span class="tp-check">{'\u2713'}</span>
-                    {/if}
+                  <div class="tp-color-bar">
+                    {#each getColors(variant) as color}
+                      <span style:background={color}></span>
+                    {/each}
                   </div>
-                  <div class="tp-row-detail">
-                    <div class="tp-swatches">
-                      {#each getColors(variant) as color}
-                        <span class="tp-swatch" style:background={color}></span>
-                      {/each}
-                    </div>
+                  <div class="tp-info">
+                    <span class="tp-name">{family.name}</span>
                     <span class="tp-fonts-label">{getFonts(variant)}</span>
                   </div>
                 </button>
-                <div class="tp-row-actions">
+                <div class="tp-row-right">
                   {#if hasPair}
-                    <div class="tp-variant-toggle">
+                    <div class="tp-variant-pill">
                       <button
-                        class="tp-var-btn"
                         class:active={activeVar === 'light'}
                         onclick={() => switchVariant(family, 'light')}
-                        title="Light variant"
+                        title="Light"
                       >
                         <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
                       </button>
                       <button
-                        class="tp-var-btn"
                         class:active={activeVar === 'dark'}
                         onclick={() => switchVariant(family, 'dark')}
-                        title="Dark variant"
+                        title="Dark"
                       >
                         <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
                       </button>
                     </div>
                   {/if}
-                  <button class="tp-fork-btn" onclick={() => forkTheme(variant)} title="Fork">Fk</button>
-                  {#if !variant.builtIn}
-                    <button
-                      class="tp-delete-btn"
-                      onclick={() => {
-                        if (confirmDelete === variant.id) {
-                          handleDeleteTheme(variant.id)
-                        } else {
-                          confirmDelete = variant.id
-                        }
-                      }}
-                      disabled={deleting === variant.id}
-                      title={confirmDelete === variant.id ? 'Click again to confirm' : 'Delete'}
-                    >
-                      {deleting === variant.id ? '..' : confirmDelete === variant.id ? 'Sure?' : '\u2715'}
+                  <div class="tp-actions">
+                    <button class="tp-act-btn" onclick={() => forkTheme(variant)} title="Duplicate">
+                      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
                     </button>
-                  {/if}
+                    {#if !variant.builtIn}
+                      <button
+                        class="tp-act-btn tp-act-delete"
+                        class:confirm={confirmDelete === variant.id}
+                        onclick={() => {
+                          if (confirmDelete === variant.id) {
+                            handleDeleteTheme(variant.id)
+                          } else {
+                            confirmDelete = variant.id
+                          }
+                        }}
+                        disabled={deleting === variant.id}
+                        title={confirmDelete === variant.id ? 'Click again to confirm' : 'Delete'}
+                      >
+                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                      </button>
+                    {/if}
+                  </div>
                 </div>
               </div>
             {/each}
@@ -827,6 +835,7 @@
     overflow-y: auto;
     overflow-x: hidden;
     min-height: 0;
+    padding: 4px 0;
   }
   .tp-empty {
     padding: 24px 10px;
@@ -835,76 +844,80 @@
     color: var(--color-text-muted);
   }
 
-  /* Theme row */
+  /* ── Theme row ── */
   .tp-row {
     display: flex;
-    align-items: stretch;
-    border-bottom: 1px solid var(--color-border);
+    align-items: center;
+    padding: 0 6px;
+    margin: 0 4px;
+    border-radius: 6px;
     transition: background 0.12s;
-  }
-  .tp-row:last-child {
-    border-bottom: none;
+    position: relative;
   }
   .tp-row:hover {
-    background: var(--color-ghost-bg, rgba(59, 115, 230, 0.04));
+    background: var(--color-ghost-bg);
   }
   .tp-row.active {
-    background: var(--color-ghost-bg, rgba(59, 115, 230, 0.06));
+    background: var(--color-ghost-bg);
+  }
+  .tp-row.active::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 6px;
+    bottom: 6px;
+    width: 3px;
+    border-radius: 2px;
+    background: var(--color-primary);
   }
 
-  .tp-row-apply {
+  /* Main clickable area */
+  .tp-row-main {
     flex: 1;
     display: flex;
-    flex-direction: column;
-    gap: 3px;
-    padding: 7px 10px;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 4px;
     background: none;
     border: none;
     cursor: pointer;
     text-align: left;
     min-width: 0;
   }
-  .tp-row-apply:disabled {
-    opacity: 0.6;
+  .tp-row-main:disabled {
+    opacity: 0.5;
     cursor: wait;
   }
 
-  .tp-row-top {
+  /* Color bar — horizontal strip of 4 colors */
+  .tp-color-bar {
     display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 4px;
+    flex-shrink: 0;
+    border-radius: 4px;
+    overflow: hidden;
+    width: 48px;
+    height: 24px;
+    border: 1px solid rgba(0, 0, 0, 0.08);
   }
-  .tp-row-name {
+  .tp-color-bar span {
+    flex: 1;
+  }
+
+  /* Name + fonts */
+  .tp-info {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    min-width: 0;
+  }
+  .tp-name {
     font-size: 12px;
     font-weight: 600;
     color: var(--color-text);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-  }
-  .tp-check {
-    color: var(--color-primary);
-    font-size: 13px;
-    font-weight: 700;
-    flex-shrink: 0;
-  }
-
-  .tp-row-detail {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-  }
-  .tp-swatches {
-    display: flex;
-    gap: 3px;
-  }
-  .tp-swatch {
-    width: 14px;
-    height: 14px;
-    border-radius: 3px;
-    border: 1px solid rgba(0, 0, 0, 0.1);
-    flex-shrink: 0;
+    line-height: 1.3;
   }
   .tp-fonts-label {
     font-size: 10px;
@@ -912,29 +925,32 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    line-height: 1.2;
   }
 
-  /* Row actions */
-  .tp-row-actions {
+  /* Right side — variant pill + action icons */
+  .tp-row-right {
     display: flex;
     align-items: center;
-    gap: 1px;
+    gap: 4px;
     flex-shrink: 0;
-    border-left: 1px solid var(--color-border);
+    margin-left: auto;
+    padding-left: 4px;
   }
 
-  /* Variant toggle (light/dark) */
-  .tp-variant-toggle {
+  /* Light/dark variant pill */
+  .tp-variant-pill {
     display: flex;
-    flex-direction: column;
-    border-right: 1px solid var(--color-border);
+    border: 1px solid var(--color-border);
+    border-radius: 4px;
+    overflow: hidden;
   }
-  .tp-var-btn {
+  .tp-variant-pill button {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 24px;
-    height: 50%;
+    width: 22px;
+    height: 20px;
     background: none;
     border: none;
     cursor: pointer;
@@ -942,51 +958,62 @@
     transition: background 0.12s, color 0.12s;
     padding: 0;
   }
-  .tp-var-btn:hover {
+  .tp-variant-pill button:first-child {
+    border-right: 1px solid var(--color-border);
+  }
+  .tp-variant-pill button:hover {
     background: var(--color-ghost-bg);
     color: var(--color-primary);
   }
-  .tp-var-btn.active {
-    color: var(--color-primary);
+  .tp-variant-pill button.active {
     background: var(--color-ghost-bg);
-  }
-
-  .tp-fork-btn {
-    padding: 0 6px;
-    background: none;
-    border: none;
-    cursor: pointer;
-    font-size: 9px;
-    font-weight: 700;
-    color: var(--color-text-muted);
-    transition: color 0.12s;
-    align-self: stretch;
-    display: flex;
-    align-items: center;
-  }
-  .tp-fork-btn:hover {
     color: var(--color-primary);
   }
 
-  .tp-delete-btn {
-    padding: 0 6px;
-    background: none;
-    border: none;
-    border-left: 1px solid var(--color-border);
-    cursor: pointer;
-    font-size: 11px;
-    font-weight: 600;
-    color: var(--color-text-muted);
-    transition: color 0.12s;
-    align-self: stretch;
+  /* Action icons — visible on hover */
+  .tp-actions {
     display: flex;
     align-items: center;
+    gap: 1px;
+    opacity: 0;
+    transition: opacity 0.12s;
   }
-  .tp-delete-btn:hover {
-    color: #ef4444;
+  .tp-row:hover .tp-actions {
+    opacity: 1;
   }
-  .tp-delete-btn:disabled {
+  .tp-act-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    background: none;
+    border: none;
+    border-radius: 3px;
+    cursor: pointer;
+    color: var(--color-text-muted);
+    transition: background 0.12s, color 0.12s;
+    padding: 0;
+  }
+  .tp-act-btn:hover {
+    background: var(--color-ghost-bg-hover);
+    color: var(--color-primary);
+  }
+  .tp-act-delete:hover {
+    color: var(--color-error);
+    background: rgba(239, 68, 68, 0.08);
+  }
+  .tp-act-delete.confirm {
+    opacity: 1;
+    color: var(--color-error);
+    background: rgba(239, 68, 68, 0.12);
+  }
+  .tp-act-btn:disabled {
     opacity: 0.3;
     cursor: not-allowed;
+  }
+  /* Keep actions visible when in confirm-delete state */
+  .tp-row:has(.tp-act-delete.confirm) .tp-actions {
+    opacity: 1;
   }
 </style>

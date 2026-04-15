@@ -86,15 +86,13 @@ async function seedThemes() {
     {
       id: 'studio-dark',
       name: 'Studio Dark',
-      // High-contrast, accessible palette
-      colors: { primary: '#1D3A83', secondary: '#64b5f6', accent: '#2FB8D6', bg: '#0c1220' },
+      colors: { primary: '#22d3ee', secondary: '#06B6D4', accent: '#2DD4BF', bg: '#0c1220' },
       fonts: { heading: 'Outfit', body: 'Inter' },
     },
     {
       id: 'studio-light',
       name: 'Studio Light',
-      // Light mode with strong title background for white text
-      colors: { primary: '#1D3A83', secondary: '#3B73E6', accent: '#0C7F96', bg: '#ffffff' },
+      colors: { primary: '#0E7490', secondary: '#0891B2', accent: '#0D9488', bg: '#f8fafc' },
       fonts: { heading: 'Outfit', body: 'Inter' },
     },
     {
@@ -104,39 +102,57 @@ async function seedThemes() {
       fonts: { heading: 'Outfit', body: 'Inter' },
     },
     {
-      id: 'cuny-dark',
-      name: 'CUNY Dark',
-      colors: { primary: '#1e3a5f', secondary: '#3b82f6', accent: '#64b5f6', bg: '#111827' },
+      id: 'cuny-ai-lab-dark',
+      name: 'CUNY AI Lab Dark',
+      colors: { primary: '#60a5fa', secondary: '#3b82f6', accent: '#38bdf8', bg: '#111827' },
       fonts: { heading: 'Outfit', body: 'Inter' },
     },
     {
-      id: 'cuny-light',
-      name: 'CUNY Light',
-      colors: { primary: '#1D3A83', secondary: '#3B73E6', accent: '#0C7F96', bg: '#ffffff' },
-      fonts: { heading: 'Outfit', body: 'Inter' },
-    },
-    {
-      id: 'warm-academic',
-      name: 'Warm Academic',
+      id: 'warm-academic-light',
+      name: 'Warm Academic Light',
       colors: { primary: '#7c3aed', secondary: '#6d28d9', accent: '#b45309', bg: '#faf5ef' },
       fonts: { heading: 'Georgia', body: 'Inter' },
     },
     {
-      id: 'slate-minimal',
-      name: 'Slate Minimal',
+      id: 'warm-academic-dark',
+      name: 'Warm Academic Dark',
+      colors: { primary: '#c4b5fd', secondary: '#a78bfa', accent: '#fbbf24', bg: '#1c1917' },
+      fonts: { heading: 'Georgia', body: 'Inter' },
+    },
+    {
+      id: 'slate-minimal-light',
+      name: 'Slate Minimal Light',
       colors: { primary: '#334155', secondary: '#64748b', accent: '#0369a1', bg: '#f8fafc' },
       fonts: { heading: 'Inter', body: 'Inter' },
     },
     {
-      id: 'midnight',
-      name: 'Midnight',
-      colors: { primary: '#312e81', secondary: '#6366f1', accent: '#a78bfa', bg: '#0f0e17' },
+      id: 'slate-minimal-dark',
+      name: 'Slate Minimal Dark',
+      colors: { primary: '#e2e8f0', secondary: '#94a3b8', accent: '#38bdf8', bg: '#0f172a' },
+      fonts: { heading: 'Inter', body: 'Inter' },
+    },
+    {
+      id: 'midnight-dark',
+      name: 'Midnight Dark',
+      colors: { primary: '#a5b4fc', secondary: '#818cf8', accent: '#c4b5fd', bg: '#0f0e17' },
       fonts: { heading: 'Outfit', body: 'Inter' },
     },
     {
-      id: 'forest',
-      name: 'Forest',
+      id: 'midnight-light',
+      name: 'Midnight Light',
+      colors: { primary: '#4338ca', secondary: '#6366f1', accent: '#8b5cf6', bg: '#f5f3ff' },
+      fonts: { heading: 'Outfit', body: 'Inter' },
+    },
+    {
+      id: 'forest-light',
+      name: 'Forest Light',
       colors: { primary: '#065f46', secondary: '#059669', accent: '#047857', bg: '#f0fdf4' },
+      fonts: { heading: 'Outfit', body: 'Inter' },
+    },
+    {
+      id: 'forest-dark',
+      name: 'Forest Dark',
+      colors: { primary: '#6ee7b7', secondary: '#34d399', accent: '#a7f3d0', bg: '#022c22' },
       fonts: { heading: 'Outfit', body: 'Inter' },
     },
   ]

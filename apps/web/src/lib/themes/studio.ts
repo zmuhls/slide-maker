@@ -5,7 +5,7 @@ export const StudioDark: ThemeData = {
   name: 'Studio Dark',
   css: '',
   fonts: { heading: 'Outfit', body: 'Inter' },
-  colors: { primary: '#1D3A83', secondary: '#64b5f6', accent: '#2FB8D6', bg: '#0c1220' },
+  colors: { primary: '#22d3ee', secondary: '#06B6D4', accent: '#2DD4BF', bg: '#0c1220' },
   builtIn: true,
 }
 
@@ -14,7 +14,7 @@ export const StudioLight: ThemeData = {
   name: 'Studio Light',
   css: '',
   fonts: { heading: 'Outfit', body: 'Inter' },
-  colors: { primary: '#1D3A83', secondary: '#3B73E6', accent: '#2FB8D6', bg: '#ffffff' },
+  colors: { primary: '#0E7490', secondary: '#0891B2', accent: '#0D9488', bg: '#f8fafc' },
   builtIn: true,
 }
 
