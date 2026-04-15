@@ -5,6 +5,9 @@
     onchange?: (newData: Record<string, unknown>) => void;
   } = $props()
 
+  let fontSize = $derived(typeof data.fontSize === 'string' ? data.fontSize : '')
+  let sizeStyle = $derived(fontSize ? `font-size: ${fontSize} !important` : '')
+
   let content = $derived(typeof data.content === 'string' ? data.content : '')
   let quality = $derived(typeof data.quality === 'string' ? data.quality : '')
   let language = $derived(typeof data.language === 'string' ? data.language : '')
@@ -43,6 +46,7 @@
   class:prompt-good={quality === 'good'}
   class:prompt-mid={quality === 'mid'}
   class:prompt-bad={quality === 'bad'}
+  style={sizeStyle}
 >
   <button class="copy-btn" onclick={copyToClipboard}>
     {copied ? 'Copied!' : 'Copy'}

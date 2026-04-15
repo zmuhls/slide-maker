@@ -11,6 +11,9 @@
     oneditorblur?: () => void;
   } = $props()
 
+  let fontSize = $derived(typeof data.fontSize === 'string' ? data.fontSize : '')
+  let sizeStyle = $derived(fontSize ? `font-size: ${fontSize} !important` : '')
+
   let renderedContent = $derived(renderContent(typeof data.content === 'string' ? data.content : ''))
   let title = $derived(typeof data.title === 'string' ? data.title : '')
 
@@ -24,7 +27,7 @@
   }
 </script>
 
-<div class="tip-box">
+<div class="tip-box" style={sizeStyle}>
   {#if title}
     <strong>{title}</strong>
   {/if}

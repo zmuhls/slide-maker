@@ -12,6 +12,9 @@
     oneditorblur?: () => void;
   } = $props()
 
+  let fontSize = $derived(typeof data.fontSize === 'string' ? data.fontSize : '')
+  let sizeStyle = $derived(fontSize ? `--list-custom-size: ${fontSize}; font-size: ${fontSize} !important` : '')
+
   let items: string[] = $derived(
     Array.isArray(data.items)
       ? data.items.map((item: unknown) => {
@@ -37,7 +40,7 @@
   }
 </script>
 
-<ul class="stream-list">
+<ul class="stream-list" class:has-custom-size={!!fontSize} style={sizeStyle}>
   {#each items as item, i}
     <li>
       {#if editable && activeItemIndex === i}
@@ -99,5 +102,8 @@
     line-height: inherit;
     font-family: inherit;
     margin: 0;
+  }
+  .stream-list.has-custom-size li {
+    font-size: var(--list-custom-size) !important;
   }
 </style>

@@ -264,14 +264,14 @@ Every module MUST specify a \`zone\` field that matches one of the layout's zone
 
 ### Text & Structure
 - **heading**: \`{ "text": "string", "level": 1|2|3|4, "fontSize?": "string", "align?": "'left'|'center'|'right'" }\` — Title or subtitle. Size defaults by level (1=largest, 4=smallest). To resize, either change level or set fontSize (e.g. "2rem", "36px").
-- **text**: \`{ "markdown": "string" }\` — Paragraphs with **bold**, *italic*, [links](url), bullet lists (\`- item\`)
+- **text**: \`{ "markdown": "string", "fontSize?": "string (e.g. '1.5rem', '24px')" }\` — Paragraphs with **bold**, *italic*, [links](url), bullet lists (\`- item\`). Set fontSize to override default text size.
 - **label**: \`{ "text": "string", "color": "cyan"|"blue"|"navy"|"red"|"amber"|"green" }\` — Small uppercase section tag
-- **stream-list**: \`{ "items": ["string", ...] }\` — Styled bullet list with accent markers
+- **stream-list**: \`{ "items": ["string", ...], "fontSize?": "string" }\` — Styled bullet list with accent markers
 
 ### Cards & Callouts
-- **card**: \`{ "content": "string", "variant": "cyan"|"navy"|"default" }\` — Colored info card with left border
-- **tip-box**: \`{ "content": "string", "title": "optional string" }\` — Highlighted callout/note box
-- **prompt-block**: \`{ "content": "string", "quality": "good"|"mid"|"bad", "language": "optional string" }\` — Code or prompt display with quality indicator
+- **card**: \`{ "content": "string", "variant": "cyan"|"navy"|"default", "fontSize?": "string" }\` — Colored info card with left border
+- **tip-box**: \`{ "content": "string", "title": "optional string", "fontSize?": "string" }\` — Highlighted callout/note box
+- **prompt-block**: \`{ "content": "string", "quality": "good"|"mid"|"bad", "language": "optional string", "fontSize?": "string" }\` — Code or prompt display with quality indicator
 
 ### Visual
 - **image**: \`{ "src": "url string", "alt": "description", "caption": "optional string" }\` — Single image

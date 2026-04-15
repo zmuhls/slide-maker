@@ -7,6 +7,8 @@
   let { data = {}, editable = false, onchange, oneditorready, oneditorblur }: { data: Record<string, unknown>; editable: boolean; onchange?: (newData: Record<string, unknown>) => void; oneditorready?: (editor: Editor) => void; oneditorblur?: () => void } = $props()
 
   let column = $derived(typeof data.column === 'string' ? data.column : '')
+  let fontSize = $derived(typeof data.fontSize === 'string' ? data.fontSize : '')
+  let sizeStyle = $derived(fontSize ? `--text-custom-size: ${fontSize}; font-size: ${fontSize} !important` : '')
 
   let editorActive = $state(false)
   let editContent = $state('')
@@ -24,6 +26,8 @@
   class="text-block"
   class:column-left={column === 'left'}
   class:column-right={column === 'right'}
+  class:has-custom-size={!!fontSize}
+  style={sizeStyle}
 >
   {#if editable && editorActive}
     <RichTextEditor
@@ -105,5 +109,9 @@
   /* Match preview padding so text doesn't shift left when editor activates */
   .text-block :global(.tiptap-mount) {
     padding-inline: 12px;
+  }
+  .text-block.has-custom-size :global(.tiptap),
+  .text-block.has-custom-size :global(.tiptap p) {
+    font-size: var(--text-custom-size) !important;
   }
 </style>

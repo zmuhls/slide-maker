@@ -11,6 +11,9 @@
     oneditorblur?: () => void;
   } = $props()
 
+  let fontSize = $derived(typeof data.fontSize === 'string' ? data.fontSize : '')
+  let sizeStyle = $derived(fontSize ? `font-size: ${fontSize} !important` : '')
+
   let title = $derived(typeof data.title === 'string' ? data.title : '')
   let renderedContent = $derived(renderContent(typeof data.body === 'string' ? data.body : typeof data.content === 'string' ? data.content : ''))
   let variant = $derived(typeof data.variant === 'string' ? data.variant : 'default')
@@ -25,7 +28,7 @@
   }
 </script>
 
-<div class="card" class:card-navy={variant === 'navy'} class:card-cyan={variant === 'cyan'}>
+<div class="card" class:card-navy={variant === 'navy'} class:card-cyan={variant === 'cyan'} style={sizeStyle}>
   {#if title}
     <h3>{title}</h3>
   {/if}

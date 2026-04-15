@@ -48,6 +48,17 @@ describe('renderModule — per-type HTML output', () => {
     it('returns empty string for empty data', () => {
       expect(renderModule(mod('text', {}))).toBe('')
     })
+
+    it('applies fontSize style', () => {
+      const html = renderModule(mod('text', { markdown: 'hello', fontSize: '1.5rem' }))
+      expect(html).toContain('font-size: 1.5rem')
+      expect(html).toContain('class="text-body"')
+    })
+
+    it('omits style attr when fontSize is absent', () => {
+      const html = renderModule(mod('text', { markdown: 'hello' }))
+      expect(html).not.toContain('style=')
+    })
   })
 
   // ── card ───────────────────────────────────────────────────
@@ -73,6 +84,11 @@ describe('renderModule — per-type HTML output', () => {
       const html = renderModule(mod('card', { title: '<img onerror=alert(1)>', content: 'x' }))
       expect(html).toContain('&lt;img')
       expect(html).not.toContain('<img ')
+    })
+
+    it('applies fontSize style', () => {
+      const html = renderModule(mod('card', { content: 'info', fontSize: '1.2rem' }))
+      expect(html).toContain('font-size: 1.2rem')
     })
   })
 
@@ -108,6 +124,11 @@ describe('renderModule — per-type HTML output', () => {
       const html = renderModule(mod('tip-box', { text: 'fallback' }))
       expect(html).toContain('fallback')
     })
+
+    it('applies fontSize style', () => {
+      const html = renderModule(mod('tip-box', { content: 'info', fontSize: '1.3rem' }))
+      expect(html).toContain('font-size: 1.3rem')
+    })
   })
 
   // ── prompt-block ───────────────────────────────────────────
@@ -126,6 +147,11 @@ describe('renderModule — per-type HTML output', () => {
     it('escapes content', () => {
       const html = renderModule(mod('prompt-block', { content: '<b>xss</b>' }))
       expect(html).toContain('&lt;b&gt;')
+    })
+
+    it('applies fontSize style', () => {
+      const html = renderModule(mod('prompt-block', { content: 'code', fontSize: '1.1rem' }))
+      expect(html).toContain('font-size: 1.1rem')
     })
   })
 
@@ -305,6 +331,11 @@ describe('renderModule — per-type HTML output', () => {
       expect(html).toContain('from text')
       expect(html).toContain('from content')
       expect(html).toContain('from label')
+    })
+
+    it('applies fontSize style', () => {
+      const html = renderModule(mod('stream-list', { items: ['a'], fontSize: '2rem' }))
+      expect(html).toContain('font-size: 2rem')
     })
   })
 

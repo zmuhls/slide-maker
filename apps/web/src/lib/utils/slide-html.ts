@@ -82,8 +82,11 @@ function renderModule(mod: Module, slide: Slide): string {
     }
 
     case 'text': {
+      const styles: string[] = []
+      if (d.fontSize) styles.push(`font-size: ${esc(String(d.fontSize))}`)
+      const styleAttr = styles.length ? ` style="${styles.join('; ')}"` : ''
       const html = renderRichTextData(d, sanitize)
-      return html ? `<div class="text-body">${html}</div>` : ''
+      return html ? `<div class="text-body"${styleAttr}>${html}</div>` : ''
     }
 
     case 'card': {
@@ -92,7 +95,10 @@ function renderModule(mod: Module, slide: Slide): string {
       const raw = String(d.body || d.content || '')
       const body = renderFormattedContent(raw, sanitize)
       const bodyHtml = containsHtmlMarkup(raw) ? body : `<p>${body}</p>`
-      return `<div class="card${variant}">${title}${bodyHtml}</div>`
+      const cStyles: string[] = []
+      if (d.fontSize) cStyles.push(`font-size: ${esc(String(d.fontSize))}`)
+      const cStyleAttr = cStyles.length ? ` style="${cStyles.join('; ')}"` : ''
+      return `<div class="card${variant}"${cStyleAttr}>${title}${bodyHtml}</div>`
     }
 
     case 'label': {
@@ -108,12 +114,18 @@ function renderModule(mod: Module, slide: Slide): string {
       const title = d.title ? `<strong>${esc(String(d.title))}</strong>` : ''
       const raw = String(d.content || d.text || '')
       const body = renderFormattedContent(raw, sanitize)
-      return `<div class="tip-box">${title}${body}</div>`
+      const tbStyles: string[] = []
+      if (d.fontSize) tbStyles.push(`font-size: ${esc(String(d.fontSize))}`)
+      const tbStyleAttr = tbStyles.length ? ` style="${tbStyles.join('; ')}"` : ''
+      return `<div class="tip-box"${tbStyleAttr}>${title}${body}</div>`
     }
 
     case 'prompt-block': {
       const quality = d.quality ? ` prompt-${esc(String(d.quality))}` : ''
-      return `<div class="prompt-block${quality}"><pre>${esc(String(d.content || d.text || ''))}</pre></div>`
+      const pbStyles: string[] = []
+      if (d.fontSize) pbStyles.push(`font-size: ${esc(String(d.fontSize))}`)
+      const pbStyleAttr = pbStyles.length ? ` style="${pbStyles.join('; ')}"` : ''
+      return `<div class="prompt-block${quality}"${pbStyleAttr}><pre>${esc(String(d.content || d.text || ''))}</pre></div>`
     }
 
     case 'image': {
@@ -184,7 +196,10 @@ function renderModule(mod: Module, slide: Slide): string {
 
     case 'stream-list': {
       const items = Array.isArray(d.items) ? d.items : []
-      let html = '<ul class="stream-list">'
+      const slStyles: string[] = []
+      if (d.fontSize) slStyles.push(`font-size: ${esc(String(d.fontSize))}`)
+      const slStyleAttr = slStyles.length ? ` style="${slStyles.join('; ')}"` : ''
+      let html = `<ul class="stream-list"${slStyleAttr}>`
       for (const item of items) {
         const o = typeof item === 'object' && item ? item as Record<string, unknown> : null
         const text = o ? String(o.text || o.content || o.label || o.title || JSON.stringify(item)) : String(item)
