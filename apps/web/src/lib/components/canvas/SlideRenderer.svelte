@@ -34,6 +34,36 @@ import { applyMutation } from '$lib/utils/mutations'
     onEditorBlur?: () => void
   } = $props()
 
+  // ── Auto-scale: shrink content to fit the 16:9 viewport ──────────
+  let slideEl: HTMLDivElement | undefined = $state()
+  let scalerEl: HTMLDivElement | undefined = $state()
+  let scaleFactor = $state(1)
+
+  $effect(() => {
+    if (!scalerEl || !slideEl) return
+    // Track slide.id so the effect re-runs when switching slides
+    // eslint-disable-next-line @typescript-eslint/no-unused-expressions
+    slide.id
+    let currentScale = 1
+    // Reset immediately so stale scale from previous slide doesn't linger
+    scaleFactor = 1
+    function update() {
+      const available = slideEl!.clientHeight
+      const natural = scalerEl!.offsetHeight
+      if (available <= 0 || natural <= 0) return
+      const next = natural > available ? Math.max(0.5, available / natural) : 1
+      // Guard: skip redundant updates to avoid ResizeObserver loop warnings
+      if (Math.abs(next - currentScale) < 0.01) return
+      currentScale = next
+      scaleFactor = next
+    }
+    // Defer first measurement to next frame so Svelte has flushed the new content
+    requestAnimationFrame(update)
+    const ro = new ResizeObserver(update)
+    ro.observe(scalerEl)
+    return () => ro.disconnect()
+  })
+
   let splitRatio = $state(0.45)
 
   $effect(() => {
@@ -123,7 +153,7 @@ import { applyMutation } from '$lib/utils/mutations'
   }
 </script>
 
-<div class="slide" data-layout={layoutType}>
+<div class="slide" data-layout={layoutType} bind:this={slideEl}>
   {#if branding}
     <img
       class="branding-logo {branding.position ?? 'top-left'}"
@@ -131,6 +161,12 @@ import { applyMutation } from '$lib/utils/mutations'
       alt="Logo"
     />
   {/if}
+  <div
+    class="slide-scaler"
+    bind:this={scalerEl}
+    style:transform={scaleFactor < 1 ? `scale(${scaleFactor})` : undefined}
+    style:transform-origin={scaleFactor < 1 ? 'top center' : undefined}
+  >
   {#if layoutType === 'title-slide' || layoutType === 'layout-divider' || layoutType === 'closing-slide'}
     <!-- Single hero zone, centered -->
     <div class="zone-centered">
@@ -207,47 +243,60 @@ import { applyMutation } from '$lib/utils/mutations'
       />
     </div>
   {/if}
+  </div>
 </div>
 
 <style>
   .slide {
     width: 100%;
     height: 100%;
-    display: flex;
-    flex-direction: column;
-    overflow: auto;
+    display: block;
+    overflow: hidden;
     font-family: var(--font-body);
     box-sizing: border-box;
     position: relative;
     container-type: inline-size;
   }
 
-  /* ── Padding: scaled for the ~700px edit canvas ── */
-  .slide[data-layout="title-slide"],
-  .slide[data-layout="layout-divider"],
-  .slide[data-layout="closing-slide"],
-  .slide[data-layout="layout-split"],
-  .slide[data-layout="layout-content"],
-  .slide[data-layout="layout-grid"],
-  .slide[data-layout="layout-full-dark"] {
+  /* ── Auto-scale wrapper: absolute so it can grow beyond the slide ── */
+  .slide-scaler {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    min-height: 100%;
+    display: flex;
+    flex-direction: column;
+    box-sizing: border-box;
+  }
+
+  /* ── Padding: on the scaler so it scales with content ── */
+  .slide[data-layout="title-slide"] > .slide-scaler,
+  .slide[data-layout="layout-divider"] > .slide-scaler,
+  .slide[data-layout="closing-slide"] > .slide-scaler,
+  .slide[data-layout="layout-split"] > .slide-scaler,
+  .slide[data-layout="layout-content"] > .slide-scaler,
+  .slide[data-layout="layout-grid"] > .slide-scaler,
+  .slide[data-layout="layout-full-dark"] > .slide-scaler {
     padding: clamp(1rem, 3cqi, 32px) clamp(1.25rem, 4cqi, 40px);
   }
 
-  /* ── Zone containers ── */
+  /* ── Zone containers ──
+     flex: 1 0 auto → grow to fill when content is small, but never
+     shrink below content height. This lets the scaler grow beyond
+     min-height: 100% when content overflows, triggering auto-scale. */
   .zone-centered {
-    flex: 1;
+    flex: 1 0 auto;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     text-align: center;
     gap: 12px;
-    max-height: 100%;
-    overflow: hidden;
   }
 
   .zone-split {
-    flex: 1;
+    flex: 1 0 auto;
     display: flex;
     flex-direction: row;
     gap: clamp(0.75rem, 4cqi, 40px);
@@ -261,8 +310,6 @@ import { applyMutation } from '$lib/utils/mutations'
     flex-direction: column;
     justify-content: center;
     min-width: 0;
-    overflow-y: auto;
-    overflow-x: hidden;
     gap: 16px;
   }
 
@@ -272,18 +319,14 @@ import { applyMutation } from '$lib/utils/mutations'
     justify-content: center;
     align-items: center;
     min-width: 0;
-    overflow-y: auto;
-    overflow-x: hidden;
     gap: 16px;
   }
 
   .zone-main {
-    flex: 1;
+    flex: 1 0 auto;
     display: flex;
     flex-direction: column;
     align-items: center;
-    /* margin-based centering instead of justify-content: center
-       so content scrolls from top instead of clipping when it overflows */
     gap: clamp(1rem, 2cqi, 24px);
   }
 

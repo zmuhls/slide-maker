@@ -105,7 +105,7 @@
 /* Split layout stage styling (match BASE intent) */
 .slide-frame .zone-right { background: var(--theme-card-bg, rgba(255,255,255,0.02)); border-left: 1px solid var(--theme-border, rgba(255,255,255,0.06)); }
 /* layout-content max-width parity (export: .layout-content > .content { max-width: 900px }) */
-.slide-frame .slide[data-layout="layout-content"] > .zone-main { max-width: 900px; width: 100%; }
+.slide-frame .slide[data-layout="layout-content"] .zone-main { max-width: 900px; width: 100%; }
 
 /* ── Typography (match BASE values; cqi scaling) ─────────────────── */
 .slide-frame h1, .slide-frame h2, .slide-frame h3, .slide-frame h4, .slide-frame .heading {
