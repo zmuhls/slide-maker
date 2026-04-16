@@ -256,7 +256,7 @@ Full admin panel at `/admin` with:
 - **Debug routes:** Require `ENABLE_DEBUG_ROUTES=true` in `.env` (explicit opt-in). Exposes transcript viewer at `/api/debug/transcripts`.
 
 ### Other Apps on the Server
-- **HM Review:** `/home/smorello.adm/hm-review`, Flask + gunicorn on port 8010, PM2 name `hm-review`. Must use `wsgi:app` (not `app:create_app()`) — `wsgi.py` applies `PrefixMiddleware` for `/hm` path prefix. Nginx passes full `/hm/` path to app.
+- **HM Review:** `/data/hm-review-app`, Flask + gunicorn on port 8010, PM2 name `hm-review`. Must use `wsgi:app` (not `app:create_app()`) — `wsgi.py` applies `PrefixMiddleware` for `/hm` path prefix. Nginx passes full `/hm/` path to app. `start.sh` invokes gunicorn via `venv/bin/python -m gunicorn` (the venv's `bin/gunicorn` shebang still points at the old `/home/smorello.adm/hm-review/venv` path). Access/error logs live in the app dir and are owned by the running PM2 user — old root-owned logs were moved aside as `*.log.old`.
 
 ## Docs
 
