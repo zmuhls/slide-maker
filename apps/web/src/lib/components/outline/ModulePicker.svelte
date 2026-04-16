@@ -69,7 +69,8 @@
 
 <style>
   .module-picker {
-    background: white;
+    background: var(--color-bg, white);
+    color: var(--color-text, #1f2937);
     border: 1px solid var(--color-border, #e5e7eb);
     border-radius: 8px;
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
@@ -99,7 +100,7 @@
   }
 
   .picker-item:hover {
-    background: #f3f4f6;
+    background: var(--color-ghost-bg, #f3f4f6);
     border-color: var(--color-border, #e5e7eb);
   }
 

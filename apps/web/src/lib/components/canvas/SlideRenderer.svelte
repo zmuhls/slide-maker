@@ -37,6 +37,11 @@ import { applyMutation, apiCall, trackSave } from '$lib/utils/mutations'
   let scalerEl: HTMLDivElement | undefined = $state()
   let scaleFactor = $state(1)
 
+  // Plain (non-reactive) focus count — reads inside ResizeObserver must not
+  // resubscribe the effect, which would reset scaleFactor mid-edit.
+  let editorFocusCount = 0
+  let scheduleResync: (() => void) | null = null
+
   $effect(() => {
     if (!scalerEl || !slideEl) return
     // Track slide.id so the effect re-runs when switching slides
@@ -46,6 +51,9 @@ import { applyMutation, apiCall, trackSave } from '$lib/utils/mutations'
     // Reset immediately so stale scale from previous slide doesn't linger
     scaleFactor = 1
     function update() {
+      // Freeze scale while the user is typing in a TipTap editor — every
+      // keystroke reflows content and would otherwise pop the transform.
+      if (editorFocusCount > 0) return
       const available = slideEl!.clientHeight
       const natural = scalerEl!.offsetHeight
       if (available <= 0 || natural <= 0) return
@@ -55,12 +63,28 @@ import { applyMutation, apiCall, trackSave } from '$lib/utils/mutations'
       currentScale = next
       scaleFactor = next
     }
+    scheduleResync = () => requestAnimationFrame(update)
     // Defer first measurement to next frame so Svelte has flushed the new content
     requestAnimationFrame(update)
     const ro = new ResizeObserver(update)
     ro.observe(scalerEl)
-    return () => ro.disconnect()
+    return () => {
+      scheduleResync = null
+      ro.disconnect()
+    }
   })
+
+  function handleEditorReady(editor: unknown) {
+    editorFocusCount++
+    onEditorReady?.(editor)
+  }
+
+  function handleEditorBlur() {
+    editorFocusCount = Math.max(0, editorFocusCount - 1)
+    onEditorBlur?.()
+    // Resync once focus fully clears so the final scale reflects committed edits
+    if (editorFocusCount === 0) scheduleResync?.()
+  }
 
   let splitRatio = $state(0.45)
 
@@ -174,8 +198,8 @@ import { applyMutation, apiCall, trackSave } from '$lib/utils/mutations'
         onModuleDelete={handleModuleDelete}
         onModuleStepChange={handleModuleStepChange}
         onMoveToZone={handleMoveToZone}
-        {onEditorReady}
-        {onEditorBlur}
+        onEditorReady={handleEditorReady}
+        onEditorBlur={handleEditorBlur}
       />
     </div>
   {:else if layoutType === 'layout-split'}
@@ -194,8 +218,8 @@ import { applyMutation, apiCall, trackSave } from '$lib/utils/mutations'
           onModuleDelete={handleModuleDelete}
           onModuleStepChange={handleModuleStepChange}
           onMoveToZone={handleMoveToZone}
-          {onEditorReady}
-          {onEditorBlur}
+          onEditorReady={handleEditorReady}
+          onEditorBlur={handleEditorBlur}
         />
       </div>
       <SplitHandle ratio={splitRatio} onRatioChange={handleRatioChange} />
@@ -212,8 +236,8 @@ import { applyMutation, apiCall, trackSave } from '$lib/utils/mutations'
           onModuleDelete={handleModuleDelete}
           onModuleStepChange={handleModuleStepChange}
           onMoveToZone={handleMoveToZone}
-          {onEditorReady}
-          {onEditorBlur}
+          onEditorReady={handleEditorReady}
+          onEditorBlur={handleEditorBlur}
         />
       </div>
     </div>
@@ -232,8 +256,8 @@ import { applyMutation, apiCall, trackSave } from '$lib/utils/mutations'
         onModuleDelete={handleModuleDelete}
         onModuleStepChange={handleModuleStepChange}
         onMoveToZone={handleMoveToZone}
-        {onEditorReady}
-        {onEditorBlur}
+        onEditorReady={handleEditorReady}
+        onEditorBlur={handleEditorBlur}
       />
     </div>
   {/if}

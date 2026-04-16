@@ -63,6 +63,7 @@
   }
 </script>
 
+<div class="card-grid-root" class:editable>
 <div class="card-grid" class:has-custom-size={!!fontSize} style="grid-template-columns: repeat({columns}, 1fr);{sizeStyle ? ` ${sizeStyle}` : ''}">
   {#each cards as card, i}
     <div class="card" class:editable-card={editable} class:card-cyan={card.variant === 'cyan'} class:card-navy={card.variant === 'navy'} style={card.color && !card.variant ? `border-top: 3px solid ${card.color};` : ''}>
@@ -124,12 +125,13 @@
       {/if}
     </div>
   {/each}
-  {#if editable}
-    <button type="button" class="card-add" onclick={addCard} aria-label="Add card">
-      <span class="card-add-icon">+</span>
-      <span>Add card</span>
-    </button>
-  {/if}
+</div>
+{#if editable}
+  <button type="button" class="card-add" onclick={addCard} aria-label="Add card">
+    <span class="card-add-icon">+</span>
+    <span>Add card</span>
+  </button>
+{/if}
 </div>
 
 <style>
@@ -168,29 +170,39 @@
   .editable-card:hover .card-remove {
     opacity: 1;
   }
+  .card-grid-root {
+    position: relative;
+  }
   .card-add {
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    margin-top: 6px;
+    padding: 4px 14px;
     background: transparent;
-    border: 1px dashed var(--border-subtle, rgba(128, 128, 128, 0.35));
-    border-radius: 10px;
-    padding: clamp(16px, 3cqi, 24px);
+    border: 1px dashed var(--border-subtle, rgba(128, 128, 128, 0.4));
+    border-radius: 6px;
     color: var(--text-muted, rgba(128, 128, 128, 0.7));
     font-family: var(--font-body);
-    font-size: clamp(0.8rem, 1.3cqi, 1rem);
+    font-size: 0.75rem;
     cursor: pointer;
     display: flex;
-    flex-direction: column;
     align-items: center;
-    justify-content: center;
     gap: 6px;
-    min-height: 100px;
-    transition: border-color 0.15s, color 0.15s;
+    white-space: nowrap;
+    opacity: 0;
+    transition: opacity 0.15s, border-color 0.15s, color 0.15s;
+  }
+  .card-grid-root.editable:hover .card-add {
+    opacity: 1;
   }
   .card-add:hover {
     border-color: var(--accent-cyan, #64b5f6);
     color: var(--accent-cyan, #64b5f6);
   }
   .card-add-icon {
-    font-size: 1.4rem;
+    font-size: 0.95rem;
     font-weight: 600;
     line-height: 1;
   }

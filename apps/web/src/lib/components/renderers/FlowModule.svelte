@@ -53,8 +53,9 @@
   }
 </script>
 
-<div class="flow" class:has-custom-size={!!fontSize} style={sizeStyle}>
-  {#each nodes as node, i}
+<div class="flow-root" class:editable>
+  <div class="flow" class:has-custom-size={!!fontSize} style={sizeStyle}>
+    {#each nodes as node, i}
     <div class="flow-node">
       {#if editable}
         <button
@@ -122,10 +123,8 @@
       <div class="flow-arrow"></div>
     {/if}
   {/each}
+  </div>
   {#if editable}
-    {#if nodes.length > 0}
-      <div class="flow-arrow"></div>
-    {/if}
     <button type="button" class="flow-add" onclick={addNode} aria-label="Add step">
       <span class="flow-add-icon">+</span>
       <span class="flow-add-label">Add step</span>
@@ -174,32 +173,44 @@
   .flow-node:hover .flow-node-remove {
     opacity: 1;
   }
+  .flow-root {
+    position: relative;
+  }
   .flow-add {
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    margin-top: 4px;
     background: transparent;
-    border: 1px dashed var(--border-subtle, rgba(128, 128, 128, 0.35));
-    border-radius: 8px;
-    padding: clamp(10px, 1.8cqi, 14px) clamp(14px, 2.8cqi, 22px);
+    border: 1px dashed var(--border-subtle, rgba(128, 128, 128, 0.4));
+    border-radius: 6px;
+    padding: 4px 12px;
     color: var(--text-muted, rgba(128, 128, 128, 0.7));
     font-family: var(--font-body);
-    font-size: clamp(0.75rem, 1.2cqi, 0.9rem);
+    font-size: 0.75rem;
     cursor: pointer;
     display: flex;
-    flex-direction: column;
     align-items: center;
-    gap: 4px;
-    transition: border-color 0.15s, color 0.15s;
+    gap: 6px;
+    opacity: 0;
+    transition: opacity 0.15s, border-color 0.15s, color 0.15s;
+    white-space: nowrap;
+  }
+  .flow-root.editable:hover .flow-add {
+    opacity: 1;
   }
   .flow-add:hover {
     border-color: var(--accent-cyan, #64b5f6);
     color: var(--accent-cyan, #64b5f6);
   }
   .flow-add-icon {
-    font-size: 1.1rem;
+    font-size: 0.95rem;
     font-weight: 600;
     line-height: 1;
   }
   .flow-add-label {
-    font-size: 0.7rem;
+    font-size: 0.75rem;
   }
   .flow-icon {
     width: 1.8rem;

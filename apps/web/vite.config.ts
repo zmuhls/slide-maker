@@ -9,6 +9,15 @@ export default defineConfig({
 			'/api': {
 				target: 'http://localhost:3001',
 				changeOrigin: true,
+				configure: (proxy) => {
+					// Ensure Origin header is present so Hono CSRF middleware accepts proxied requests.
+					// Browsers may omit Origin on same-origin fetches, but the API expects it.
+					proxy.on('proxyReq', (proxyReq) => {
+						if (!proxyReq.getHeader('origin')) {
+							proxyReq.setHeader('origin', 'http://localhost:5173')
+						}
+					})
+				},
 			},
 		},
 	},

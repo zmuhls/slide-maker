@@ -53,48 +53,48 @@
   }
 </script>
 
-<ul class="stream-list" class:has-custom-size={!!fontSize} style={sizeStyle}>
-  {#each items as item, i}
-    <li class:editable-li={editable}>
-      {#if editable && activeItemIndex === i}
-        <RichTextEditor
-          content={editContent}
-          {editable}
-          placeholder="List item..."
-          onchange={(html) => handleItemChange(i, html)}
-          {oneditorready}
-          {oneditorblur}
-          initialClickCoords={clickCoords}
-        />
-      {:else if editable}
-        <button
-          type="button"
-          class="item-preview"
-          onclick={(e) => { clickCoords = { x: e.clientX, y: e.clientY }; editContent = item; activeItemIndex = i }}
-        >{@html DOMPurify.sanitize(inlineMarkdown(item))}</button>
-      {:else}
-        {@html DOMPurify.sanitize(inlineMarkdown(item))}
-      {/if}
-      {#if editable}
-        <button
-          type="button"
-          class="item-remove"
-          onclick={() => removeItem(i)}
-          aria-label="Remove item"
-          title="Remove item"
-        >×</button>
-      {/if}
-    </li>
-  {/each}
+<div class="stream-list-root" class:editable>
+  <ul class="stream-list" class:has-custom-size={!!fontSize} style={sizeStyle}>
+    {#each items as item, i}
+      <li>
+        {#if editable && activeItemIndex === i}
+          <RichTextEditor
+            content={editContent}
+            {editable}
+            placeholder="List item..."
+            onchange={(html) => handleItemChange(i, html)}
+            {oneditorready}
+            {oneditorblur}
+            initialClickCoords={clickCoords}
+          />
+        {:else if editable}
+          <button
+            type="button"
+            class="item-preview"
+            onclick={(e) => { clickCoords = { x: e.clientX, y: e.clientY }; editContent = item; activeItemIndex = i }}
+          >{@html DOMPurify.sanitize(inlineMarkdown(item))}</button>
+        {:else}
+          {@html DOMPurify.sanitize(inlineMarkdown(item))}
+        {/if}
+        {#if editable}
+          <button
+            type="button"
+            class="item-remove"
+            onclick={() => removeItem(i)}
+            aria-label="Remove item"
+            title="Remove item"
+          >×</button>
+        {/if}
+      </li>
+    {/each}
+  </ul>
   {#if editable}
-    <li class="add-item-li">
-      <button type="button" class="add-item-btn" onclick={addItem} aria-label="Add list item">
-        <span class="add-item-icon">+</span>
-        <span>Add item</span>
-      </button>
-    </li>
+    <button type="button" class="add-item-btn" onclick={addItem} aria-label="Add list item">
+      <span class="add-item-icon">+</span>
+      <span>Add item</span>
+    </button>
   {/if}
-</ul>
+</div>
 
 <style>
   .stream-list {
@@ -136,63 +136,67 @@
   .stream-list.has-custom-size li {
     font-size: var(--list-custom-size) !important;
   }
-  .editable-li {
+  .stream-list-root {
     position: relative;
-    padding-right: clamp(28px, 4cqi, 36px) !important;
+  }
+  .stream-list-root.editable li {
+    position: relative;
   }
   .item-remove {
     position: absolute;
     top: 50%;
-    right: 8px;
+    right: 4px;
     transform: translateY(-50%);
     width: 18px;
     height: 18px;
     border-radius: 50%;
     border: none;
-    background: rgba(0, 0, 0, 0.15);
-    color: currentColor;
+    background: rgba(0, 0, 0, 0.35);
+    color: #fff;
     font-size: 12px;
     line-height: 1;
     cursor: pointer;
     padding: 0;
     opacity: 0;
+    z-index: 2;
     transition: opacity 0.15s, background 0.15s;
   }
-  .editable-li:hover .item-remove {
+  .stream-list-root.editable li:hover .item-remove {
     opacity: 1;
   }
   .item-remove:hover {
-    background: rgba(0, 0, 0, 0.3);
-  }
-  .add-item-li {
-    list-style: none;
-    padding: 0 !important;
-    background: transparent !important;
-    border-left: none !important;
-    margin-top: clamp(4px, 0.8cqi, 6px);
+    background: rgba(200, 0, 0, 0.7);
   }
   .add-item-btn {
-    width: 100%;
-    padding: clamp(6px, 1.2cqi, 10px) clamp(12px, 2cqi, 16px);
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    margin-top: 4px;
+    padding: 4px 10px;
     background: transparent;
-    border: 1px dashed var(--border-subtle, rgba(128, 128, 128, 0.35));
+    border: 1px dashed var(--border-subtle, rgba(128, 128, 128, 0.4));
     border-radius: 6px;
     color: var(--text-muted, rgba(128, 128, 128, 0.7));
     font-family: var(--font-body);
-    font-size: 0.8rem;
+    font-size: 0.75rem;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 6px;
-    transition: border-color 0.15s, color 0.15s;
+    opacity: 0;
+    transition: opacity 0.15s, border-color 0.15s, color 0.15s;
+  }
+  .stream-list-root.editable:hover .add-item-btn {
+    opacity: 1;
   }
   .add-item-btn:hover {
     border-color: var(--accent-cyan, #64b5f6);
     color: var(--accent-cyan, #64b5f6);
   }
   .add-item-icon {
-    font-size: 1rem;
+    font-size: 0.95rem;
     font-weight: 600;
     line-height: 1;
   }
