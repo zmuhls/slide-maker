@@ -47,5 +47,9 @@ playwright-report/
 # Generated demo
 docs/demo.html
 
-# Project-local Claude agents
-.claude/agents/
+# Project-local Claude config (per-machine)
+.claude/settings.local.json
+.claude/scheduled_tasks.lock
+
+# Test artifact screenshots at repo root
+/*.png
