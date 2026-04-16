@@ -5,6 +5,7 @@
   import { goto } from '$app/navigation'
   import { base } from '$app/paths'
   import { API_URL } from '$lib/api'
+  import { flushPendingSaves } from '$lib/utils/mutations'
   import { currentDeck } from '$lib/stores/deck'
   import { activeSlideId, activeModuleControls, setActiveSlide } from '$lib/stores/ui'
   import { activeTheme, ensureThemesLoaded, isDark, darkenHex } from '$lib/stores/themes'
@@ -53,8 +54,9 @@
   let theme = $derived($activeTheme)
   let themeMode = $derived(isDark(theme?.colors?.bg ?? '#111827') ? 'dark' : 'light')
 
-  function openPreview() {
+  async function openPreview() {
     if (!$currentDeck) return
+    await flushPendingSaves()
     window.open(`${API_URL}/api/decks/${$currentDeck.id}/preview`, '_blank')
   }
 

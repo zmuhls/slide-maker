@@ -7,6 +7,18 @@ import { logAction, lastAgentSlideId } from '$lib/stores/actions'
 import { get } from 'svelte/store'
 import { API_URL } from '$lib/api'
 
+// Track in-flight save requests so export/preview can wait for them
+const pendingSaves = new Set<Promise<unknown>>()
+
+export function trackSave(p: Promise<unknown>) {
+  pendingSaves.add(p)
+  p.finally(() => pendingSaves.delete(p))
+}
+
+export async function flushPendingSaves() {
+  await Promise.all([...pendingSaves])
+}
+
 export async function apiCall(path: string, method: string, body?: unknown) {
   try {
     const res = await fetch(`${API_URL}${path}`, {

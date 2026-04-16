@@ -7,6 +7,7 @@
   import { editorDarkMode } from '$lib/stores/editor-theme'
   import { themesStore, themesLoaded, ensureThemesLoaded, isDark, createTheme, deleteTheme, type ThemeData } from '$lib/stores/themes'
   import { API_URL } from '$lib/api'
+  import { flushPendingSaves } from '$lib/utils/mutations'
   import ShareDeckDialog from '$lib/components/gallery/ShareDeckDialog.svelte'
 
   const COMMON_FONTS = [
@@ -294,6 +295,7 @@
     if (!$currentDeck || exporting) return
     exporting = true
     try {
+      await flushPendingSaves()
       const res = await fetch(`${API_URL}/api/decks/${$currentDeck.id}/export`, { method: 'POST', credentials: 'include' })
       if (!res.ok) throw new Error('Export failed')
       const blob = await res.blob()
