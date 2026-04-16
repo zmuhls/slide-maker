@@ -44,15 +44,15 @@ html, body { height: 100%; width: 100%; overflow: hidden; font-family: 'Inter', 
 
 /* ── Typography ──────────────────────────────────────────────────── */
 h1, h2, h3, h4 { font-family: 'Outfit', sans-serif; line-height: 1.2; margin-bottom: 0.4em; }
-h1 { font-size: clamp(2.5rem, 5vw, 4.5rem); font-weight: 600; }
-h2 { font-size: clamp(2rem, 3.8vw, 3.2rem); font-weight: 500; }
-h3 { font-size: clamp(1.5rem, 2.8vw, 2.2rem); font-weight: 500; }
-h4 { font-size: clamp(1.2rem, 2vw, 1.6rem); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
-.text-body { font-size: clamp(1rem, 1.8vw, 1.5rem); line-height: 1.55; color: var(--text-muted); }
+h1 { font-size: clamp(3rem, 5.5vw, 5rem); font-weight: 600; }
+h2 { font-size: clamp(2.4rem, 4.2vw, 3.6rem); font-weight: 500; }
+h3 { font-size: clamp(1.8rem, 3.2vw, 2.6rem); font-weight: 500; }
+h4 { font-size: clamp(1.4rem, 2.4vw, 1.9rem); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
+.text-body { font-size: clamp(1.15rem, 2.1vw, 1.7rem); line-height: 1.55; color: var(--text-muted); }
 .text-body ul, .text-body ol { padding-left: 1.5em; margin: 0.4em 0; }
 .text-body li { margin-bottom: 0.5em; }
 code, pre { font-family: 'JetBrains Mono', monospace; }
-pre { background: rgba(0,0,0,0.3); border: 1px solid var(--border-subtle); border-radius: 8px; padding: 20px 24px; overflow-x: auto; font-size: 1.05rem; line-height: 1.5; }
+pre { background: rgba(0,0,0,0.3); border: 1px solid var(--border-subtle); border-radius: 8px; padding: 20px 24px; overflow-x: auto; font-size: 1.15rem; line-height: 1.5; }
 
 /* ── Layout: Title ───────────────────────────────────────────────── */
 .title-slide {
@@ -63,8 +63,8 @@ pre { background: rgba(0,0,0,0.3); border: 1px solid var(--border-subtle); borde
   flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
   max-height: 100%; overflow: hidden; gap: 12px;
 }
-.title-slide h1 { font-size: clamp(1.8rem, 4.5vw, 3.8rem); }
-.title-slide .text-body { font-size: clamp(0.95rem, 1.6vw, 1.3rem); }
+.title-slide h1 { font-size: clamp(2.2rem, 5vw, 4.2rem); }
+.title-slide .text-body { font-size: clamp(1.1rem, 1.9vw, 1.5rem); }
 
 /* ── Layout: Split ───────────────────────────────────────────────── */
 .slide.layout-split {
@@ -118,13 +118,13 @@ pre { background: rgba(0,0,0,0.3); border: 1px solid var(--border-subtle); borde
 }
 .card-cyan { border-left: 3px solid var(--accent-cyan); }
 .card-navy { border-left: 3px solid var(--accent-navy); }
-.card h3 { font-size: 1.3rem; font-weight: 650; margin-bottom: 8px; display: block; }
-.card p { font-size: 1rem; color: var(--text-muted); line-height: 1.45; }
+.card h3 { font-size: 1.5rem; font-weight: 650; margin-bottom: 8px; display: block; }
+.card p { font-size: 1.15rem; color: var(--text-muted); line-height: 1.45; }
 
 /* ── Module: Label ───────────────────────────────────────────────── */
 .label {
   display: inline-block; padding: 4px 10px; background: none; border-radius: 4px;
-  font-size: 0.85rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em;
+  font-size: 1rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em;
   line-height: 1.5;
 }
 .label-cyan { color: #79c0ff; }
@@ -143,14 +143,14 @@ pre { background: rgba(0,0,0,0.3); border: 1px solid var(--border-subtle); borde
 /* ── Module: Tip Box ─────────────────────────────────────────────── */
 .tip-box {
   background: rgba(100,181,246,0.05); border: 1px solid rgba(100,181,246,0.12);
-  border-radius: 8px; padding: 20px 24px; font-size: 1rem; line-height: 1.6;
+  border-radius: 8px; padding: 20px 24px; font-size: 1.15rem; line-height: 1.6;
 }
-.tip-box strong { display: block; margin-bottom: 6px; color: var(--accent-cyan); font-weight: 500; font-size: 1rem; }
-.tip-box-content { font-size: 1rem; line-height: 1.6; }
+.tip-box strong { display: block; margin-bottom: 6px; color: var(--accent-cyan); font-weight: 500; font-size: 1.15rem; }
+.tip-box-content { font-size: 1.15rem; line-height: 1.6; }
 
 /* ── Module: Prompt Block ────────────────────────────────────────── */
 .prompt-block {
-  border-radius: 8px; padding: 20px 24px; font-size: 1.05rem;
+  border-radius: 8px; padding: 20px 24px; font-size: 1.2rem;
   border: 1px solid var(--border-subtle);
 }
 .prompt-block pre { background: transparent; padding: 0; margin: 0; white-space: pre-wrap; border: none; font-size: inherit; }
@@ -187,32 +187,32 @@ pre { background: rgba(0,0,0,0.3); border: 1px solid var(--border-subtle); borde
   flex: 1; background: rgba(255,255,255,0.02); border: 1px solid var(--border-subtle);
   border-radius: 10px; padding: 24px;
 }
-.comparison-panel h3 { font-size: 1.3rem; font-weight: 600; margin-bottom: 8px; }
-.panel-content { font-size: 1rem; line-height: 1.45; color: var(--text-muted); }
-.comparison-panel p { font-size: 1rem; color: var(--text-muted); line-height: 1.45; }
+.comparison-panel h3 { font-size: 1.5rem; font-weight: 600; margin-bottom: 8px; }
+.panel-content { font-size: 1.15rem; line-height: 1.45; color: var(--text-muted); }
+.comparison-panel p { font-size: 1.15rem; color: var(--text-muted); line-height: 1.45; }
 
 /* ── Module: Card Grid ───────────────────────────────────────────── */
 .card-grid { display: grid; gap: 20px; width: 100%; }
-.card-grid .card-title { font-size: 1.3rem; font-weight: 650; line-height: 1.2; margin: 0 0 8px 0; font-family: var(--theme-heading-font, 'Outfit'), sans-serif; }
-.card-grid .card-content { font-size: 1rem; line-height: 1.45; color: var(--text-muted); }
+.card-grid .card-title { font-size: 1.5rem; font-weight: 650; line-height: 1.2; margin: 0 0 8px 0; font-family: var(--theme-heading-font, 'Outfit'), sans-serif; }
+.card-grid .card-content { font-size: 1.15rem; line-height: 1.45; color: var(--text-muted); }
 
 /* ── Module: Flow ────────────────────────────────────────────────── */
 .flow { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: center; }
 .flow-node {
   background: rgba(255,255,255,0.03); border: 1px solid var(--border-subtle);
-  border-radius: 8px; padding: 14px 22px; font-size: 1rem; text-align: center;
+  border-radius: 8px; padding: 14px 22px; font-size: 1.15rem; text-align: center;
   display: flex; flex-direction: column; align-items: center; gap: 4px;
 }
 .flow-icon {
   width: 1.8rem; height: 1.8rem; border-radius: 50%;
   background: var(--accent-cyan); color: white;
   display: flex; align-items: center; justify-content: center;
-  flex-shrink: 0; font-weight: 700; font-size: 0.7rem;
+  flex-shrink: 0; font-weight: 700; font-size: 0.8rem;
   font-family: var(--theme-heading-font, 'Outfit'), sans-serif;
 }
 .flow-body { min-width: 0; }
-.flow-label { font-weight: 600; font-size: 1rem; line-height: 1.2; font-family: var(--theme-heading-font, 'Outfit'), sans-serif; }
-.flow-desc { font-size: 0.85rem; color: var(--text-muted); line-height: 1.4; }
+.flow-label { font-weight: 600; font-size: 1.15rem; line-height: 1.2; font-family: var(--theme-heading-font, 'Outfit'), sans-serif; }
+.flow-desc { font-size: 1rem; color: var(--text-muted); line-height: 1.4; }
 .flow-arrow { font-size: 1.2rem; color: var(--text-muted); }
 .flow-arrow::after { content: '→'; }
 
@@ -221,13 +221,13 @@ pre { background: rgba(0,0,0,0.3); border: 1px solid var(--border-subtle); borde
 .stream-list li {
   padding: 12px 16px; border-left: 2px solid var(--accent-cyan);
   margin-bottom: 6px; background: rgba(255,255,255,0.02); border-radius: 0 6px 6px 0;
-  font-size: 1rem; line-height: 1.5;
+  font-size: 1.15rem; line-height: 1.5;
 }
 
 /* ── Module: Image ───────────────────────────────────────────────── */
 figure { text-align: center; margin: 0; }
 figure img { display: block; max-width: 100%; max-height: 60vh; border-radius: 6px; object-fit: contain; }
-figcaption { margin-top: 8px; font-size: 0.85rem; color: var(--text-muted); }
+figcaption { margin-top: 8px; font-size: 1rem; color: var(--text-muted); }
 
 /* ── Module: Artifact ─────────────────────────────────────────────── */
 /* Match editor behavior: artifacts are fluid by default, fill container width,
@@ -277,17 +277,17 @@ figcaption { margin-top: 8px; font-size: 0.85rem; color: var(--text-muted); }
   position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none;
 }
 .video-caption {
-  font-size: 0.8rem; color: var(--text-muted); text-align: center;
+  font-size: 0.95rem; color: var(--text-muted); text-align: center;
   margin: 6px 0 0; font-style: italic;
 }
 
 /* ── Blockquote ──────────────────────────────────────────────────── */
 blockquote {
   border-left: 3px solid var(--accent-cyan); padding: 16px 24px;
-  font-style: italic; font-size: 1rem; background: rgba(100,181,246,0.04);
+  font-style: italic; font-size: 1.15rem; background: rgba(100,181,246,0.04);
   border-radius: 0 6px 6px 0;
 }
-blockquote cite { display: block; margin-top: 8px; font-size: 0.85rem; color: var(--text-muted); font-style: normal; }
+blockquote cite { display: block; margin-top: 8px; font-size: 1rem; color: var(--text-muted); font-style: normal; }
 
 /* ── Links (accessible) ─────────────────────────────────────────── */
 a { color: var(--accent-cyan); text-decoration: underline; text-underline-offset: 2px; }
@@ -401,13 +401,13 @@ export const FRAMEWORK_CSS_PREVIEW = FRAMEWORK_CSS_BASE + `
 }
 
 /* ── Typography overrides (cqi parity with canvas) ─────────────── */
-h1 { font-size: clamp(2.5rem, 5cqi, 4.5rem); }
-h2 { font-size: clamp(2rem, 3.8cqi, 3.2rem); }
-h3 { font-size: clamp(1.5rem, 2.8cqi, 2.2rem); }
-h4 { font-size: clamp(1.2rem, 2cqi, 1.6rem); }
-.text-body { font-size: clamp(1rem, 1.8cqi, 1.5rem); }
-.title-slide h1 { font-size: clamp(1.8rem, 4.5cqi, 3.8rem); }
-.title-slide .text-body { font-size: clamp(0.95rem, 1.6cqi, 1.3rem); }
+h1 { font-size: clamp(3rem, 5.5cqi, 5rem); }
+h2 { font-size: clamp(2.4rem, 4.2cqi, 3.6rem); }
+h3 { font-size: clamp(1.8rem, 3.2cqi, 2.6rem); }
+h4 { font-size: clamp(1.4rem, 2.4cqi, 1.9rem); }
+.text-body { font-size: clamp(1.15rem, 2.1cqi, 1.7rem); }
+.title-slide h1 { font-size: clamp(2.2rem, 5cqi, 4.2rem); }
+.title-slide .text-body { font-size: clamp(1.1rem, 1.9cqi, 1.5rem); }
 
 /* ── Step Reveal (all visible in preview, with step indicator) ──── */
 .step-hidden { opacity: 1; transform: none; position: relative; }
