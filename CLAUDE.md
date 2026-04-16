@@ -203,7 +203,7 @@ Key tables:
 - `templates` — layout, modules (JSON)
 - `artifacts` — name, description, type (chart/map/diagram/visualization), source (URL or raw HTML), config (JSON), builtIn flag
 - `themes` — name, colors, fonts, CSS, builtIn flag
-- `users`, `sessions`, `emailVerifications`, `decks`, `deck_access`, `uploaded_files`, `chat_messages`, `deck_locks`, `deckPresence`
+- `users`, `sessions`, `emailVerifications`, `password_resets`, `decks`, `deck_access`, `uploaded_files`, `chat_messages`, `deck_locks`, `deckPresence`
 
 Push schema changes: `pnpm db:push` (runs `drizzle-kit push` from `apps/api/`).
 
@@ -220,6 +220,11 @@ Push schema changes: `pnpm db:push` (runs `drizzle-kit push` from `apps/api/`).
 - Email sent via Amazon SES (`@aws-sdk/client-ses` through nodemailer SES transport). Sender: `ailab@gc.cuny.edu` (verified as individual email identity — no DNS/domain verification). Set `EMAIL_PROVIDER=ses` in `.env`. Falls back to SMTP if `EMAIL_PROVIDER` is unset and `SMTP_HOST` is configured. Email code at `apps/api/src/email/index.ts`.
 - Admins can create pre-approved users from the admin panel (`POST /api/admin/users`)
 - Users can change their own password from the gallery header (`POST /api/auth/change-password`, rate limited 5/15min)
+- **Password reset** — two flows:
+  - **User self-service:** "Forgot your password?" link on login page → `/forgot-password` → enter email → receive reset link → `/reset-password?token=...` → set new password. Token expires in 1 hour. Rate limited (3 per 15 min). Anti-enumeration: always returns success regardless of whether email exists. API: `POST /api/auth/forgot-password`, `POST /api/auth/reset-password`.
+  - **Admin-initiated:** "Reset PW" button in admin user table → sends reset email to user with 24-hour token. API: `POST /api/admin/users/:id/reset-password`.
+  - Both flows: single-use tokens (deleted after use, old tokens cleared on new request), all sessions invalidated on reset. Schema: `password_resets` table.
+- **Name validation:** Registration and admin user creation enforce trimmed 2-100 character names, reject HTML tags.
 - Lucia v3 sessions (HTTP-only cookies)
 - Admins: Stefano Morello (smorello@gc.cuny.edu), Zach Muhlbauer (zmuhlbauer@gc.cuny.edu)
 
@@ -231,7 +236,8 @@ Full admin panel at `/admin` with:
 - **Sortable + filterable** by any column / status
 - **Token usage modal:** Monthly bar chart, model breakdown, cap progress bar
 - **Create user:** `+ Add User` button — creates pre-approved, email-verified accounts (enforces CUNY email)
-- **API routes:** `GET /api/admin/users/all`, `POST /api/admin/users` (create), `PATCH /api/admin/users/:id`, `GET /api/admin/users/:id/usage`
+- **Reset password:** "Reset PW" button per user — sends reset email, confirms via dialog
+- **API routes:** `GET /api/admin/users/all`, `POST /api/admin/users` (create), `PATCH /api/admin/users/:id`, `GET /api/admin/users/:id/usage`, `POST /api/admin/users/:id/reset-password`
 
 **Svelte 5 gotcha:** `$derived.by(() => { ... })` returns a VALUE. Don't call it as `filteredUsers()` in templates — use `filteredUsers` directly. `$derived(expr)` is for simple expressions only.
 
@@ -288,7 +294,9 @@ Full admin panel at `/admin` with:
   - Registration: 3 per hour
   - Chat: 30 messages per minute
   - Password change: 3 per 15 minutes
+  - Forgot password: 3 per 15 minutes
   - Heartbeat: excluded from rate limiting
+- Email template injection prevention: all user-controlled values (`adminName`, `sharedByName`, `deckTitle`) are HTML-escaped via `escapeHtml()` in email bodies and `stripTags()` in subject lines (`apps/api/src/email/index.ts`)
 - Admin role middleware at `apps/api/src/middleware/admin.ts` — enforces admin role (403 if not admin)
 - Admin role check is client-side only (server-side guard removed — it broke on staging due to SvelteKit server not proxying to API)
 - Block ownership verification on CRUD endpoints
@@ -307,7 +315,7 @@ Full admin panel at `/admin` with:
 - Slide insertion uses raw better-sqlite3 sync transaction (not Drizzle's async wrapper) to prevent order race conditions.
 - In-memory rate limiter (`RateLimiterMemory`) resets on PM2 restart — known limitation, acceptable for staging.
 
-**Do not revert security changes in:** `decks.ts`, `files.ts`, `chat.ts`, `auth.ts`, `index.ts`, `export/index.ts`, `export/html-renderer.ts`, `lucia.ts`
+**Do not revert security changes in:** `decks.ts`, `files.ts`, `chat.ts`, `auth.ts`, `index.ts`, `export/index.ts`, `export/html-renderer.ts`, `lucia.ts`, `email/index.ts`
 
 ### UI Design System
 Editor chrome uses CSS custom properties defined in `apps/web/src/app.css`. Key tokens:
