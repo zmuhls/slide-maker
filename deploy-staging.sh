@@ -16,8 +16,8 @@ if [ -z "$DEPLOY_PASS" ]; then
   echo ""
 fi
 
-echo "Pushing to GitHub..."
-git push origin main
+echo "Pushing to GitHub (upstream/CUNY-AI-Lab)..."
+git push upstream main
 
 echo "Deploying to server..."
 sshpass -p "$DEPLOY_PASS" ssh -o StrictHostKeyChecking=no "$SERVER" "
