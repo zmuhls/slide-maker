@@ -3,7 +3,6 @@
   import SplitHandle from './SplitHandle.svelte'
 import { currentDeck, updateSlideInDeck } from '$lib/stores/deck'
 import { applyMutation } from '$lib/utils/mutations'
-  import { get } from 'svelte/store'
   import type { Editor } from '@tiptap/core'
   import { API_URL } from '$lib/api'
 
@@ -91,7 +90,7 @@ import { applyMutation } from '$lib/utils/mutations'
 
   // Branding from deck metadata
   let branding = $derived.by(() => {
-    const deck = get(currentDeck)
+    const deck = $currentDeck
     const meta = deck?.metadata as Record<string, unknown> | undefined
     if (!meta?.branding) return null
     const b = meta.branding as { logo?: string; position?: string }
@@ -203,6 +202,7 @@ import { applyMutation } from '$lib/utils/mutations'
           onModuleStepChange={handleModuleStepChange}
           onMoveToZone={handleMoveToZone}
           {onEditorReady}
+          {onEditorBlur}
         />
       </div>
       <SplitHandle ratio={splitRatio} onRatioChange={handleRatioChange} />
@@ -220,6 +220,7 @@ import { applyMutation } from '$lib/utils/mutations'
           onModuleStepChange={handleModuleStepChange}
           onMoveToZone={handleMoveToZone}
           {onEditorReady}
+          {onEditorBlur}
         />
       </div>
     </div>

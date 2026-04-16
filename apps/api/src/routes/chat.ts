@@ -391,7 +391,7 @@ chat.post('/', chatRateLimit, async (c) => {
       })
 
       // Estimate and record token usage
-      const allInputLength = systemPrompt.length + chatHistory.reduce((sum, m) => sum + (m.content?.length ?? 0), 0) + message.length
+      const allInputLength = systemPrompt.length + chatHistory.reduce((sum, m) => sum + (m.content?.length ?? 0), 0)
       const inputTokens = Math.ceil(allInputLength / 4)
       const outputTokens = Math.ceil(fullResponse.length / 4)
       await db.insert(tokenUsage).values({

@@ -284,8 +284,8 @@ function renderModule(mod: Module, files?: ExportFile[], opts?: RenderOptions): 
     case 'card-grid': {
       const cards = Array.isArray(d.cards) ? d.cards : []
       const cols = Number(d.columns || d.cols) || 3
-      const cgExtra = d.fontSize ? `; font-size: ${esc(String(d.fontSize))}` : ''
-      let html = `<div class="card-grid" style="grid-template-columns: repeat(${cols}, 1fr)${cgExtra}"${step}>`
+      const gridStyle = buildFontSizeAttr(d.fontSize, esc, [`grid-template-columns: repeat(${cols}, 1fr)`])
+      let html = `<div class="card-grid"${gridStyle}${step}>`
       for (const card of cards) {
         const c = card as Record<string, unknown>
         const title = c.title ? `<h3 class="card-title">${esc(String(c.title))}</h3>` : ''

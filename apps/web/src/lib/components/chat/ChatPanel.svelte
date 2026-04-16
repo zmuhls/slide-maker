@@ -31,6 +31,7 @@
   let clearing = $state(false)
   let controller: AbortController | null = $state(null)
   let currentAssistantId: string | null = $state(null)
+  let intentionalStop = false
 
   // Auto-scroll to bottom when messages change
   $effect(() => {
@@ -249,6 +250,10 @@
         controller = null
       },
       (error) => {
+        if (intentionalStop) {
+          intentionalStop = false
+          return
+        }
         aborted = true
         mutationQueue.length = 0
         appendToAssistant(assistantId, `\n\n[Error: ${error}]`)
@@ -279,6 +284,7 @@
 
   function stopStreaming() {
     if (!controller || !$chatStreaming) return
+    intentionalStop = true
     controller.abort()
     if (currentAssistantId) finishAssistant(currentAssistantId)
     chatStreaming.set(false)

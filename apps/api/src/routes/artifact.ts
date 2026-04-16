@@ -1,6 +1,9 @@
 import { Hono } from 'hono'
+import { authMiddleware } from '../middleware/auth.js'
 
 const artifactRouter = new Hono()
+
+artifactRouter.use('*', authMiddleware)
 
 // Serves base64-encoded inline artifact HTML for previews.
 artifactRouter.get('/artifact', async (c) => {

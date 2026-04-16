@@ -15,6 +15,8 @@ import {
   containsHtmlMarkup,
   escapeHtml,
   getSlideSections,
+  inlineMarkdown,
+  markdownToHtml,
   renderFormattedContent,
   renderRichTextData,
 } from '@slide-maker/shared'
@@ -75,11 +77,13 @@ function renderModule(mod: Module, slide: Slide): string {
   switch (mod.type) {
     case 'heading': {
       const level = Math.min(Math.max(Number(d.level) || 1, 1), 4)
+      const extra = d.align ? [`text-align: ${esc(String(d.align))}`] : []
+      const styleAttr = buildFontSizeAttr(d.fontSize, esc, extra)
       const raw = String(d.text || '')
       const inner = containsHtmlMarkup(raw)
         ? sanitize(raw).replace(/^<p>(.*)<\/p>$/s, '$1')
         : esc(raw)
-      return `<h${level}>${inner}</h${level}>`
+      return `<h${level}${styleAttr}>${inner}</h${level}>`
     }
 
     case 'text': {
@@ -113,7 +117,7 @@ function renderModule(mod: Module, slide: Slide): string {
       const raw = String(d.content || d.text || '')
       const body = renderFormattedContent(raw, sanitize)
       const tbStyleAttr = buildFontSizeAttr(d.fontSize, esc)
-      return `<div class="tip-box"${tbStyleAttr}>${title}${body}</div>`
+      return `<div class="tip-box"${tbStyleAttr}>${title}<div class="tip-box-content">${body}</div></div>`
     }
 
     case 'prompt-block': {
@@ -164,16 +168,16 @@ function renderModule(mod: Module, slide: Slide): string {
     case 'card-grid': {
       const cards = Array.isArray(d.cards) ? d.cards : []
       const cols = Number(d.columns || d.cols) || 3
-      const cgExtra = d.fontSize ? `; font-size: ${esc(String(d.fontSize))}` : ''
-      let html = `<div class="card-grid" style="grid-template-columns: repeat(${cols}, 1fr)${cgExtra}">`
+      const gridStyle = buildFontSizeAttr(d.fontSize, esc, [`grid-template-columns: repeat(${cols}, 1fr)`])
+      let html = `<div class="card-grid"${gridStyle}>`
       for (const card of cards) {
         const item = card as Record<string, unknown>
-        const title = item.title ? `<h3>${esc(String(item.title))}</h3>` : ''
+        const title = item.title ? `<h3 class="card-title">${esc(String(item.title))}</h3>` : ''
         const raw = String(item.body || item.content || '')
-        const body = renderFormattedContent(raw, sanitize)
-        const bodyHtml = containsHtmlMarkup(raw) ? body : `<p>${body}</p>`
+        const body = raw.includes('<') ? sanitize(raw) : markdownToHtml(raw)
         const variant = item.variant ? ` card-${esc(String(item.variant))}` : ''
-        const color = typeof item.color === 'string' && item.color ? ` style="border-top:3px solid ${esc(item.color)}"` : ''
+        const color = typeof item.color === 'string' && item.color && !item.variant ? ` style="border-top:3px solid ${esc(item.color)}"` : ''
+        const bodyHtml = body ? `<div class="card-content">${body}</div>` : ''
         html += `<div class="card${variant}"${color}>${title}${bodyHtml}</div>`
       }
       html += '</div>'
@@ -184,9 +188,13 @@ function renderModule(mod: Module, slide: Slide): string {
       const nodes = Array.isArray(d.nodes) ? d.nodes : []
       const fStyleAttr = buildFontSizeAttr(d.fontSize, esc)
       let html = `<div class="flow"${fStyleAttr}>`
-      nodes.forEach((node: unknown, index: number) => {
-        if (index > 0) html += '<div class="flow-arrow">→</div>'
-        html += `<div class="flow-node">${esc(String((node as Record<string, unknown>).label || node))}</div>`
+      nodes.forEach((node: unknown, i: number) => {
+        if (i > 0) html += `<div class="flow-arrow"></div>`
+        const n = node as Record<string, unknown>
+        const icon = typeof n.icon === 'string' ? n.icon : String(i + 1)
+        const label = sanitize(String(n.label || ''))
+        const desc = typeof n.description === 'string' ? `<div class="flow-desc">${sanitize(n.description)}</div>` : ''
+        html += `<div class="flow-node"><div class="flow-icon">${esc(icon)}</div><div class="flow-body"><div class="flow-label">${label}</div>${desc}</div></div>`
       })
       html += '</div>'
       return html
@@ -199,7 +207,10 @@ function renderModule(mod: Module, slide: Slide): string {
       for (const item of items) {
         const o = typeof item === 'object' && item ? item as Record<string, unknown> : null
         const text = o ? String(o.text || o.content || o.label || o.title || JSON.stringify(item)) : String(item)
-        html += `<li>${esc(text)}</li>`
+        const inner = containsHtmlMarkup(text)
+          ? sanitize(text).replace(/^<p>(.*)<\/p>$/s, '$1')
+          : inlineMarkdown(text)
+        html += `<li>${inner}</li>`
       }
       html += '</ul>'
       return html
@@ -287,21 +298,6 @@ function renderModule(mod: Module, slide: Slide): string {
       }
 
       return `<div class="artifact-wrapper" style="aspect-ratio:1;display:flex;align-items:center;justify-content:center;color:#94a3b8;font-size:13px;">${alt}</div>`
-    }
-
-    case 'code': {
-      const code = String(d.code || d.content || '')
-      const language = String(d.language || '')
-      return `<div class="code-wrapper"><pre><code class="language-${esc(language)}">${esc(code)}</code></pre></div>`
-    }
-
-    case 'quote': {
-      const text = String(d.quote || d.text || '')
-      const cite = String(d.cite || d.author || '')
-      let html = `<blockquote><p>${esc(text)}</p>`
-      if (cite) html += `<cite>${esc(cite)}</cite>`
-      html += '</blockquote>'
-      return html
     }
 
     default:
