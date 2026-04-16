@@ -10,6 +10,7 @@
   let caption = $derived(typeof data.caption === 'string' ? data.caption : '')
   let imgWidth = $derived(typeof data.width === 'string' ? data.width : undefined)
   let imgHeight = $derived(typeof data.height === 'string' ? data.height : undefined)
+  let fontSize = $derived(typeof data.fontSize === 'string' ? data.fontSize : undefined)
 </script>
 
 <figure class="image-block">
@@ -19,7 +20,7 @@
     <div class="placeholder">No image source</div>
   {/if}
   {#if caption}
-    <figcaption>{caption}</figcaption>
+    <figcaption style:font-size={fontSize}>{caption}</figcaption>
   {/if}
 </figure>
 

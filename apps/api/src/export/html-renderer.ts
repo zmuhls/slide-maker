@@ -236,8 +236,9 @@ function renderModule(mod: Module, files?: ExportFile[], opts?: RenderOptions): 
       const imgW = typeof d.width === 'string' ? d.width : ''
       const imgH = typeof d.height === 'string' ? d.height : ''
       const sizeAttr = imgW || imgH ? ` style="${imgW ? `width:${esc(imgW)};` : ''}${imgH ? `max-height:${esc(imgH)};` : ''}object-fit:contain;"` : ''
+      const capStyleAttr = buildFontSizeAttr(d.fontSize, esc)
       let html = `<figure${step}><img src="${esc(src)}" alt="${alt}" loading="lazy"${sizeAttr}>`
-      if (caption) html += `<figcaption>${esc(caption)}</figcaption>`
+      if (caption) html += `<figcaption${capStyleAttr}>${esc(caption)}</figcaption>`
       html += `</figure>`
       return html
     }

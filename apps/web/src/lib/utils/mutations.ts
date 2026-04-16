@@ -833,7 +833,18 @@ async function applyMutationSilent(mutation: Record<string, unknown>): Promise<v
       const blockId = payload.blockId as string
       const toZone = payload.toZone as string
       const fromZone = payload.fromZone as string
-      const order = payload.order as string[]
+      let order = payload.order as string[] | undefined
+
+      // Auto-compute order when AI omits it: append moved block to end of destination zone
+      if (!order || order.length === 0) {
+        const d = get(currentDeck)
+        const sl = d?.slides.find((s) => s.id === slideId)
+        const destIds = (sl?.blocks ?? [])
+          .filter((b) => b.zone === toZone && b.id !== blockId)
+          .sort((a, b) => a.order - b.order)
+          .map((b) => b.id)
+        order = [...destIds, blockId]
+      }
 
       currentDeck.update((d) => {
         if (!d) return d

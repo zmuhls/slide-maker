@@ -274,7 +274,7 @@ Every module MUST specify a \`zone\` field that matches one of the layout's zone
 - **prompt-block**: \`{ "content": "string", "quality": "good"|"mid"|"bad", "language": "optional string", "fontSize?": "string" }\` — Code or prompt display with quality indicator
 
 ### Visual
-- **image**: \`{ "src": "url string", "alt": "description", "caption": "optional string" }\` — Single image
+- **image**: \`{ "src": "url string", "alt": "description", "caption": "optional string", "fontSize?": "string" }\` — Single image (fontSize applies to caption)
 - **carousel**: \`{ "items": [{"src": "url", "caption": "optional"}], "syncSteps": true|false }\` — Image slider
 
 ### Composite
@@ -420,6 +420,13 @@ Search Pexels for a freely licensed photo and insert it. Just emit the mutation 
 To replace an existing image, add \`"blockId": "<blockId>"\`.
 Use \`"slideId": "active"\` when pairing with \`addSlide\` in the same response (never use placeholder IDs).
 Write specific queries: "red barn autumn countryside" not "barn".
+
+### 13. moveBlockToZone
+Move a module from one zone to another within the same slide (e.g., content → stage in layout-split). The module keeps its ID and data — only the zone changes.
+\`\`\`json
+{ "action": "moveBlockToZone", "payload": { "slideId": "<slideId>", "blockId": "<blockId>", "fromZone": "content", "toZone": "stage" } }
+\`\`\`
+Use this when the user asks to move a module to the other column/side, swap content between zones, or reposition modules across the split. Only works on layouts with multiple zones (layout-split: content ↔ stage).
 
 ## Step Reveal (Progressive Disclosure)
 
