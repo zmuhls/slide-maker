@@ -79,7 +79,12 @@ pre { background: rgba(0,0,0,0.3); border: 1px solid var(--border-subtle); borde
 }
 
 /* ── Layout: Content ─────────────────────────────────────────────── */
-.layout-content { align-items: center; gap: 24px; }
+.layout-content {
+  background: var(--theme-bg, #111827);
+  color: var(--theme-text, #f0f0f0);
+  align-items: center;
+  gap: 24px;
+}
 .layout-content > .content { max-width: 900px; width: 100%; display: flex; flex-direction: column; gap: 24px; }
 
 /* ── Layout: Grid ────────────────────────────────────────────────── */
