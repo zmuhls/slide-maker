@@ -65,7 +65,8 @@
 /* Title-slide specific typography (mirrors BASE) */
 .slide-frame .slide[data-layout="title-slide"] h1 { font-size: clamp(2.2rem, 5cqi, 4.2rem) !important; }
 .slide-frame .slide[data-layout="title-slide"] .text-body,
-.slide-frame .slide[data-layout="title-slide"] p:not(.flow-label):not(.flow-desc) { font-size: clamp(1.1rem, 1.9cqi, 1.5rem) !important; }
+.slide-frame .slide[data-layout="title-slide"] .text-block,
+.slide-frame .slide[data-layout="title-slide"] .text-block p { font-size: clamp(1.1rem, 1.9cqi, 1.5rem) !important; }
 
 .slide-frame .slide[data-layout="title-slide"] h1,
 .slide-frame .slide[data-layout="title-slide"] h2,
