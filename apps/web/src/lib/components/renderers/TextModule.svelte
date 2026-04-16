@@ -18,7 +18,8 @@
 
   function handleRichTextChange(html: string) {
     editContent = html
-    onchange?.({ ...data, html })
+    const { markdown: _md, ...rest } = data
+    onchange?.({ ...rest, html })
   }
 </script>
 
