@@ -161,8 +161,8 @@
                             : template.layout === 'layout-grid' ? (dark ? gridVariants[i % gridVariants.length] : gridVariantsLight[i % gridVariantsLight.length])
                             : dark ? base : (layoutMetaLight[template.layout] ?? base)}
             <div class="template-card-wrap">
-              <button class="template-card" onclick={() => applyTemplate(template)} aria-label="Add {template.name} template">
-                <div class="thumbnail" style:background={meta.bg}>
+              <div class="template-card">
+                <div class="thumbnail" style:background={meta.bg} aria-hidden="true">
                 {#if template.layout === 'title-slide' || template.layout === 'closing-slide'}
                   <div class="thumb-zones thumb-center">
                     <div class="z-bar z-wide" style:background={meta.fg}></div>
@@ -226,9 +226,12 @@
                   </div>
                 {/if}
               </div>
-              </button>
+              </div>
               <div class="template-info">
                 <span class="template-name">{template.name}</span>
+                <button class="act-btn act-add" onclick={() => applyTemplate(template)} title="Add this slide to the deck" aria-label="Add {template.name} slide">
+                  <svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M6 2v8M2 6h8"/></svg>
+                </button>
                 <button class="act-btn act-at" onclick={() => injectTemplateRef(template)} title="Mention in chat (@template)" aria-label="Mention in chat">
                   <svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"><circle cx="6" cy="6" r="2"/><path d="M8 4.5v2.3a1.2 1.2 0 002.4 0V6a4.4 4.4 0 10-2.2 3.8"/></svg>
                 </button>
@@ -304,7 +307,6 @@
     width: 100%;
     border: none;
     padding: 0;
-    cursor: pointer;
     background: transparent;
   }
 

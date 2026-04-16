@@ -362,6 +362,7 @@ decksRouter.post('/:id/slides', async (c) => {
           data: mod.data || {},
           order: i,
           stepOrder: mod.stepOrder ?? null,
+          sourceNodeIds: null,
         }
         sqlite.prepare(
           'INSERT INTO content_blocks (id, slide_id, type, zone, data, "order", step_order) VALUES (?, ?, ?, ?, ?, ?, ?)'
@@ -419,6 +420,15 @@ decksRouter.patch('/:id/slides/:slideId', async (c) => {
 
   if (body.notes !== undefined) updates.notes = body.notes
   if (body.splitRatio !== undefined) updates.splitRatio = body.splitRatio
+  if (body.title !== undefined) {
+    // Null/empty clears the title; otherwise trim, strip tags, cap length.
+    if (body.title === null || body.title === '') {
+      updates.title = null
+    } else if (typeof body.title === 'string') {
+      const cleaned = body.title.replace(/<[^>]*>/g, '').trim().slice(0, 120)
+      updates.title = cleaned.length > 0 ? cleaned : null
+    }
+  }
   if (body.layout !== undefined) {
     const validLayouts = [
       'title-slide',

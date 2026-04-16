@@ -61,6 +61,7 @@ export const slides = sqliteTable('slides', {
   order: integer('order').notNull(),
   splitRatio: text('split_ratio').notNull().default('0.45'),
   notes: text('notes'),
+  title: text('title'),
   createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
   updatedAt: integer('updated_at', { mode: 'timestamp_ms' }).notNull(),
 })
@@ -73,6 +74,7 @@ export const contentBlocks = sqliteTable('content_blocks', {
   data: text('data', { mode: 'json' }).notNull().default('{}'),
   order: integer('order').notNull(),
   stepOrder: integer('step_order'),
+  sourceNodeIds: text('source_node_ids', { mode: 'json' }),
 })
 
 // ── Resources ──

@@ -6,6 +6,7 @@ interface SlideModule {
   data: Record<string, unknown>
   order: number
   stepOrder?: number | null
+  sourceNodeIds?: string[] | null
 }
 
 interface SlideWithModules {
@@ -70,6 +71,8 @@ interface BuildPromptOptions {
     status: 'idle' | 'loading' | 'ready' | 'error'
     message?: string
   }[]
+  fidelity?: 'strict' | 'balanced' | 'interpretive' | null
+  outlineMarkdown?: string
 }
 
 const MAX_SLIDES = 60
@@ -126,14 +129,16 @@ function buildRenderDiagnosticsSection(opts: BuildPromptOptions): string {
   return `## Recent Canvas Render Issues\n${lines.join('\n')}\n`
 }
 
-function serializeSlide(s: SlideWithModules, tier: 'full' | 'skeleton', activeSlideId: string | null): string {
+function serializeSlide(s: SlideWithModules, tier: 'full' | 'skeleton', activeSlideId: string | null, strictMode: boolean): string {
   const active = s.id === activeSlideId ? ' [ACTIVE]' : ''
   if (tier === 'full') {
     const blocksSummary = s.blocks
-      .map(
-        (b) =>
-          `      - Module "${b.id}" type="${b.type}" zone="${b.zone ?? 'unknown'}" data=${JSON.stringify(b.data)}`
-      )
+      .map((b) => {
+        const locked = strictMode && Array.isArray(b.sourceNodeIds) && b.sourceNodeIds.length > 0
+          ? ' [strict-locked]'
+          : ''
+        return `      - Module "${b.id}" type="${b.type}" zone="${b.zone ?? 'unknown'}"${locked} data=${JSON.stringify(b.data)}`
+      })
       .join('\n')
     return `    Slide ${s.order + 1} (id="${s.id}", layout="${s.layout}")${active}\n${blocksSummary || '      (no modules)'}`
   }
@@ -164,10 +169,12 @@ export function buildSystemPrompt(opts: BuildPromptOptions): string {
     }
   }
 
+  const strictMode = opts.fidelity === 'strict'
+
   const slidesSummary = deck.slides
     .map((s) => {
       const tier = fullDetailIds.has(s.id) ? 'full' as const : 'skeleton' as const
-      return serializeSlide(s, tier, activeSlideId)
+      return serializeSlide(s, tier, activeSlideId, strictMode)
     })
     .join('\n')
 
@@ -219,7 +226,46 @@ export function buildSystemPrompt(opts: BuildPromptOptions): string {
     ? '\n  Available themes:\n' + opts.allThemes.map((t) => `    - "${t.name}" (id="${t.id}")`).join('\n')
     : ''
 
-  return `You are a slide deck authoring assistant for the CUNY AI Lab Slide Wiz. You help create professional presentation slides.
+  const strictLockedBlockIds: string[] = []
+  if (opts.fidelity === 'strict') {
+    for (const slide of deck.slides) {
+      for (const block of slide.blocks) {
+        if (Array.isArray(block.sourceNodeIds) && block.sourceNodeIds.length > 0) {
+          strictLockedBlockIds.push(block.id)
+        }
+      }
+    }
+  }
+
+  const fidelityBanner = opts.fidelity === 'strict'
+    ? `⚠️ STRICT FIDELITY MODE — the user imported an outline as STRICT. You MUST NOT rewrite, paraphrase, tighten, punch up, or "improve the tone of" any [strict-locked] block below. Even if the user explicitly asks to "rewrite," "polish," "make it punchy," "make it more engaging," or similar, REFUSE and offer alternatives (add a new non-locked block, or ask them to switch fidelity mode). Only proceed with a rewrite if the user says "override strict" or "rewrite anyway" in literal words. See Fidelity Contract below for full rules.\n\n`
+    : ''
+
+  const fidelitySection = opts.fidelity === 'strict'
+    ? `
+## Fidelity Contract: STRICT
+This deck was generated from an outline the user marked as STRICT fidelity. Outline content must be preserved verbatim. Blocks listed below carry \`[strict-locked]\` markers in the slide detail above; you must NOT paraphrase, summarize, reword, or shorten their \`text\`/\`markdown\`/\`content\`/\`items\` fields.
+
+Allowed:
+- Add new slides or blocks (non-locked)
+- Reorder slides or move blocks between zones
+- Change layout, theme, or styling
+- Edit blocks that are NOT strict-locked
+
+Forbidden (unless the user literally writes "override strict" or "rewrite anyway"):
+- Emitting \`updateBlock\` on a strict-locked block's text/markdown/content/items
+- Deleting strict-locked blocks
+- Replacing strict-locked wording with "equivalent" phrasing, even in a new block that supersedes the original
+
+Trigger words to treat as rewrite requests (REFUSE unless override phrase present): "rewrite," "polish," "tighten," "improve," "make it punchy," "make it exciting," "make it more [anything]," "reword," "paraphrase," "cleaner," "more concise."
+
+When refusing, briefly explain: "This deck is in STRICT fidelity mode — the Inputs bullets are locked to the outline's wording. I can add a new block with alternate phrasing, or you can re-import this outline in Balanced/Interpretive mode. If you want to override, reply with 'override strict'."
+
+Strict-locked block IDs: ${strictLockedBlockIds.length ? strictLockedBlockIds.map((id) => `"${id}"`).join(', ') : '(none yet)'}
+${opts.outlineMarkdown ? `\n## Original Outline (source of truth for strict-locked blocks)\n\`\`\`\n${opts.outlineMarkdown}\n\`\`\`\n` : ''}`
+    : ''
+
+  return `${fidelityBanner}You are a slide deck authoring assistant for the CUNY AI Lab Slide Wiz. You help create professional presentation slides.
 
 ${activeSlideInfo}
 
@@ -419,6 +465,16 @@ Search Pexels for a freely licensed photo and insert it. Just emit the mutation 
 \`\`\`
 To replace an existing image, add \`"blockId": "<blockId>"\`.
 Use \`"slideId": "active"\` when pairing with \`addSlide\` in the same response (never use placeholder IDs).
+
+## Slide references
+
+Every mutation that targets a slide accepts a slide reference in \`slideId\`. Prefer real UUIDs from the deck state above. The resolver also accepts these shorthands:
+- \`"active"\` — the slide the user is currently editing.
+- \`"slide 3"\`, \`"#3"\`, or \`"3"\` — the slide in the Nth position (1-indexed, matching how the user refers to it in chat). Resolves against the live deck order, so prefer this when the user says "slide 3" and you don't have the UUID cached.
+- \`"index:3"\` — legacy form of the above.
+- \`"heading:My Topic"\` — the first slide whose heading matches that text.
+
+When a user says "slide 3", that corresponds to the slide with \`order = 2\` in the deck state. Use either the UUID from the deck state or the \`"slide 3"\` shorthand — never a made-up ID.
 Write specific queries: "red barn autumn countryside" not "barn".
 
 ### 13. moveBlockToZone
@@ -450,7 +506,7 @@ ${themeInfo}${themeList}
 Total slides: ${deck.slides.length}
 
 ${slidesSummary || '  (empty deck)'}
-
+${fidelitySection}
 ## Available Templates
 ${templatesList}${focusedTemplatesDetail}
 

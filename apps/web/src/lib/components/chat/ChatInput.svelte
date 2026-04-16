@@ -224,31 +224,51 @@
     dragOver = false
   }
 
-  async function handleDrop(e: DragEvent) {
-    e.preventDefault()
-    dragOver = false
-
-    const files = e.dataTransfer?.files
+  async function uploadFiles(files: FileList) {
     if (!files?.length) return
 
     const deck = get(currentDeck)
-    if (!deck) return
+    if (!deck) {
+      console.warn('Drop ignored: no active deck')
+      return
+    }
 
     uploading = true
     try {
       for (const file of Array.from(files)) {
-        const result = await api.uploadFile(deck.id, file)
-        if (result?.file) {
-          const label = file.type.startsWith('image/') ? 'image' : 'file'
-          richEditor?.insertContent(`[Uploaded ${label}: ${file.name}]`)
+        try {
+          const result = await api.uploadFile(deck.id, file)
+          if (result?.file) {
+            const label = file.type.startsWith('image/') ? 'image' : 'file'
+            richEditor?.insertContent(`[Uploaded ${label}: ${file.name}]`)
+          } else {
+            richEditor?.insertContent(`[Upload failed: ${file.name} — empty response]`)
+          }
+        } catch (err: any) {
+          console.error('File upload failed:', err)
+          richEditor?.insertContent(`[Upload failed: ${file.name} — ${err?.message ?? 'unknown error'}]`)
         }
       }
       plainText = richEditor?.getText() ?? ''
-    } catch (err: any) {
-      richEditor?.insertContent(`[Upload failed: ${err.message}]`)
+      richEditor?.focus()
     } finally {
       uploading = false
     }
+  }
+
+  function handleDrop(e: DragEvent) {
+    // ProseMirror's handleDrop already preventDefault'd + uploaded when the
+    // file landed on the editor itself. Skip so we don't upload twice.
+    if (e.defaultPrevented) { dragOver = false; return }
+    e.preventDefault()
+    dragOver = false
+    const files = e.dataTransfer?.files
+    if (files?.length) uploadFiles(files)
+  }
+
+  function handleEditorFileDrop(files: FileList) {
+    dragOver = false
+    uploadFiles(files)
   }
 </script>
 
@@ -316,6 +336,7 @@
       onsubmit={handleSubmit}
       oninput={handleEditorInput}
       onfocuschange={handleFocusChange}
+      onfiledrop={handleEditorFileDrop}
     />
     <button
       class="send-btn"

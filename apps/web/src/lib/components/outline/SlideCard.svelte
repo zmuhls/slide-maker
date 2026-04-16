@@ -27,6 +27,7 @@
       deckId: string
       layout: string
       order: number
+      title?: string | null
       blocks: { id: string; slideId: string; type: string; zone: string; data: Record<string, unknown>; order: number; stepOrder: number | null }[]
     }
     active: boolean
@@ -34,6 +35,45 @@
   } = $props()
 
   let layoutLabel = $derived(layoutLabels[slide.layout] ?? slide.layout)
+  let displayLabel = $derived(slide.title?.trim() ? slide.title : layoutLabel)
+
+  let editingTitle = $state(false)
+  let titleDraft = $state('')
+  let titleInput: HTMLInputElement | undefined = $state()
+
+  function startRename(e?: MouseEvent) {
+    e?.stopPropagation()
+    titleDraft = slide.title ?? ''
+    editingTitle = true
+    queueMicrotask(() => { titleInput?.focus(); titleInput?.select() })
+  }
+
+  async function commitRename() {
+    if (!editingTitle) return
+    const next = titleDraft.trim().slice(0, 120)
+    const prev = slide.title ?? ''
+    if (next === prev) { editingTitle = false; return }
+    try {
+      await applyMutation({
+        action: 'updateSlide',
+        payload: { slideId: slide.id, title: next.length > 0 ? next : null },
+      })
+      editingTitle = false
+    } catch (err) {
+      console.error('Failed to rename slide:', err)
+      // Keep the editor open with the user's draft so they can retry/copy it.
+    }
+  }
+
+  function cancelRename() {
+    editingTitle = false
+    titleDraft = ''
+  }
+
+  function handleTitleKeydown(e: KeyboardEvent) {
+    if (e.key === 'Enter') { e.preventDefault(); commitRename() }
+    else if (e.key === 'Escape') { e.preventDefault(); cancelRename() }
+  }
 
   let deleting = $state(false)
   let expanded = $state(false)
@@ -77,6 +117,8 @@
   function handleClick(e?: MouseEvent) {
     // Ignore clicks on the delete button (Svelte 5 event delegation)
     if (e && (e.target as HTMLElement).closest('.delete-btn')) return
+    if (e && (e.target as HTMLElement).closest('.slide-title-input')) return
+    if (editingTitle) return
     if (active) {
       expanded = !expanded
     } else {
@@ -120,7 +162,25 @@
   <div class="card-header" onclick={handleClick} onkeydown={(e) => e.key === 'Enter' && handleClick()} role="button" tabindex="0">
     <span class="drag-handle" use:dragHandle title="Drag to reorder">{'\u2807'}</span>
     <span class="arrow">{expanded ? '\u25BC' : '\u25B6'}</span>
-    <span class="slide-label">{index + 1}. {layoutLabel}</span>
+    {#if editingTitle}
+      <span class="slide-label">{index + 1}.&nbsp;</span>
+      <input
+        class="slide-title-input"
+        bind:this={titleInput}
+        bind:value={titleDraft}
+        onkeydown={handleTitleKeydown}
+        onblur={commitRename}
+        onclick={(e) => e.stopPropagation()}
+        maxlength="120"
+        placeholder={layoutLabel}
+      />
+    {:else}
+      <span
+        class="slide-label"
+        ondblclick={startRename}
+        title="Double-click to rename"
+      >{index + 1}. {displayLabel}</span>
+    {/if}
     {#if active}
       <span class="active-badge">ACTIVE</span>
     {/if}
@@ -196,6 +256,18 @@
     overflow: hidden;
     text-overflow: ellipsis;
     color: var(--color-text, #1f2937);
+  }
+
+  .slide-title-input {
+    flex: 1;
+    min-width: 0;
+    font: inherit;
+    color: var(--color-text, #1f2937);
+    background: var(--color-bg, #fff);
+    border: 1px solid var(--color-primary, #3B73E6);
+    border-radius: 3px;
+    padding: 1px 4px;
+    outline: none;
   }
 
   .active-badge {

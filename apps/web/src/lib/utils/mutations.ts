@@ -206,11 +206,13 @@ export async function applyMutation(mutation: Record<string, unknown>): Promise<
       if (payload.notes !== undefined) oldValues.notes = (oldSlide as any)?.notes ?? null
       if (payload.splitRatio !== undefined) oldValues.splitRatio = oldSlide?.splitRatio
       if (payload.layout !== undefined) oldValues.layout = oldSlide?.layout
+      if (payload.title !== undefined) oldValues.title = (oldSlide as any)?.title ?? null
 
       const updates: Record<string, unknown> = {}
       if (payload.notes !== undefined) updates.notes = payload.notes
       if (payload.splitRatio !== undefined) updates.splitRatio = payload.splitRatio
       if (payload.layout !== undefined) updates.layout = payload.layout
+      if (payload.title !== undefined) updates.title = payload.title
       await apiCall(`/api/decks/${deck.id}/slides/${slideId}`, 'PATCH', updates)
       updateSlideInDeck(slideId, (s) => {
         const updated = {
@@ -218,6 +220,7 @@ export async function applyMutation(mutation: Record<string, unknown>): Promise<
           ...(payload.notes !== undefined ? { notes: payload.notes as string | null } : {}),
           ...(payload.splitRatio !== undefined ? { splitRatio: payload.splitRatio as string } : {}),
           ...(payload.layout !== undefined ? { layout: payload.layout as string } : {}),
+          ...(payload.title !== undefined ? { title: (payload.title as string | null) } : {}),
         }
         // Remap block zones when layout changes
         if (payload.layout && payload.layout !== s.layout) {
@@ -728,6 +731,15 @@ function resolveSlideRef(ref?: string): string | null {
     return id ?? null
   }
 
+  // "slide 3" / "#3" / "3" → 1-indexed slide position
+  const numericMatch = ref.trim().match(/^(?:slide\s*)?#?(\d+)$/i)
+  if (numericMatch) {
+    const num = parseInt(numericMatch[1], 10)
+    if (num >= 1 && num <= deck.slides.length) {
+      return deck.slides[num - 1]?.id ?? null
+    }
+  }
+
   if (ref.startsWith('index:')) {
     const num = parseInt(ref.slice(6), 10)
     if (!isNaN(num) && num >= 1 && num <= deck.slides.length) {
@@ -970,6 +982,7 @@ async function applyMutationSilent(mutation: Record<string, unknown>): Promise<v
       if (payload.notes !== undefined) updates.notes = payload.notes
       if (payload.splitRatio !== undefined) updates.splitRatio = payload.splitRatio
       if (payload.layout !== undefined) updates.layout = payload.layout
+      if (payload.title !== undefined) updates.title = payload.title
       await apiCall(`/api/decks/${deck.id}/slides/${slideId}`, 'PATCH', updates)
       updateSlideInDeck(slideId, (s) => {
         const updated = {
@@ -977,6 +990,7 @@ async function applyMutationSilent(mutation: Record<string, unknown>): Promise<v
           ...(payload.notes !== undefined ? { notes: payload.notes as string | null } : {}),
           ...(payload.splitRatio !== undefined ? { splitRatio: payload.splitRatio as string } : {}),
           ...(payload.layout !== undefined ? { layout: payload.layout as string } : {}),
+          ...(payload.title !== undefined ? { title: (payload.title as string | null) } : {}),
         }
         if (payload.layout && payload.layout !== s.layout) {
           const validZones = LAYOUT_ZONES[payload.layout as SlideLayout] || []

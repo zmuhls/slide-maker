@@ -13,6 +13,7 @@
     onsubmit?: () => void
     oninput?: () => void
     onfocuschange?: (focused: boolean) => void
+    onfiledrop?: (files: FileList) => void
   }
 
   let {
@@ -22,6 +23,7 @@
     onsubmit,
     oninput,
     onfocuschange,
+    onfiledrop,
   }: Props = $props()
 
   let editorEl: HTMLDivElement | undefined = $state(undefined)
@@ -53,6 +55,26 @@
           'aria-label': 'Chat message',
           role: 'textbox',
           'aria-multiline': 'true',
+        },
+        handleDOMEvents: {
+          // ProseMirror ignores dragover for unknown drops, so the browser refuses
+          // the drop target. Opt in so the subsequent drop event actually fires.
+          dragover: (_view, event) => {
+            const dt = (event as DragEvent).dataTransfer
+            if (dt && Array.from(dt.types).includes('Files')) {
+              event.preventDefault()
+            }
+            return false
+          },
+        },
+        handleDrop: (_view, event) => {
+          const files = (event as DragEvent).dataTransfer?.files
+          if (files && files.length > 0) {
+            event.preventDefault()
+            onfiledrop?.(files)
+            return true
+          }
+          return false
         },
       },
       extensions: [

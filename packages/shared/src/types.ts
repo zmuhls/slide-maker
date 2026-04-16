@@ -25,6 +25,7 @@ export interface Slide {
   order: number
   splitRatio: string
   notes: string | null
+  title: string | null
   createdAt: number
   updatedAt: number
   blocks: ContentBlock[]

@@ -24,6 +24,16 @@
 
   let { onCollapse }: { onCollapse?: () => void } = $props()
 
+  const activeSlide = $derived.by(() => {
+    const deck = $currentDeck
+    const id = $activeSlideId
+    if (!deck || !id) return null
+    const idx = deck.slides?.findIndex((s) => s.id === id) ?? -1
+    if (idx < 0) return null
+    const slide = deck.slides[idx] as { id: string; title?: string | null }
+    return { number: idx + 1, title: slide.title ?? null }
+  })
+
   let messagesContainer: HTMLDivElement | undefined = $state()
   const latestAssistantId = $derived(
     [...$chatMessages].reverse().find((m) => m.role === 'assistant' && !m.streaming)?.id ?? null
@@ -348,6 +358,14 @@
 
 <div class="chat-panel">
   <div class="chat-header">
+    {#if activeSlide}
+      <div class="slide-context" title="Chat is acting on this slide">
+        <span class="slide-pill-label">Slide {activeSlide.number}</span>
+        {#if activeSlide.title}
+          <span class="slide-pill-title">{activeSlide.title}</span>
+        {/if}
+      </div>
+    {/if}
     <div class="chat-controls">
       <ModelSelector />
       {#if $chatStreaming}
@@ -419,6 +437,30 @@
     gap: 6px;
     padding: 5px 8px;
     border-bottom: 1px solid var(--color-border);
+  }
+
+  .slide-context {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    padding: 4px 10px;
+    border-bottom: 1px solid var(--color-border);
+    background: var(--color-ghost-bg, rgba(59, 115, 230, 0.08));
+    font-size: 11px;
+    line-height: 1.2;
+    min-width: 0;
+  }
+  .slide-pill-label {
+    font-weight: 600;
+    color: var(--color-primary, #3B73E6);
+    flex-shrink: 0;
+  }
+  .slide-pill-title {
+    color: var(--color-text-muted);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    min-width: 0;
   }
 
   .collapse-toggle {
