@@ -45,9 +45,26 @@ export const MODULE_REGISTRY_LIST: ModuleRegistryEntry[] = [
     icon: '⟺',
     factory: makeFactory({ panels: [{ title: '', content: '' }, { title: '', content: '' }] }),
   },
-  { type: 'card-grid', label: 'Card Grid', icon: '▦', factory: makeFactory({ cards: [], columns: 3 }) },
-  { type: 'flow', label: 'Process Flow', icon: '↓', factory: makeFactory({ nodes: [] }) },
-  { type: 'stream-list', label: 'List', icon: '☰', factory: makeFactory({ items: [] }) },
+  {
+    type: 'card-grid',
+    label: 'Card Grid',
+    icon: '▦',
+    factory: makeFactory({
+      cards: [
+        { title: '', content: '' },
+        { title: '', content: '' },
+        { title: '', content: '' },
+      ],
+      columns: 3,
+    }),
+  },
+  {
+    type: 'flow',
+    label: 'Process Flow',
+    icon: '↓',
+    factory: makeFactory({ nodes: [{ label: 'Step 1' }, { label: 'Step 2' }] }),
+  },
+  { type: 'stream-list', label: 'List', icon: '☰', factory: makeFactory({ items: ['List item'] }) },
   {
     type: 'artifact',
     label: 'Artifact',

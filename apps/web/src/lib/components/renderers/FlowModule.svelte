@@ -42,11 +42,29 @@
     const newNodes = nodes.map((n, i) => i === nodeIndex ? { ...n, [field]: html } : { ...n })
     onchange?.({ ...data, nodes: newNodes })
   }
+
+  function addNode() {
+    onchange?.({ ...data, nodes: [...nodes, { label: `Step ${nodes.length + 1}` }] })
+  }
+
+  function removeNode(index: number) {
+    const newNodes = nodes.filter((_, i) => i !== index)
+    onchange?.({ ...data, nodes: newNodes })
+  }
 </script>
 
 <div class="flow" class:has-custom-size={!!fontSize} style={sizeStyle}>
   {#each nodes as node, i}
     <div class="flow-node">
+      {#if editable}
+        <button
+          type="button"
+          class="flow-node-remove"
+          onclick={() => removeNode(i)}
+          aria-label="Remove step"
+          title="Remove step"
+        >×</button>
+      {/if}
       <div class="flow-icon">
         {#if node.icon}
           {node.icon}
@@ -104,6 +122,15 @@
       <div class="flow-arrow"></div>
     {/if}
   {/each}
+  {#if editable}
+    {#if nodes.length > 0}
+      <div class="flow-arrow"></div>
+    {/if}
+    <button type="button" class="flow-add" onclick={addNode} aria-label="Add step">
+      <span class="flow-add-icon">+</span>
+      <span class="flow-add-label">Add step</span>
+    </button>
+  {/if}
 </div>
 
 <style>
@@ -115,6 +142,7 @@
     justify-content: center;
   }
   .flow-node {
+    position: relative;
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.03));
     border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.06));
     border-radius: 8px;
@@ -125,6 +153,53 @@
     flex-direction: column;
     align-items: center;
     gap: 4px;
+  }
+  .flow-node-remove {
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    border: none;
+    background: rgba(0, 0, 0, 0.25);
+    color: rgba(255, 255, 255, 0.85);
+    font-size: 12px;
+    line-height: 1;
+    cursor: pointer;
+    padding: 0;
+    opacity: 0;
+    transition: opacity 0.15s;
+  }
+  .flow-node:hover .flow-node-remove {
+    opacity: 1;
+  }
+  .flow-add {
+    background: transparent;
+    border: 1px dashed var(--border-subtle, rgba(128, 128, 128, 0.35));
+    border-radius: 8px;
+    padding: clamp(10px, 1.8cqi, 14px) clamp(14px, 2.8cqi, 22px);
+    color: var(--text-muted, rgba(128, 128, 128, 0.7));
+    font-family: var(--font-body);
+    font-size: clamp(0.75rem, 1.2cqi, 0.9rem);
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    transition: border-color 0.15s, color 0.15s;
+  }
+  .flow-add:hover {
+    border-color: var(--accent-cyan, #64b5f6);
+    color: var(--accent-cyan, #64b5f6);
+  }
+  .flow-add-icon {
+    font-size: 1.1rem;
+    font-weight: 600;
+    line-height: 1;
+  }
+  .flow-add-label {
+    font-size: 0.7rem;
   }
   .flow-icon {
     width: 1.8rem;

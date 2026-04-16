@@ -7,7 +7,8 @@
   import { onDestroy } from 'svelte'
   import { get } from 'svelte/store'
   import { API_URL } from '$lib/api'
-  import { buildSourceWithConfig } from '$lib/utils/artifact-config'
+  import { buildArtifactBlockData, buildSourceWithConfig, getResolvedConfig } from '$lib/utils/artifact-config'
+  import { artifactsStore, ensureArtifactsLoaded, type ArtifactDef } from '$lib/stores/artifacts'
   import {
     clearModuleRenderStatus,
     markModuleRenderStatus,
@@ -374,6 +375,57 @@
     showEditor = true
   }
 
+  // --- Registry picker ---
+  let showArtifactPicker = $state(false)
+  let pickerLoading = $state(false)
+  let pickerError = $state<string | null>(null)
+  let registryArtifacts = $derived($artifactsStore)
+
+  function cleanArtifactName(name: string): string {
+    return name
+      .replace(/\binteractive\b/gi, '')
+      .replace(/\bvisuali[sz]ation\b/gi, '')
+      .replace(/\bdemo(nstration)?\b/gi, '')
+      .replace(/\s{2,}/g, ' ')
+      .trim()
+  }
+
+  function artifactDisplayName(artifact: ArtifactDef): string {
+    const cleaned = cleanArtifactName(artifact.name)
+    if (!cleaned) return artifact.name
+    return cleaned.charAt(0).toUpperCase() + cleaned.slice(1)
+  }
+
+  async function openArtifactPicker() {
+    showArtifactPicker = true
+    pickerError = null
+    if (registryArtifacts.length > 0) return
+    pickerLoading = true
+    try {
+      await ensureArtifactsLoaded()
+    } catch (err) {
+      pickerError = 'Failed to load artifacts'
+      console.error('artifact picker load failed:', err)
+    } finally {
+      pickerLoading = false
+    }
+  }
+
+  function closeArtifactPicker() {
+    showArtifactPicker = false
+  }
+
+  function chooseArtifact(artifact: ArtifactDef) {
+    const config = getResolvedConfig(artifact)
+    // buildArtifactBlockData sets artifactName/registryId/factory so native-factory
+    // lookup in ArtifactModule resolves correctly; iframe fallback still works via rawSource.
+    const built = buildArtifactBlockData(artifact, config, {
+      alt: artifactDisplayName(artifact.name),
+    })
+    onchange?.({ ...data, ...built })
+    showArtifactPicker = false
+  }
+
   function addEntry() {
     dataEntries = [...dataEntries, { lat: '', lng: '', label: '', value: '' }]
   }
@@ -443,9 +495,12 @@
   {:else}
     <div class="artifact-placeholder">
       <span class="artifact-icon">?</span>
-      <p>No artifact source configured</p>
+      <p>No artifact selected</p>
       {#if editable}
-        <button class="edit-data-btn" onclick={openEditor} type="button">Add Source</button>
+        <div class="placeholder-actions">
+          <button class="choose-artifact-btn" onclick={openArtifactPicker} type="button">Choose artifact</button>
+          <button class="edit-data-btn" onclick={openEditor} type="button">Paste HTML</button>
+        </div>
       {/if}
     </div>
   {/if}
@@ -504,6 +559,49 @@
       <div class="editor-footer">
         <button class="cancel-btn" onclick={closeEditor} type="button">Cancel</button>
         <button class="save-btn" onclick={saveEditor} type="button">Save & Reload</button>
+      </div>
+    </div>
+  </div>
+{/if}
+
+{#if showArtifactPicker}
+  <div
+    class="editor-overlay"
+    role="button"
+    tabindex="0"
+    onclick={(event) => { if (event.target === event.currentTarget) closeArtifactPicker() }}
+    onkeydown={(e) => e.key === 'Escape' && closeArtifactPicker()}
+  >
+    <div class="picker-dialog" role="dialog" aria-modal="true" aria-label="Choose artifact" tabindex="-1">
+      <div class="editor-header">
+        <h3>Choose an artifact</h3>
+        <button class="close-btn" onclick={closeArtifactPicker} type="button">&times;</button>
+      </div>
+      {#if pickerError}
+        <div class="picker-error" role="alert">{pickerError}</div>
+      {/if}
+      <div class="picker-body">
+        {#if pickerLoading}
+          <p class="picker-empty">Loading artifacts…</p>
+        {:else if registryArtifacts.length === 0}
+          <p class="picker-empty">No artifacts available. Run the seed script to add starter artifacts.</p>
+        {:else}
+          <ul class="picker-list">
+            {#each registryArtifacts as artifact (artifact.id)}
+              <li>
+                <button type="button" class="picker-item" onclick={() => chooseArtifact(artifact)}>
+                  <span class="picker-item-head">
+                    <span class="picker-item-name">{artifactDisplayName(artifact)}</span>
+                    <span class="picker-item-type">{artifact.type}</span>
+                  </span>
+                  {#if artifact.description}
+                    <span class="picker-item-desc">{artifact.description}</span>
+                  {/if}
+                </button>
+              </li>
+            {/each}
+          </ul>
+        {/if}
       </div>
     </div>
   </div>
@@ -594,6 +692,108 @@
   }
   .artifact-icon {
     font-size: 2rem;
+  }
+  .placeholder-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .choose-artifact-btn {
+    font-size: 0.78rem;
+    padding: 6px 14px;
+    background: var(--color-primary, #2563eb);
+    border: 1px solid var(--color-primary, #2563eb);
+    border-radius: 4px;
+    color: #fff;
+    cursor: pointer;
+    font-family: var(--font-body);
+    font-weight: 600;
+    transition: background 0.15s;
+  }
+  .choose-artifact-btn:hover {
+    background: color-mix(in srgb, var(--color-primary, #2563eb) 85%, black);
+  }
+  .picker-dialog {
+    background: var(--color-bg, white);
+    border-radius: 8px;
+    width: 100%;
+    max-width: 540px;
+    max-height: 80vh;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.3);
+    overflow: hidden;
+  }
+  .picker-error {
+    padding: 8px 16px;
+    background: rgba(220, 38, 38, 0.08);
+    color: #b91c1c;
+    font-size: 0.82rem;
+    border-bottom: 1px solid rgba(220, 38, 38, 0.2);
+  }
+  .picker-body {
+    flex: 1;
+    overflow: auto;
+    padding: 8px;
+  }
+  .picker-empty {
+    text-align: center;
+    padding: 24px 16px;
+    color: var(--color-text-muted, #6b7280);
+    font-size: 0.85rem;
+  }
+  .picker-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .picker-item {
+    width: 100%;
+    text-align: left;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 6px;
+    padding: 10px 12px;
+    cursor: pointer;
+    color: inherit;
+    font-family: inherit;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    transition: background 0.15s, border-color 0.15s;
+  }
+  .picker-item:hover {
+    background: var(--color-ghost-bg, rgba(37, 99, 235, 0.06));
+    border-color: var(--color-primary, #2563eb);
+  }
+  .picker-item-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+  }
+  .picker-item-name {
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: var(--color-text, #1f2937);
+  }
+  .picker-item-type {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--color-text-muted, #6b7280);
+    border: 1px solid var(--color-border, #d1d5db);
+    border-radius: 4px;
+    padding: 2px 6px;
+  }
+  .picker-item-desc {
+    font-size: 0.78rem;
+    color: var(--color-text-muted, #6b7280);
+    line-height: 1.4;
   }
   .editor-overlay {
     position: fixed;

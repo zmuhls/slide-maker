@@ -38,11 +38,24 @@
     newItems[index] = html
     onchange?.({ ...data, items: newItems })
   }
+
+  function addItem() {
+    onchange?.({ ...data, items: [...items, ''] })
+    activeItemIndex = items.length
+    editContent = ''
+    clickCoords = null
+  }
+
+  function removeItem(index: number) {
+    const newItems = items.filter((_, i) => i !== index)
+    if (activeItemIndex === index) activeItemIndex = null
+    onchange?.({ ...data, items: newItems })
+  }
 </script>
 
 <ul class="stream-list" class:has-custom-size={!!fontSize} style={sizeStyle}>
   {#each items as item, i}
-    <li>
+    <li class:editable-li={editable}>
       {#if editable && activeItemIndex === i}
         <RichTextEditor
           content={editContent}
@@ -62,8 +75,25 @@
       {:else}
         {@html DOMPurify.sanitize(inlineMarkdown(item))}
       {/if}
+      {#if editable}
+        <button
+          type="button"
+          class="item-remove"
+          onclick={() => removeItem(i)}
+          aria-label="Remove item"
+          title="Remove item"
+        >×</button>
+      {/if}
     </li>
   {/each}
+  {#if editable}
+    <li class="add-item-li">
+      <button type="button" class="add-item-btn" onclick={addItem} aria-label="Add list item">
+        <span class="add-item-icon">+</span>
+        <span>Add item</span>
+      </button>
+    </li>
+  {/if}
 </ul>
 
 <style>
@@ -105,5 +135,65 @@
   }
   .stream-list.has-custom-size li {
     font-size: var(--list-custom-size) !important;
+  }
+  .editable-li {
+    position: relative;
+    padding-right: clamp(28px, 4cqi, 36px) !important;
+  }
+  .item-remove {
+    position: absolute;
+    top: 50%;
+    right: 8px;
+    transform: translateY(-50%);
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    border: none;
+    background: rgba(0, 0, 0, 0.15);
+    color: currentColor;
+    font-size: 12px;
+    line-height: 1;
+    cursor: pointer;
+    padding: 0;
+    opacity: 0;
+    transition: opacity 0.15s, background 0.15s;
+  }
+  .editable-li:hover .item-remove {
+    opacity: 1;
+  }
+  .item-remove:hover {
+    background: rgba(0, 0, 0, 0.3);
+  }
+  .add-item-li {
+    list-style: none;
+    padding: 0 !important;
+    background: transparent !important;
+    border-left: none !important;
+    margin-top: clamp(4px, 0.8cqi, 6px);
+  }
+  .add-item-btn {
+    width: 100%;
+    padding: clamp(6px, 1.2cqi, 10px) clamp(12px, 2cqi, 16px);
+    background: transparent;
+    border: 1px dashed var(--border-subtle, rgba(128, 128, 128, 0.35));
+    border-radius: 6px;
+    color: var(--text-muted, rgba(128, 128, 128, 0.7));
+    font-family: var(--font-body);
+    font-size: 0.8rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    transition: border-color 0.15s, color 0.15s;
+  }
+  .add-item-btn:hover {
+    border-color: var(--accent-cyan, #64b5f6);
+    color: var(--accent-cyan, #64b5f6);
+  }
+  .add-item-icon {
+    font-size: 1rem;
+    font-weight: 600;
+    line-height: 1;
   }
 </style>

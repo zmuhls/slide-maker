@@ -51,11 +51,30 @@
     const newCards = cards.map((c, i) => i === cardIndex ? { ...c, [field]: html } : { ...c })
     onchange?.({ ...data, cards: newCards })
   }
+
+  function addCard() {
+    onchange?.({ ...data, cards: [...cards, { title: '', content: '' }] })
+  }
+
+  function removeCard(index: number) {
+    const newCards = cards.filter((_, i) => i !== index)
+    if (activeField?.cardIndex === index) activeField = null
+    onchange?.({ ...data, cards: newCards })
+  }
 </script>
 
 <div class="card-grid" class:has-custom-size={!!fontSize} style="grid-template-columns: repeat({columns}, 1fr);{sizeStyle ? ` ${sizeStyle}` : ''}">
   {#each cards as card, i}
-    <div class="card" class:card-cyan={card.variant === 'cyan'} class:card-navy={card.variant === 'navy'} style={card.color && !card.variant ? `border-top: 3px solid ${card.color};` : ''}>
+    <div class="card" class:editable-card={editable} class:card-cyan={card.variant === 'cyan'} class:card-navy={card.variant === 'navy'} style={card.color && !card.variant ? `border-top: 3px solid ${card.color};` : ''}>
+      {#if editable}
+        <button
+          type="button"
+          class="card-remove"
+          onclick={() => removeCard(i)}
+          aria-label="Remove card"
+          title="Remove card"
+        >×</button>
+      {/if}
       {#if editable && activeField?.cardIndex === i && activeField.field === 'title'}
         <h3 class="card-title">
           <RichTextEditor
@@ -105,6 +124,12 @@
       {/if}
     </div>
   {/each}
+  {#if editable}
+    <button type="button" class="card-add" onclick={addCard} aria-label="Add card">
+      <span class="card-add-icon">+</span>
+      <span>Add card</span>
+    </button>
+  {/if}
 </div>
 
 <style>
@@ -118,6 +143,56 @@
     border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.06));
     border-radius: 10px;
     padding: clamp(16px, 3cqi, 24px);
+  }
+  .editable-card {
+    position: relative;
+  }
+  .card-remove {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    border: none;
+    background: rgba(0, 0, 0, 0.25);
+    color: rgba(255, 255, 255, 0.85);
+    font-size: 13px;
+    line-height: 1;
+    cursor: pointer;
+    padding: 0;
+    opacity: 0;
+    transition: opacity 0.15s;
+    z-index: 1;
+  }
+  .editable-card:hover .card-remove {
+    opacity: 1;
+  }
+  .card-add {
+    background: transparent;
+    border: 1px dashed var(--border-subtle, rgba(128, 128, 128, 0.35));
+    border-radius: 10px;
+    padding: clamp(16px, 3cqi, 24px);
+    color: var(--text-muted, rgba(128, 128, 128, 0.7));
+    font-family: var(--font-body);
+    font-size: clamp(0.8rem, 1.3cqi, 1rem);
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    min-height: 100px;
+    transition: border-color 0.15s, color 0.15s;
+  }
+  .card-add:hover {
+    border-color: var(--accent-cyan, #64b5f6);
+    color: var(--accent-cyan, #64b5f6);
+  }
+  .card-add-icon {
+    font-size: 1.4rem;
+    font-weight: 600;
+    line-height: 1;
   }
   .card-title {
     font-family: var(--font-display);
