@@ -184,7 +184,7 @@ export async function applyMutation(mutation: Record<string, unknown>): Promise<
           splitRatio: removedSlide.splitRatio,
           modules: removedSlide.blocks.map((b) => ({
             type: b.type, zone: b.zone,
-            data: { ...b.data },
+            data: structuredClone(b.data ?? {}),
             stepOrder: b.stepOrder ?? null,
           })),
           insertAfter: prevSlideId,
@@ -285,7 +285,7 @@ export async function applyMutation(mutation: Record<string, unknown>): Promise<
         blocks: s.blocks.filter((b) => b.id !== blockId),
       }))
       if (oldBlock) {
-        const snapshot = { type: oldBlock.type, zone: oldBlock.zone, data: oldBlock.data || {}, stepOrder: oldBlock.stepOrder ?? null }
+        const snapshot = { type: oldBlock.type, zone: oldBlock.zone, data: structuredClone(oldBlock.data ?? {}), stepOrder: oldBlock.stepOrder ?? null }
         // Enhance the forward mutation so redo can target the re-added block by snapshot
         const forward = { action: 'removeBlock', payload: { slideId, blockId, snapshot } }
         const reverse = {
@@ -305,7 +305,7 @@ export async function applyMutation(mutation: Record<string, unknown>): Promise<
       // Capture old data for undo
       const currentSlide = deck.slides.find((s) => s.id === slideId)
       const oldBlock = currentSlide?.blocks.find((b) => b.id === blockId)
-      const oldData = oldBlock ? { ...oldBlock.data } : {}
+      const oldData = oldBlock ? structuredClone(oldBlock.data ?? {}) : {}
 
       const result = await apiCall(`/api/decks/${deck.id}/slides/${slideId}/blocks/${blockId}`, 'PATCH', {
         data: newData,
@@ -583,7 +583,7 @@ export async function applyMutation(mutation: Record<string, unknown>): Promise<
         if (slide) {
           // Snapshot old state for undo
           const oldLayout = slide.layout
-          const oldBlocks = slide.blocks.map((b) => ({ type: b.type, zone: b.zone, data: { ...b.data }, stepOrder: b.stepOrder }))
+          const oldBlocks = slide.blocks.map((b) => ({ type: b.type, zone: b.zone, data: structuredClone(b.data ?? {}), stepOrder: b.stepOrder }))
 
           for (const block of slide.blocks) {
             await apiCall(`/api/decks/${deck.id}/slides/${resolvedSlideId}/blocks/${block.id}`, 'DELETE')

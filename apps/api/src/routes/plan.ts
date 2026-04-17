@@ -15,6 +15,7 @@ import { db, sqlite } from '../db/index.js'
 import { decks, deckAccess, slides, contentBlocks, uploadedFiles, templates, themes, users, tokenUsage } from '../db/schema.js'
 import { gte, sql } from 'drizzle-orm'
 import { authMiddleware } from '../middleware/auth.js'
+import { checkDeckLock } from '../middleware/deck-lock.js'
 import { chatRateLimit } from '../middleware/rate-limit.js'
 import { getModelStream, ALL_MODELS } from '../providers/index.js'
 import { parseOutline } from '../utils/outline-parser.js'
@@ -289,6 +290,9 @@ planRouter.post('/:id/plan/apply', async (c) => {
   if (!access || access.role === 'viewer') {
     return c.json({ error: 'Not found or no access' }, 404)
   }
+
+  const locked = await checkDeckLock(c, deckId)
+  if (locked) return locked
 
   // Load the deck so we can merge fidelity/outlineFileId into metadata
   const deckRow = await db.select().from(decks).where(eq(decks.id, deckId)).get()

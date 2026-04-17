@@ -13,6 +13,7 @@ import {
 import { db } from '../db/index.js'
 import { artifacts, decks, deckAccess, slides, contentBlocks } from '../db/schema.js'
 import { authMiddleware } from '../middleware/auth.js'
+import { checkDeckLock } from '../middleware/deck-lock.js'
 
 type AuthEnv = {
   Variables: {
@@ -272,6 +273,9 @@ decksRouter.post('/:id/slides', async (c) => {
     return c.json({ error: 'No permission to add slides' }, 403)
   }
 
+  const locked = await checkDeckLock(c, deckId)
+  if (locked) return locked
+
   const body = await c.req.json()
   const { layout, splitRatio, modules: moduleDefs, insertAfter } = body
 
@@ -405,6 +409,9 @@ decksRouter.patch('/:id/slides/:slideId', async (c) => {
     return c.json({ error: 'No permission to edit slides' }, 403)
   }
 
+  const locked = await checkDeckLock(c, deckId)
+  if (locked) return locked
+
   const slide = await db
     .select()
     .from(slides)
@@ -489,6 +496,9 @@ decksRouter.delete('/:id/slides/:slideId', async (c) => {
     return c.json({ error: 'No permission to delete slides' }, 403)
   }
 
+  const locked = await checkDeckLock(c, deckId)
+  if (locked) return locked
+
   const slide = await db
     .select()
     .from(slides)
@@ -530,6 +540,9 @@ decksRouter.post('/:id/slides/:slideId/blocks', async (c) => {
   if (!access || access.role === 'viewer') {
     return c.json({ error: 'Forbidden' }, 403)
   }
+
+  const locked = await checkDeckLock(c, deckId)
+  if (locked) return locked
 
   const slide = await db
     .select()
@@ -598,6 +611,9 @@ decksRouter.patch('/:id/slides/:slideId/blocks/:blockId', async (c) => {
   if (!access || access.role === 'viewer') {
     return c.json({ error: 'Forbidden' }, 403)
   }
+
+  const locked = await checkDeckLock(c, deckId)
+  if (locked) return locked
 
   const body = await c.req.json()
   const { data: blockData, zone, order: blockOrder, stepOrder } = body
@@ -672,6 +688,9 @@ decksRouter.delete('/:id/slides/:slideId/blocks/:blockId', async (c) => {
     return c.json({ error: 'Forbidden' }, 403)
   }
 
+  const locked = await checkDeckLock(c, deckId)
+  if (locked) return locked
+
   const slideId = c.req.param('slideId')
 
   // Verify block belongs to this slide and slide belongs to this deck
@@ -706,6 +725,9 @@ decksRouter.post('/:id/slides/:slideId/blocks/reorder', async (c) => {
     return c.json({ error: 'No permission to reorder blocks' }, 403)
   }
 
+  const locked = await checkDeckLock(c, deckId)
+  if (locked) return locked
+
   const body = await c.req.json()
   const { order: blockOrder } = body
 
@@ -739,6 +761,9 @@ decksRouter.post('/:id/slides/reorder', async (c) => {
   if (!access || access.role === 'viewer') {
     return c.json({ error: 'No permission to reorder slides' }, 403)
   }
+
+  const locked = await checkDeckLock(c, deckId)
+  if (locked) return locked
 
   const body = await c.req.json()
   const { order: slideOrder } = body
@@ -775,6 +800,9 @@ decksRouter.post('/:id/blocks/:blockId/move', async (c) => {
   if (!access || access.role === 'viewer') {
     return c.json({ error: 'No permission to move blocks' }, 403)
   }
+
+  const locked = await checkDeckLock(c, deckId)
+  if (locked) return locked
 
   const body = await c.req.json().catch(() => ({}))
   const toSlideId = String(body?.toSlideId || '')
