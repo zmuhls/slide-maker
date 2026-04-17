@@ -43,38 +43,59 @@
       src="{base}/thumbnail/{deck.id}"
       title="Preview of {deck.name}"
       class="thumbnail-iframe"
-      sandbox
+      sandbox=""
       loading="lazy"
       tabindex="-1"
     ></iframe>
+    <div class="preview-overlay">
+      <span class="open-label">Open →</span>
+    </div>
   </div>
-  <div class="card-info">
-    <h3 class="card-title">{deck.name}</h3>
-    <p class="card-meta">
-      {#if deck.updatedAt}
-        Edited {formatDate(deck.updatedAt)}
-      {:else}
-        New deck
+  <div class="card-body">
+    <div class="card-info">
+      <h3 class="card-title">{deck.name}</h3>
+      <p class="card-meta">
+        {#if deck.updatedAt}
+          Edited {formatDate(deck.updatedAt)}
+        {:else}
+          New deck
+        {/if}
+      </p>
+    </div>
+    <div class="card-actions">
+      {#if onshare}
+        <button
+          class="action-btn"
+          onclick={(e) => { e.stopPropagation(); onshare!(deck.id); }}
+          type="button"
+          title="Share deck"
+          aria-label="Share deck"
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+        </button>
       {/if}
-    </p>
+      {#if confirming}
+        <button
+          class="action-btn action-btn--confirm"
+          onclick={handleDelete}
+          type="button"
+          aria-label="Confirm delete"
+        >
+          Confirm?
+        </button>
+      {:else}
+        <button
+          class="action-btn action-btn--delete"
+          onclick={handleDelete}
+          type="button"
+          title="Delete deck"
+          aria-label="Delete deck"
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+        </button>
+      {/if}
+    </div>
   </div>
-  {#if onshare}
-    <button
-      class="share-btn"
-      onclick={(e) => { e.stopPropagation(); onshare(deck.id); }}
-      type="button"
-      title="Share deck"
-    >&#x1F517;</button>
-  {/if}
-  <button
-    class="delete-btn"
-    class:confirming
-    onclick={handleDelete}
-    type="button"
-    title={confirming ? 'Click again to confirm' : 'Delete deck'}
-  >
-    {confirming ? 'Confirm?' : '✕'}
-  </button>
 </div>
 
 <style>
@@ -86,19 +107,25 @@
     border-radius: var(--radius-lg);
     overflow: hidden;
     cursor: pointer;
-    transition: box-shadow 0.2s, transform 0.2s;
-    position: relative;
+    transition: box-shadow 0.2s, border-color 0.2s, transform 0.15s;
     text-align: left;
     font-family: var(--font-body);
   }
 
   .deck-card:hover {
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    border-color: var(--color-accent);
     transform: translateY(-2px);
   }
 
+  .deck-card:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+  }
+
+  /* Preview area — scaled to exactly 160px tall (540 * 0.296 = 159.8) */
   .card-preview {
-    height: 120px;
+    height: 160px;
     background: var(--color-bg-tertiary);
     overflow: hidden;
     position: relative;
@@ -108,91 +135,126 @@
     width: 960px;
     height: 540px;
     border: none;
-    transform: scale(0.222);
+    transform: scale(0.296);
     transform-origin: top left;
     pointer-events: none;
     position: absolute;
     top: 0;
     left: 50%;
-    margin-left: -106px;
+    margin-left: -142px;
+  }
+
+  .preview-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(29, 58, 131, 0);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s;
+  }
+
+  .open-label {
+    color: white;
+    font-size: 0.875rem;
+    font-weight: 600;
+    font-family: var(--font-display);
+    letter-spacing: 0.02em;
+    opacity: 0;
+    transform: translateY(6px);
+    transition: opacity 0.2s, transform 0.2s;
+  }
+
+  .deck-card:hover .preview-overlay {
+    background: rgba(29, 58, 131, 0.4);
+  }
+
+  .deck-card:hover .open-label {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .card-body {
+    padding: 0.875rem 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    border-top: 1px solid var(--color-border);
   }
 
   .card-info {
-    padding: 1rem;
+    flex: 1;
+    min-width: 0;
   }
 
   .card-title {
     font-family: var(--font-display);
-    font-size: 1rem;
+    font-size: 0.9375rem;
     font-weight: 600;
     color: var(--color-text);
-    margin-bottom: 0.25rem;
+    margin-bottom: 0.2rem;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
 
   .card-meta {
-    font-size: 0.8125rem;
-    color: var(--color-text-secondary);
+    font-size: 0.75rem;
+    color: var(--color-text-muted);
   }
 
-  .delete-btn {
-    position: absolute;
-    top: 0.5rem;
-    right: 0.5rem;
-    background: rgba(255, 255, 255, 0.9);
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-md);
-    padding: 0.25rem 0.5rem;
-    font-size: 0.75rem;
+  .card-actions {
+    display: flex;
+    gap: 0.25rem;
+    flex-shrink: 0;
+  }
+
+  .action-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: var(--radius-sm);
+    color: var(--color-text-secondary);
     cursor: pointer;
     opacity: 0;
-    transition: opacity 0.15s, background 0.15s;
-    font-family: var(--font-body);
-    color: var(--color-text-secondary);
+    transition: opacity 0.15s, background 0.15s, border-color 0.15s, color 0.15s;
   }
 
-  .deck-card:hover .delete-btn {
+  .deck-card:hover .action-btn,
+  .action-btn:focus-visible,
+  .action-btn--confirm {
     opacity: 1;
   }
 
-  .delete-btn:hover {
-    background: rgba(239, 68, 68, 0.1);
-    color: #ef4444;
+  .action-btn:hover {
+    background: var(--color-bg-secondary);
+    border-color: var(--color-border);
+  }
+
+  .action-btn--delete:hover {
+    background: rgba(239, 68, 68, 0.08);
     border-color: rgba(239, 68, 68, 0.3);
+    color: #ef4444;
   }
 
-  .share-btn {
-    position: absolute;
-    top: 0.5rem;
-    right: 3.5rem;
-    background: rgba(255, 255, 255, 0.9);
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-md);
-    padding: 0.25rem 0.5rem;
-    font-size: 0.75rem;
-    cursor: pointer;
-    opacity: 0;
-    transition: opacity 0.15s, background 0.15s;
-    font-family: var(--font-body);
-    color: var(--color-text-secondary);
-  }
-
-  .deck-card:hover .share-btn {
-    opacity: 1;
-  }
-
-  .share-btn:hover {
-    background: #eff6ff;
-    color: var(--color-primary);
-    border-color: #93c5fd;
-  }
-
-  .delete-btn.confirming {
-    opacity: 1;
+  .action-btn--confirm {
+    width: auto;
+    padding: 0 0.5rem;
+    font-size: 0.6875rem;
+    font-weight: 600;
     background: #ef4444;
-    color: white;
     border-color: #ef4444;
+    color: white;
+    font-family: var(--font-body);
+  }
+
+  .action-btn--confirm:hover {
+    background: #dc2626;
+    border-color: #dc2626;
+    color: white;
   }
 </style>
