@@ -4,7 +4,7 @@
   import { page } from '$app/stores';
   import { api, API_URL } from '$lib/api';
   import { currentDeck } from '$lib/stores/deck';
-  import { activeSlideId } from '$lib/stores/ui';
+  import { activeSlideId, lockConflictMessage } from '$lib/stores/ui';
   import { currentUser } from '$lib/stores/auth';
   import { chatMessages } from '$lib/stores/chat';
   import { undo, redo } from '$lib/utils/mutations';
@@ -188,6 +188,13 @@
       {lockedByName} is also editing this deck
     </div>
   {/if}
+  <div
+    class="lock-conflict-banner"
+    class:visible={!!$lockConflictMessage}
+    role="alert"
+    aria-live="assertive"
+    aria-atomic="true"
+  >{$lockConflictMessage ?? ''}</div>
   <PresenceBar otherUsers={presenceUsers} />
   <EditorShell editable={true} />
 {/if}
@@ -234,5 +241,27 @@
     font-size: 0.875rem;
     font-family: var(--font-body);
     border-bottom: 1px solid #ffc107;
+  }
+
+  .lock-conflict-banner {
+    position: fixed;
+    bottom: 1.5rem;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 200;
+    background: #dc3545;
+    color: #fff;
+    padding: 0.5rem 1.25rem;
+    border-radius: var(--radius-sm, 6px);
+    font-size: 0.875rem;
+    font-family: var(--font-body);
+    box-shadow: 0 2px 8px rgba(0,0,0,.25);
+    pointer-events: none;
+    opacity: 0;
+    visibility: hidden;
+  }
+  .lock-conflict-banner.visible {
+    opacity: 1;
+    visibility: visible;
   }
 </style>

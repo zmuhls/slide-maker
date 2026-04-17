@@ -1,7 +1,7 @@
 import { currentDeck, addSlideToDeck, removeSlideFromDeck, updateSlideInDeck } from '$lib/stores/deck'
 import { reorderBlocksInZone, moveBlockBetweenZones, reorderSlides as reorderSlidesTransform } from '@slide-maker/shared/dnd-transforms'
 import { LAYOUT_ZONES, type SlideLayout } from '@slide-maker/shared'
-import { activeSlideId } from '$lib/stores/ui'
+import { activeSlideId, lockConflictMessage } from '$lib/stores/ui'
 import { history } from '$lib/stores/history'
 import { logAction, lastAgentSlideId } from '$lib/stores/actions'
 import { get } from 'svelte/store'
@@ -9,6 +9,8 @@ import { API_URL } from '$lib/api'
 
 // Track in-flight save requests so export/preview can wait for them
 const pendingSaves = new Set<Promise<unknown>>()
+
+let lockConflictTimer: ReturnType<typeof setTimeout> | null = null
 
 export function trackSave(p: Promise<unknown>) {
   pendingSaves.add(p)
@@ -28,6 +30,14 @@ export async function apiCall(path: string, method: string, body?: unknown) {
       ...(body ? { body: JSON.stringify(body) } : {}),
     })
     if (res.ok) return res.json()
+    if (res.status === 409) {
+      const data = await res.json().catch(() => ({}))
+      const name = (data as { lockedBy?: { name?: string } })?.lockedBy?.name ?? 'Another editor'
+      lockConflictMessage.set(`Edit blocked — ${name} holds the lock`)
+      if (lockConflictTimer !== null) clearTimeout(lockConflictTimer)
+      lockConflictTimer = setTimeout(() => { lockConflictMessage.set(null); lockConflictTimer = null }, 5000)
+      return null
+    }
     console.error('API persist failed:', res.status, await res.text())
   } catch (err) {
     console.error('API persist error:', err)
@@ -359,9 +369,14 @@ export async function applyMutation(mutation: Record<string, unknown>): Promise<
 
     case 'setTheme': {
       const themeId = payload.themeId as string
+      const prevThemeId = deck.themeId
       await apiCall(`/api/decks/${deck.id}`, 'PATCH', { themeId })
       currentDeck.update((d) => (d ? { ...d, themeId } : d))
       logAction('AI: changed theme')
+      history.pushMutation(
+        { action: 'setTheme', payload: { themeId } },
+        { action: 'setTheme', payload: { themeId: prevThemeId } },
+      )
       break
     }
 
@@ -369,6 +384,7 @@ export async function applyMutation(mutation: Record<string, unknown>): Promise<
     case 'updateDeckMeta': {
       const updates: Record<string, unknown> = {}
       if (payload.name !== undefined) updates.name = payload.name
+      const prevName = deck.name
       await apiCall(`/api/decks/${deck.id}`, 'PATCH', updates)
       currentDeck.update((d) => {
         if (!d) return d
@@ -377,6 +393,12 @@ export async function applyMutation(mutation: Record<string, unknown>): Promise<
           ...(payload.name !== undefined ? { name: payload.name as string } : {}),
         }
       })
+      if (payload.name !== undefined) {
+        history.pushMutation(
+          { action: 'updateDeckMeta', payload: { name: payload.name } },
+          { action: 'updateDeckMeta', payload: { name: prevName } },
+        )
+      }
       break
     }
 

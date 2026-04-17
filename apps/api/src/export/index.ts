@@ -94,7 +94,7 @@ export async function exportDeckAsZip(
     const staticDeps = new Set<string>()
     if (artifacts.size > 0) {
       for (const [filename, source] of artifacts) {
-        for (const m of source.matchAll(/\/api\/static\/([^"'<>\s]+)/g)) {
+        for (const m of source.matchAll(/\/api\/static\/([a-zA-Z0-9._-]+\.js)/g)) {
           staticDeps.add(m[1])
         }
         const rewritten = staticDeps.size > 0
@@ -115,8 +115,8 @@ export async function exportDeckAsZip(
     if (files?.length) {
       for (const file of files) {
         const resolvedPath = path.isAbsolute(file.path) ? file.path : path.resolve(UPLOAD_DIR, file.path)
-        // Traversal check: must be inside UPLOAD_DIR or be an absolute path to an existing file
-        if (!path.isAbsolute(file.path) && !resolvedPath.startsWith(UPLOAD_DIR + path.sep) && resolvedPath !== UPLOAD_DIR) {
+        // Traversal check: resolved path must be inside UPLOAD_DIR regardless of whether it was absolute or relative
+        if (!resolvedPath.startsWith(UPLOAD_DIR + path.sep) && resolvedPath !== UPLOAD_DIR) {
           continue // skip files outside upload directory
         }
         if (fs.existsSync(resolvedPath)) {

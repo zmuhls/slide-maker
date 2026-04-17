@@ -1,6 +1,6 @@
 /**
  * Build an inline style attribute string for fontSize (and optional extra styles).
- * Used by html-renderer.ts and slide-html.ts to avoid duplicating the same pattern.
+ * Used by html-renderer.ts to avoid duplicating the same pattern.
  */
 export function buildFontSizeAttr(
   fontSize: unknown,
