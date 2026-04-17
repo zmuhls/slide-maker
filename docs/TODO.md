@@ -72,7 +72,7 @@ Working list of near-term fixes and enhancements. Grouped by area and written as
 ## Export/Preview Consistency
 - [x] Unify artifact sizing across editor/preview/export (wrapper + iframe aspect rules)
 - [x] Video module export support (html-renderer)
-- [ ] View mode WYSIWYG: render view mode via iframe srcdoc using FRAMEWORK_CSS_PREVIEW + client-side renderSlideHtml (mirrors API html-renderer) so canvas view matches preview/export exactly
+- [ ] View mode WYSIWYG: render view mode via iframe srcdoc using FRAMEWORK_CSS_PREVIEW + a new client-side renderer mirroring apps/api/src/export/html-renderer.ts, so canvas view matches preview/export exactly
 - [ ] Export: optional artifact size report (per‑artifact byte size and total) in `manifest.json`
 - [ ] Add checksum to extracted artifact filenames for cacheability
 - [ ] Integration test: unzip export and assert artifact files + iframe `src` references

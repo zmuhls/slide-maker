@@ -13,3 +13,5 @@ export function setActiveSlide(id: string | null, slideNumber?: number) {
 export const activeResourceTab = writable<'files' | 'templates' | 'artifacts'>('files')
 export const rightPanelOpen = writable(true)
 export const activeModuleControls = writable<string | null>(null)
+
+export const lockConflictMessage = writable<string | null>(null)

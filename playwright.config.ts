@@ -11,16 +11,16 @@ export default defineConfig({
   },
   webServer: [
     {
-      command: 'pnpm --filter @slide-maker/api start',
+      command: 'pnpm --filter @slide-maker/api dev',
       port: 3001,
       reuseExistingServer: true,
-      timeout: 15_000,
+      timeout: 60_000,
     },
     {
       command: 'pnpm --filter @slide-maker/web dev',
       port: 5173,
       reuseExistingServer: true,
-      timeout: 15_000,
+      timeout: 60_000,
     },
   ],
   projects: [

@@ -16,6 +16,11 @@ function esc(str: string): string {
   return escapeHtml(str)
 }
 
+const CSS_DIM_RE = /^\d+(\.\d+)?(px|%|em|rem|vw|vh|cqw|cqi)$/
+function safeCssDim(v: string): string {
+  return CSS_DIM_RE.test(v.trim()) ? v.trim() : ''
+}
+
 const SAFE_HTML_OPTIONS: sanitizeHtml.IOptions = {
   allowedTags: sanitizeHtml.defaults.allowedTags.concat(['h1', 'h2', 'h3', 'h4', 'figure', 'figcaption', 'img', 'pre', 'code', 'span', 'br']),
   allowedAttributes: {
@@ -237,9 +242,9 @@ function renderModule(mod: Module, files?: ExportFile[], opts?: RenderOptions): 
       const src = rewriteSrc(String(d.src || d.url || ''), files)
       const alt = esc(String(d.alt || ''))
       const caption = String(d.caption || '')
-      const imgW = typeof d.width === 'string' ? d.width : ''
-      const imgH = typeof d.height === 'string' ? d.height : ''
-      const sizeAttr = imgW || imgH ? ` style="${imgW ? `width:${esc(imgW)};` : ''}${imgH ? `max-height:${esc(imgH)};` : ''}object-fit:contain;"` : ''
+      const imgW = safeCssDim(typeof d.width === 'string' ? d.width : '')
+      const imgH = safeCssDim(typeof d.height === 'string' ? d.height : '')
+      const sizeAttr = imgW || imgH ? ` style="${imgW ? `width:${imgW};` : ''}${imgH ? `max-height:${imgH};` : ''}object-fit:contain;"` : ''
       const capStyleAttr = buildFontSizeAttr(d.fontSize, esc)
       let html = `<figure${step}><img src="${esc(src)}" alt="${alt}" loading="lazy"${sizeAttr}>`
       if (caption) html += `<figcaption${capStyleAttr}>${esc(caption)}</figcaption>`
@@ -372,15 +377,15 @@ function renderModule(mod: Module, files?: ExportFile[], opts?: RenderOptions): 
       const isUrl = /^https?:\/\//i.test(rawSrc)
       const artifactName = d.artifactName ? String(d.artifactName) : ''
       const alt = esc(String(d.alt || 'Interactive visualization'))
-      const aw = d.width ? String(d.width) : ''
-      const ah = d.height ? String(d.height) : ''
+      const aw = safeCssDim(d.width ? String(d.width) : '')
+      const ah = safeCssDim(d.height ? String(d.height) : '')
       const autoSize = d.autoSize !== false
       const ar = Number(d.aspectRatio)
       const hasAr = isFinite(ar) && ar > 0
       const align = typeof d.align === 'string' ? String(d.align) : 'center'
       const alignCss = align === 'left' ? 'margin-right:auto;' : align === 'right' ? 'margin-left:auto;' : 'margin:0 auto;'
       const arStyle = !ah && autoSize && hasAr ? `aspect-ratio:${ar};` : ''
-      const sizeStyle = ` style="${aw ? `width:${esc(aw)};` : ''}${ah ? `height:${esc(ah)};aspect-ratio:auto;` : arStyle}${alignCss}"`
+      const sizeStyle = ` style="${aw ? `width:${aw};` : ''}${ah ? `height:${ah};aspect-ratio:auto;` : arStyle}${alignCss}"`
       const wrapArtifact = (content: string) => `<div class="artifact-wrapper"${step}${sizeStyle}>${content}</div>`
 
       // Native JS rendering for registered canvas artifacts (no iframe)
