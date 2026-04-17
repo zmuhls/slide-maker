@@ -32,6 +32,7 @@ export function summarizeMutation(m: Record<string, unknown>): string {
     case 'reorderSlides': return 'Reorder slides'
     case 'moveBlockToZone': return 'Move module to different zone'
     case 'setTheme': return 'Change theme'
+    case 'updateTheme': return `Update theme (${[p.colors ? 'colors' : '', p.fonts ? 'fonts' : ''].filter(Boolean).join(', ') || 'no changes'})`
     case 'applyTemplate': return 'Apply template'
     case 'updateMetadata': return 'Update deck name'
     case 'updateArtifactConfig': return `Update ${p.artifactName ?? 'artifact'} config`

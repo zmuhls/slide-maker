@@ -72,6 +72,53 @@ resourcesRouter.post('/themes', authMiddleware, async (c) => {
   return c.json({ theme: created }, 201)
 })
 
+// PATCH /api/themes/:id — update colors/fonts of a custom theme (owner only)
+resourcesRouter.patch('/themes/:id', authMiddleware, async (c) => {
+  const user = c.get('user' as never) as { id: string }
+  const themeId = c.req.param('id')
+  if (!themeId) return c.json({ error: 'Missing theme id' }, 400)
+
+  const theme = await db.select().from(themes).where(eq(themes.id, themeId)).get()
+  if (!theme) return c.json({ error: 'Theme not found' }, 404)
+  if (theme.builtIn) return c.json({ error: 'Cannot edit built-in themes' }, 403)
+  if (!theme.createdBy || theme.createdBy !== user.id) return c.json({ error: 'Not authorized' }, 403)
+
+  const body = await c.req.json()
+  const { colors, fonts } = body
+
+  const hexColorRegex = /^#[0-9a-fA-F]{3,8}$/
+  const fontNameRegex = /^[a-zA-Z0-9 \-]+$/
+
+  const mergedColors = { ...(theme.colors as Record<string, string>), ...(colors ?? {}) }
+  const mergedFonts = { ...(theme.fonts as Record<string, string>), ...(fonts ?? {}) }
+
+  for (const [key, val] of Object.entries(mergedColors)) {
+    if (val && typeof val === 'string' && !hexColorRegex.test(val)) {
+      return c.json({ error: `Invalid color value for ${key}` }, 400)
+    }
+  }
+  for (const [key, val] of Object.entries(mergedFonts)) {
+    if (val && typeof val === 'string' && !fontNameRegex.test(val)) {
+      return c.json({ error: `Invalid font name for ${key}` }, 400)
+    }
+  }
+
+  const css = `
+:root {
+  --slide-bg: ${mergedColors.bg || '#ffffff'};
+  --slide-heading-color: ${mergedColors.primary || '#3b82f6'};
+  --slide-accent: ${mergedColors.secondary || '#6366f1'};
+  --slide-accent-secondary: ${mergedColors.accent || '#2FB8D6'};
+  --slide-font-heading: '${mergedFonts.heading || 'Outfit'}', system-ui, sans-serif;
+  --slide-font-body: '${mergedFonts.body || 'Inter'}', system-ui, sans-serif;
+}
+  `
+
+  await db.update(themes).set({ colors: mergedColors, fonts: mergedFonts, css }).where(eq(themes.id, themeId))
+  const updated = await db.select().from(themes).where(eq(themes.id, themeId)).get()
+  return c.json({ theme: updated })
+})
+
 // DELETE /api/themes/:id — delete a custom theme (owner only)
 resourcesRouter.delete('/themes/:id', authMiddleware, async (c) => {
   const user = c.get('user' as never) as { id: string }

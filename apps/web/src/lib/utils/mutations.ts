@@ -380,6 +380,36 @@ export async function applyMutation(mutation: Record<string, unknown>): Promise<
       break
     }
 
+    case 'updateTheme': {
+      const colors = payload.colors as Record<string, string> | undefined
+      const fonts = payload.fonts as Record<string, string> | undefined
+      const prevThemeId = deck.themeId
+
+      const { ensureThemesLoaded, themesStore, createTheme } = await import('../stores/themes')
+      await ensureThemesLoaded()
+      const allThemes = get(themesStore)
+      const currentTheme = allThemes.find(t => t.id === deck.themeId)
+
+      const baseColors = { primary: '#1e3a5f', secondary: '#2563eb', accent: '#64b5f6', bg: '#0f1923', ...(currentTheme?.colors ?? {}) }
+      const baseFonts = { heading: 'Outfit', body: 'Inter', ...(currentTheme?.fonts ?? {}) }
+      const mergedColors = { ...baseColors, ...colors } as { primary: string; secondary: string; accent: string; bg: string }
+      const mergedFonts = { ...baseFonts, ...fonts } as { heading: string; body: string }
+
+      // Always fork — avoids mutating built-in themes and ownership issues
+      const baseName = currentTheme?.name?.replace(/ \(custom\)$/, '') ?? 'Custom'
+      const newTheme = await createTheme({ name: `${baseName} (custom)`, colors: mergedColors, fonts: mergedFonts })
+      if (!newTheme) throw new Error('Failed to create theme')
+
+      await apiCall(`/api/decks/${deck.id}`, 'PATCH', { themeId: newTheme.id })
+      currentDeck.update(d => d ? { ...d, themeId: newTheme.id } : d)
+      logAction('AI: updated theme colors/fonts')
+      history.pushMutation(
+        { action: 'setTheme', payload: { themeId: newTheme.id } },
+        { action: 'setTheme', payload: { themeId: prevThemeId } },
+      )
+      break
+    }
+
     case 'updateMetadata':
     case 'updateDeckMeta': {
       const updates: Record<string, unknown> = {}

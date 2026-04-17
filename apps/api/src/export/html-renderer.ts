@@ -551,7 +551,7 @@ export function renderDeckHtml(
     .tip-box strong { color: ${accent}; }
     /* Text colors use var() so title-slide/divider/closing-slide
        --text-muted/--text-primary overrides cascade correctly. */
-    .stream-list li { border-left-color: ${accent}; background: ${cardBg}; color: var(--text-muted); }
+    .stream-list li { border-left-color: ${accent}; background: var(--theme-card-bg, ${cardBg}); color: var(--text-muted); }
     .comparison-panel { background: ${cardBg}; border-color: ${border}; }
     .flow-node { background: ${cardBg}; border-color: ${border}; }
     .prompt-block { color: var(--text-primary); }
