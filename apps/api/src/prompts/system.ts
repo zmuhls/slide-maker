@@ -317,7 +317,7 @@ Every module MUST specify a \`zone\` matching one of the layout's zones. All typ
 - **flow**: \`{ nodes: [{label, description?}, ...] }\` — vertical process flow with arrows
 
 ### Embeds
-- **artifact**: \`{ registryId: "artifact-id", config: {...}, alt, width?, height? }\` — interactive JS viz. Use ID from Available Artifacts. For timelines: \`config: { events: [{date, label, description, category?}] }\`.
+- **artifact**: \`{ registryId: "artifact-id", config: {...}, alt, width?, height? }\` — interactive JS viz. Use ID from Available Artifacts. For timelines: \`config: { events: [{date, label, description, category?}] }\`. For Frappe line/bar charts: \`config: { data: { labels: ["Q1", "Q2", ...], datasets: [{name: "Series", values: [10, 20, ...]}] }, colors: ["#hex"], yMin: 0 }\` — ALWAYS populate \`data\` with actual values from the conversation, never use defaults. Use \`yMin\` to set the y-axis floor (e.g. \`yMin: 0\` to anchor at zero). Do NOT claim to update the y-axis without setting this field.
 - **video**: \`{ url, caption? }\` — YouTube/Vimeo/Loom embed (use regular share URL — auto-converts)
 
 IMPORTANT: Use ONLY the 14 module types listed above. Do not invent other types.
