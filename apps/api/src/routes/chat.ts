@@ -288,7 +288,7 @@ chat.post('/', chatRateLimit, async (c) => {
       .filter((diagnostic): diagnostic is NormalizedRenderDiagnostic => Boolean(diagnostic.moduleId && diagnostic.slideId))
     : undefined
 
-  const systemPrompt = buildSystemPrompt({
+  const { staticPrompt, dynamicContext } = buildSystemPrompt({
     deck: {
       id: deck.id,
       name: deck.name,
@@ -315,6 +315,7 @@ chat.post('/', chatRateLimit, async (c) => {
     fidelity: deckFidelity,
     outlineMarkdown: outlineMarkdown || undefined,
   })
+  const systemPrompt = `${staticPrompt}\n\n${dynamicContext}`
 
   // Prepare messages for the LLM
   // Reconstruct chat history server-side from DB (never trust client-supplied history)

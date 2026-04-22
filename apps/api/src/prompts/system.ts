@@ -77,197 +77,7 @@ interface BuildPromptOptions {
 
 const MAX_SLIDES = 60
 
-function buildArtifactsSection(opts: BuildPromptOptions): string {
-  const { artifacts, activeArtifacts, focusedArtifactNames } = opts
-  if (!artifacts?.length) return '## Artifacts\n(none available)\n'
-
-  // Tier 1: Index — always present, one line per artifact
-  const index = artifacts.map((a) => {
-    const params = a.paramCount ?? (a.config ? Object.keys(a.config).length : 0)
-    return `${a.id} | ${a.name} | ${a.description} | ${params} params`
-  }).join('\n')
-
-  let section = `## Available Artifacts (${artifacts.length})\n| ID | Name | Description | Params |\n|-----|------|-------------|--------|\n${index}\n`
-
-  // Tier 2: Active — artifacts placed in deck slides with resolved config
-  if (activeArtifacts?.length) {
-    section += '\n## Deck Artifacts (in slides)\n'
-    for (const aa of activeArtifacts) {
-      const slides = aa.slidePositions.map((p) => p + 1).join(', ')
-      const cfg = JSON.stringify(aa.config)
-      section += `@artifact:${aa.name} (slide${aa.slidePositions.length > 1 ? 's' : ''} ${slides})\n  Config: ${cfg}\n`
-    }
-  }
-
-  // Tier 3: Focused — full schema for explicitly @-referenced artifacts
-  if (focusedArtifactNames?.length) {
-    for (const name of focusedArtifactNames) {
-      const art = artifacts.find((a) => a.name.toLowerCase() === name.toLowerCase())
-      if (!art?.config) continue
-      section += `\n## @artifact:${art.name} (full schema)\n`
-      for (const [key, field] of Object.entries(art.config)) {
-        const f = field as Record<string, unknown>
-        if (f && typeof f === 'object' && 'type' in f) {
-          const range = f.min !== undefined && f.max !== undefined ? ` (${f.min}-${f.max})` : ''
-          const opts = f.options ? ` [${(f.options as string[]).join(', ')}]` : ''
-          section += `  ${key}: ${f.type}${range}${opts}, default ${JSON.stringify(f.default)} — ${f.label}\n`
-        }
-      }
-    }
-  }
-
-  return section
-}
-
-function buildRenderDiagnosticsSection(opts: BuildPromptOptions): string {
-  const issues = (opts.renderDiagnostics ?? []).filter((d) => d.status === 'error')
-  if (!issues.length) return ''
-  const lines = issues.map((issue) => {
-    const message = issue.message ? ` — ${issue.message}` : ''
-    return `- module "${issue.moduleId}" on slide "${issue.slideId}" (${issue.surface})${message}`
-  })
-  return `## Recent Canvas Render Issues\n${lines.join('\n')}\n`
-}
-
-function serializeSlide(s: SlideWithModules, tier: 'full' | 'skeleton', activeSlideId: string | null, strictMode: boolean): string {
-  const active = s.id === activeSlideId ? ' [ACTIVE]' : ''
-  if (tier === 'full') {
-    const blocksSummary = s.blocks
-      .map((b) => {
-        const locked = strictMode && Array.isArray(b.sourceNodeIds) && b.sourceNodeIds.length > 0
-          ? ' [strict-locked]'
-          : ''
-        return `      - Module "${b.id}" type="${b.type}" zone="${b.zone ?? 'unknown'}"${locked} data=${JSON.stringify(b.data)}`
-      })
-      .join('\n')
-    return `    Slide ${s.order + 1} (id="${s.id}", layout="${s.layout}")${active}\n${blocksSummary || '      (no modules)'}`
-  }
-  // Skeleton: one-liner with heading text and module type list
-  const heading = s.blocks.find((b) => b.type === 'heading')
-  const title = heading ? String((heading.data as Record<string, unknown>).text || '').slice(0, 60) : ''
-  const moduleList = s.blocks.map((b) => {
-    const zone = b.zone && b.zone !== 'content' ? `[${b.zone}]` : ''
-    return `${b.type}${zone}`
-  }).join(', ')
-  const titlePart = title ? `: "${title}"` : ''
-  return `    Slide ${s.order + 1} (id="${s.id}", layout="${s.layout}")${active}${titlePart} → ${moduleList || '(empty)'}`
-}
-
-export function buildSystemPrompt(opts: BuildPromptOptions): string {
-  const { deck, activeSlideId, templates, theme, files } = opts
-
-  // Determine which slides get full detail vs skeleton
-  const activeOrder = deck.slides.find((s) => s.id === activeSlideId)?.order
-  const fullDetailIds = new Set<string>()
-  if (activeSlideId) fullDetailIds.add(activeSlideId)
-  if (opts.lastAgentSlideId) fullDetailIds.add(opts.lastAgentSlideId)
-  if (opts.expandSlideIds) opts.expandSlideIds.forEach((id) => fullDetailIds.add(id))
-  // Include ±1 neighbors of active slide
-  if (activeOrder !== undefined) {
-    for (const s of deck.slides) {
-      if (Math.abs(s.order - activeOrder) <= 1) fullDetailIds.add(s.id)
-    }
-  }
-
-  const strictMode = opts.fidelity === 'strict'
-
-  const slidesSummary = deck.slides
-    .map((s) => {
-      const tier = fullDetailIds.has(s.id) ? 'full' as const : 'skeleton' as const
-      return serializeSlide(s, tier, activeSlideId, strictMode)
-    })
-    .join('\n')
-
-  const slideIndex = deck.slides.length
-    ? deck.slides.map((s, i) => {
-        const h = s.blocks.find((b) => b.type === 'heading')
-        const title = h
-          ? String((h.data as Record<string, unknown>).text || '').slice(0, 60)
-          : s.blocks[0]
-            ? `[${s.blocks[0].type}]`
-            : '(empty)'
-        return `${i + 1}. "${title}"${s.id === activeSlideId ? ' [ACTIVE]' : ''}`
-      }).join('\n')
-    : '(empty deck)'
-
-  const activeSlideInfo = (() => {
-    if (!activeSlideId) {
-      if ((deck.slides?.length ?? 0) === 0) {
-        return 'Active Slide: none — deck is empty; create the first slide as requested.'
-      }
-      return 'Active Slide: none — do not modify slides; ask the user to select a slide first.'
-    }
-    const s = deck.slides.find((sl) => sl.id === activeSlideId)
-    if (!s) return `Active Slide: id="${activeSlideId}" (not found in deck)`
-    return `Active Slide: Slide ${s.order + 1} (id="${s.id}", layout="${s.layout}")`
-  })()
-
-  const templatesList = templates?.length
-    ? templates.map((t) => {
-        const modSummary = ((t.modules ?? []) as any[]).map((m: any) => `${m.type}(${m.zone})`).join(', ')
-        return `  - "${t.name}" (id="${t.id}", layout="${t.layout}") → [${modSummary}]`
-      }).join('\n')
-    : '  (none loaded)'
-
-  let focusedTemplatesDetail = ''
-  if (opts.focusedTemplateNames?.length && templates?.length) {
-    for (const name of opts.focusedTemplateNames) {
-      const tpl = templates.find((t) => t.name.toLowerCase() === name.toLowerCase())
-      if (!tpl) continue
-      focusedTemplatesDetail += `\n## @template:${tpl.name} (full schema)\nlayout: ${tpl.layout}\nmodules: ${JSON.stringify(tpl.modules, null, 2)}\n`
-    }
-  }
-
-  const themeInfo = theme
-    ? `  Theme: "${theme.name}" (id="${theme.id}")\n  Colors: ${JSON.stringify(theme.colors)}\n  Fonts: ${JSON.stringify(theme.fonts)}`
-    : '  No theme set'
-
-  const themeList = opts.allThemes?.length
-    ? '\n  Available themes:\n' + opts.allThemes.map((t) => `    - "${t.name}" (id="${t.id}")`).join('\n')
-    : ''
-
-  const strictLockedBlockIds: string[] = []
-  if (opts.fidelity === 'strict') {
-    for (const slide of deck.slides) {
-      for (const block of slide.blocks) {
-        if (Array.isArray(block.sourceNodeIds) && block.sourceNodeIds.length > 0) {
-          strictLockedBlockIds.push(block.id)
-        }
-      }
-    }
-  }
-
-  const fidelityBanner = opts.fidelity === 'strict'
-    ? `⚠️ STRICT FIDELITY MODE — the user imported an outline as STRICT. You MUST NOT rewrite, paraphrase, tighten, punch up, or "improve the tone of" any [strict-locked] block below. Even if the user explicitly asks to "rewrite," "polish," "make it punchy," "make it more engaging," or similar, REFUSE and offer alternatives (add a new non-locked block, or ask them to switch fidelity mode). Only proceed with a rewrite if the user says "override strict" or "rewrite anyway" in literal words. See Fidelity Contract below for full rules.\n\n`
-    : ''
-
-  const fidelitySection = opts.fidelity === 'strict'
-    ? `
-## Fidelity Contract: STRICT
-This deck was generated from an outline the user marked as STRICT fidelity. Outline content must be preserved verbatim. Blocks listed below carry \`[strict-locked]\` markers in the slide detail above; you must NOT paraphrase, summarize, reword, or shorten their \`text\`/\`markdown\`/\`content\`/\`items\` fields.
-
-Allowed:
-- Add new slides or blocks (non-locked)
-- Reorder slides or move blocks between zones
-- Change layout, theme, or styling
-- Edit blocks that are NOT strict-locked
-
-Forbidden (unless the user literally writes "override strict" or "rewrite anyway"):
-- Emitting \`updateBlock\` on a strict-locked block's text/markdown/content/items
-- Deleting strict-locked blocks
-- Replacing strict-locked wording with "equivalent" phrasing, even in a new block that supersedes the original
-
-Trigger words to treat as rewrite requests (REFUSE unless override phrase present): "rewrite," "polish," "tighten," "improve," "make it punchy," "make it exciting," "make it more [anything]," "reword," "paraphrase," "cleaner," "more concise."
-
-When refusing, briefly explain: "This deck is in STRICT fidelity mode — the Inputs bullets are locked to the outline's wording. I can add a new block with alternate phrasing, or you can re-import this outline in Balanced/Interpretive mode. If you want to override, reply with 'override strict'."
-
-Strict-locked block IDs: ${strictLockedBlockIds.length ? strictLockedBlockIds.map((id) => `"${id}"`).join(', ') : '(none yet)'}
-${opts.outlineMarkdown ? `\n## Original Outline (source of truth for strict-locked blocks)\n\`\`\`\n${opts.outlineMarkdown}\n\`\`\`\n` : ''}`
-    : ''
-
-  return `${fidelityBanner}You are a slide deck authoring assistant for the CUNY AI Lab Slide Wiz. You help create professional presentation slides.
-
-${activeSlideInfo}
+const STATIC_SYSTEM_PROMPT = `You are a slide deck authoring assistant for the CUNY AI Lab Slide Wiz. You help create professional presentation slides.
 
 ## Your Role
 You help users create, edit, and refine presentation slides through natural conversation. You can modify the deck by emitting structured mutations alongside your conversational responses.
@@ -496,40 +306,11 @@ Example in addSlide modules array:
 
 A carousel module with \`syncSteps: true\` advances its images in sync with step reveals on the same slide.
 
-## Slide Index
-${slideIndex}
-
-## Current Deck State
-
-Deck: "${deck.name}" (id="${deck.id}")
-${themeInfo}${themeList}
-Total slides: ${deck.slides.length}
-
-${slidesSummary || '  (empty deck)'}
-${fidelitySection}
-## Available Templates
-${templatesList}${focusedTemplatesDetail}
-
-## Uploaded Files
-${files?.length ? files.map((f) => `- "${f.filename}" (${f.mimeType}) → use src: "${f.url}" in image modules`).join('\n') : '(no files uploaded)'}
-
-${(() => {
-  const docs = (files ?? []).filter((f) => f.excerpt && (f.mimeType?.includes('pdf') || f.mimeType?.includes('word') || f.mimeType?.includes('markdown') || f.mimeType === 'text/plain'))
-  if (!docs.length) return ''
-  let section = '\n## Uploaded Documents (text excerpts)\n'
-  for (const d of docs) {
-    section += `\n### ${d.filename} (${d.mimeType})\n` + (d.excerpt || '') + '\n'
-  }
-  return section
-})()}
-
 IMAGE RULES:
 - Uploaded files: use the EXACT url from the list above. Never fabricate or guess URLs.
 - Need a web image? Use \`searchImage\` — it downloads openly licensed photos from Pexels. Don't tell users to search manually.
 - Proactively use \`searchImage\` for \`layout-split\` stage zones when no uploaded image fits.
 - External URLs from users: ask them to upload via Files panel first.
-
-${buildArtifactsSection(opts)}
 
 ARTIFACT RULES:
 - Artifacts are interactive JavaScript visualizations (canvas animations, simulations, maps, charts).
@@ -539,14 +320,6 @@ ARTIFACT RULES:
 - When a user requests a visualization, look it up in Available Artifacts by name; if unclear, ask them to clarify or propose a close match.
 - The Deck Artifacts list shows which artifacts are already placed and their config. Use it to guide updates.
 
-${opts.recentActions?.length ? `## Recent User Actions\n${opts.recentActions.map((a) => `- ${a}`).join('\n')}\n` : ''}
-${opts.lastAgentSlideId ? (() => {
-  const agentSlide = deck.slides.find((s) => s.id === opts.lastAgentSlideId)
-  return agentSlide
-    ? `## Agent Memory\nLast slide you modified: Slide ${agentSlide.order + 1} (id="${agentSlide.id}", layout="${agentSlide.layout}")\n`
-    : ''
-})() : ''}
-${buildRenderDiagnosticsSection(opts)}
 ## Guidelines
 
 **Brevity:** Keep responses short — 1-2 sentences max. State what you did, not why or how. Never narrate your reasoning, restate the user's request, or ask rhetorical follow-ups. Only ask a question if you genuinely need clarification to proceed. Do not editorialize about aesthetic choices or explain what the user can already see.
@@ -628,4 +401,241 @@ After completing a request, optionally include 2-3 brief follow-up suggestions t
 
 Place suggestions at the very end of your response, after all text and mutations. Keep each under 60 characters. Only include when contextually relevant — not every response needs suggestions.
 `
+
+function buildArtifactsSection(opts: BuildPromptOptions): string {
+  const { artifacts, activeArtifacts, focusedArtifactNames } = opts
+  if (!artifacts?.length) return '## Artifacts\n(none available)\n'
+
+  // Tier 1: Index — always present, one line per artifact
+  const index = artifacts.map((a) => {
+    const params = a.paramCount ?? (a.config ? Object.keys(a.config).length : 0)
+    return `${a.id} | ${a.name} | ${a.description} | ${params} params`
+  }).join('\n')
+
+  let section = `## Available Artifacts (${artifacts.length})\n| ID | Name | Description | Params |\n|-----|------|-------------|--------|\n${index}\n`
+
+  // Tier 2: Active — artifacts placed in deck slides with resolved config
+  if (activeArtifacts?.length) {
+    section += '\n## Deck Artifacts (in slides)\n'
+    for (const aa of activeArtifacts) {
+      const slides = aa.slidePositions.map((p) => p + 1).join(', ')
+      const cfg = JSON.stringify(aa.config)
+      section += `@artifact:${aa.name} (slide${aa.slidePositions.length > 1 ? 's' : ''} ${slides})\n  Config: ${cfg}\n`
+    }
+  }
+
+  // Tier 3: Focused — full schema for explicitly @-referenced artifacts
+  if (focusedArtifactNames?.length) {
+    for (const name of focusedArtifactNames) {
+      const art = artifacts.find((a) => a.name.toLowerCase() === name.toLowerCase())
+      if (!art?.config) continue
+      section += `\n## @artifact:${art.name} (full schema)\n`
+      for (const [key, field] of Object.entries(art.config)) {
+        const f = field as Record<string, unknown>
+        if (f && typeof f === 'object' && 'type' in f) {
+          const range = f.min !== undefined && f.max !== undefined ? ` (${f.min}-${f.max})` : ''
+          const opts = f.options ? ` [${(f.options as string[]).join(', ')}]` : ''
+          section += `  ${key}: ${f.type}${range}${opts}, default ${JSON.stringify(f.default)} — ${f.label}\n`
+        }
+      }
+    }
+  }
+
+  return section
+}
+
+function buildRenderDiagnosticsSection(opts: BuildPromptOptions): string {
+  const issues = (opts.renderDiagnostics ?? []).filter((d) => d.status === 'error')
+  if (!issues.length) return ''
+  const lines = issues.map((issue) => {
+    const message = issue.message ? ` — ${issue.message}` : ''
+    return `- module "${issue.moduleId}" on slide "${issue.slideId}" (${issue.surface})${message}`
+  })
+  return `## Recent Canvas Render Issues\n${lines.join('\n')}\n`
+}
+
+function serializeSlide(s: SlideWithModules, tier: 'full' | 'skeleton', activeSlideId: string | null, strictMode: boolean): string {
+  const active = s.id === activeSlideId ? ' [ACTIVE]' : ''
+  if (tier === 'full') {
+    const blocksSummary = s.blocks
+      .map((b) => {
+        const locked = strictMode && Array.isArray(b.sourceNodeIds) && b.sourceNodeIds.length > 0
+          ? ' [strict-locked]'
+          : ''
+        return `      - Module "${b.id}" type="${b.type}" zone="${b.zone ?? 'unknown'}"${locked} data=${JSON.stringify(b.data)}`
+      })
+      .join('\n')
+    return `    Slide ${s.order + 1} (id="${s.id}", layout="${s.layout}")${active}\n${blocksSummary || '      (no modules)'}`
+  }
+  // Skeleton: one-liner with heading text and module type list
+  const heading = s.blocks.find((b) => b.type === 'heading')
+  const title = heading ? String((heading.data as Record<string, unknown>).text || '').slice(0, 60) : ''
+  const moduleList = s.blocks.map((b) => {
+    const zone = b.zone && b.zone !== 'content' ? `[${b.zone}]` : ''
+    return `${b.type}${zone}`
+  }).join(', ')
+  const titlePart = title ? `: "${title}"` : ''
+  return `    Slide ${s.order + 1} (id="${s.id}", layout="${s.layout}")${active}${titlePart} → ${moduleList || '(empty)'}`
+}
+
+export function buildSystemPrompt(opts: BuildPromptOptions): { staticPrompt: string; dynamicContext: string } {
+  const { deck, activeSlideId, templates, theme, files } = opts
+
+  // Determine which slides get full detail vs skeleton
+  const activeOrder = deck.slides.find((s) => s.id === activeSlideId)?.order
+  const fullDetailIds = new Set<string>()
+  if (activeSlideId) fullDetailIds.add(activeSlideId)
+  if (opts.lastAgentSlideId) fullDetailIds.add(opts.lastAgentSlideId)
+  if (opts.expandSlideIds) opts.expandSlideIds.forEach((id) => fullDetailIds.add(id))
+  // Include ±1 neighbors of active slide
+  if (activeOrder !== undefined) {
+    for (const s of deck.slides) {
+      if (Math.abs(s.order - activeOrder) <= 1) fullDetailIds.add(s.id)
+    }
+  }
+
+  const strictMode = opts.fidelity === 'strict'
+
+  const slidesSummary = deck.slides
+    .map((s) => {
+      const tier = fullDetailIds.has(s.id) ? 'full' as const : 'skeleton' as const
+      return serializeSlide(s, tier, activeSlideId, strictMode)
+    })
+    .join('\n')
+
+  const slideIndex = deck.slides.length
+    ? deck.slides.map((s, i) => {
+        const h = s.blocks.find((b) => b.type === 'heading')
+        const title = h
+          ? String((h.data as Record<string, unknown>).text || '').slice(0, 60)
+          : s.blocks[0]
+            ? `[${s.blocks[0].type}]`
+            : '(empty)'
+        return `${i + 1}. "${title}"${s.id === activeSlideId ? ' [ACTIVE]' : ''}`
+      }).join('\n')
+    : '(empty deck)'
+
+  const activeSlideInfo = (() => {
+    if (!activeSlideId) {
+      if ((deck.slides?.length ?? 0) === 0) {
+        return 'Active Slide: none — deck is empty; create the first slide as requested.'
+      }
+      return 'Active Slide: none — do not modify slides; ask the user to select a slide first.'
+    }
+    const s = deck.slides.find((sl) => sl.id === activeSlideId)
+    if (!s) return `Active Slide: id="${activeSlideId}" (not found in deck)`
+    return `Active Slide: Slide ${s.order + 1} (id="${s.id}", layout="${s.layout}")`
+  })()
+
+  const templatesList = templates?.length
+    ? templates.map((t) => {
+        const modSummary = ((t.modules ?? []) as any[]).map((m: any) => `${m.type}(${m.zone})`).join(', ')
+        return `  - "${t.name}" (id="${t.id}", layout="${t.layout}") → [${modSummary}]`
+      }).join('\n')
+    : '  (none loaded)'
+
+  let focusedTemplatesDetail = ''
+  if (opts.focusedTemplateNames?.length && templates?.length) {
+    for (const name of opts.focusedTemplateNames) {
+      const tpl = templates.find((t) => t.name.toLowerCase() === name.toLowerCase())
+      if (!tpl) continue
+      focusedTemplatesDetail += `\n## @template:${tpl.name} (full schema)\nlayout: ${tpl.layout}\nmodules: ${JSON.stringify(tpl.modules, null, 2)}\n`
+    }
+  }
+
+  const themeInfo = theme
+    ? `  Theme: "${theme.name}" (id="${theme.id}")\n  Colors: ${JSON.stringify(theme.colors)}\n  Fonts: ${JSON.stringify(theme.fonts)}`
+    : '  No theme set'
+
+  const themeList = opts.allThemes?.length
+    ? '\n  Available themes:\n' + opts.allThemes.map((t) => `    - "${t.name}" (id="${t.id}")`).join('\n')
+    : ''
+
+  const strictLockedBlockIds: string[] = []
+  if (opts.fidelity === 'strict') {
+    for (const slide of deck.slides) {
+      for (const block of slide.blocks) {
+        if (Array.isArray(block.sourceNodeIds) && block.sourceNodeIds.length > 0) {
+          strictLockedBlockIds.push(block.id)
+        }
+      }
+    }
+  }
+
+  const fidelityBanner = opts.fidelity === 'strict'
+    ? `⚠️ STRICT FIDELITY MODE — the user imported an outline as STRICT. You MUST NOT rewrite, paraphrase, tighten, punch up, or "improve the tone of" any [strict-locked] block below. Even if the user explicitly asks to "rewrite," "polish," "make it punchy," "make it more engaging," or similar, REFUSE and offer alternatives (add a new non-locked block, or ask them to switch fidelity mode). Only proceed with a rewrite if the user says "override strict" or "rewrite anyway" in literal words. See Fidelity Contract below for full rules.\n\n`
+    : ''
+
+  const fidelitySection = opts.fidelity === 'strict'
+    ? `
+## Fidelity Contract: STRICT
+This deck was generated from an outline the user marked as STRICT fidelity. Outline content must be preserved verbatim. Blocks listed below carry \`[strict-locked]\` markers in the slide detail above; you must NOT paraphrase, summarize, reword, or shorten their \`text\`/\`markdown\`/\`content\`/\`items\` fields.
+
+Allowed:
+- Add new slides or blocks (non-locked)
+- Reorder slides or move blocks between zones
+- Change layout, theme, or styling
+- Edit blocks that are NOT strict-locked
+
+Forbidden (unless the user literally writes "override strict" or "rewrite anyway"):
+- Emitting \`updateBlock\` on a strict-locked block's text/markdown/content/items
+- Deleting strict-locked blocks
+- Replacing strict-locked wording with "equivalent" phrasing, even in a new block that supersedes the original
+
+Trigger words to treat as rewrite requests (REFUSE unless override phrase present): "rewrite," "polish," "tighten," "improve," "make it punchy," "make it exciting," "make it more [anything]," "reword," "paraphrase," "cleaner," "more concise."
+
+When refusing, briefly explain: "This deck is in STRICT fidelity mode — the Inputs bullets are locked to the outline's wording. I can add a new block with alternate phrasing, or you can re-import this outline in Balanced/Interpretive mode. If you want to override, reply with 'override strict'."
+
+Strict-locked block IDs: ${strictLockedBlockIds.length ? strictLockedBlockIds.map((id) => `"${id}"`).join(', ') : '(none yet)'}
+${opts.outlineMarkdown ? `\n## Original Outline (source of truth for strict-locked blocks)\n\`\`\`\n${opts.outlineMarkdown}\n\`\`\`\n` : ''}`
+    : ''
+
+  const uploadedDocsSection = (() => {
+    const docs = (files ?? []).filter((f) => f.excerpt && (f.mimeType?.includes('pdf') || f.mimeType?.includes('word') || f.mimeType?.includes('markdown') || f.mimeType === 'text/plain'))
+    if (!docs.length) return ''
+    let section = '\n## Uploaded Documents (text excerpts)\n'
+    for (const d of docs) {
+      section += `\n### ${d.filename} (${d.mimeType})\n` + (d.excerpt || '') + '\n'
+    }
+    return section
+  })()
+
+  const recentActionsSection = opts.recentActions?.length
+    ? `## Recent User Actions\n${opts.recentActions.map((a) => `- ${a}`).join('\n')}\n`
+    : ''
+
+  const agentMemorySection = opts.lastAgentSlideId
+    ? (() => {
+        const agentSlide = deck.slides.find((s) => s.id === opts.lastAgentSlideId)
+        return agentSlide
+          ? `## Agent Memory\nLast slide you modified: Slide ${agentSlide.order + 1} (id="${agentSlide.id}", layout="${agentSlide.layout}")\n`
+          : ''
+      })()
+    : ''
+
+  const dynamicContext = `${fidelityBanner}${activeSlideInfo}
+
+## Slide Index
+${slideIndex}
+
+## Current Deck State
+
+Deck: "${deck.name}" (id="${deck.id}")
+${themeInfo}${themeList}
+Total slides: ${deck.slides.length}
+
+${slidesSummary || '  (empty deck)'}
+${fidelitySection}
+## Available Templates
+${templatesList}${focusedTemplatesDetail}
+
+## Uploaded Files
+${files?.length ? files.map((f) => `- "${f.filename}" (${f.mimeType}) → use src: "${f.url}" in image modules`).join('\n') : '(no files uploaded)'}
+${uploadedDocsSection}
+
+${buildArtifactsSection(opts)}
+
+${recentActionsSection}${agentMemorySection}${buildRenderDiagnosticsSection(opts)}`
+
+  return { staticPrompt: STATIC_SYSTEM_PROMPT, dynamicContext }
 }
