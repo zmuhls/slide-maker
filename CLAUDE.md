@@ -328,7 +328,7 @@ Buttons across the app follow a ghost pattern: transparent background, 1px borde
 
 ## Testing
 
-Vitest at root level. Config: `vitest.config.ts`. Tests: `tests/**/*.test.ts`. Currently 613 tests across 18 files. Shell check scripts (8) in `tests/*.sh` via `tests/run_all.sh`. Playwright E2E specs (5) in `e2e/`.
+Vitest at root level. Config: `vitest.config.ts`. Tests: `tests/**/*.test.ts`. Currently 695 tests across 20 files. Shell check scripts (8) in `tests/*.sh` via `tests/run_all.sh`. Playwright E2E specs (15) in `e2e/`.
 
 - `tests/artifact-config.test.ts` — artifact config resolution (`getResolvedConfig`, `buildAtRef`)
 - `tests/artifact-runtime.test.ts` — artifact runtime helpers
