@@ -288,7 +288,7 @@ chat.post('/', chatRateLimit, async (c) => {
       .filter((diagnostic): diagnostic is NormalizedRenderDiagnostic => Boolean(diagnostic.moduleId && diagnostic.slideId))
     : undefined
 
-  const { staticPrompt, dynamicContext } = buildSystemPrompt({
+  const systemParts = buildSystemPrompt({
     deck: {
       id: deck.id,
       name: deck.name,
@@ -315,7 +315,6 @@ chat.post('/', chatRateLimit, async (c) => {
     fidelity: deckFidelity,
     outlineMarkdown: outlineMarkdown || undefined,
   })
-  const systemPrompt = `${staticPrompt}\n\n${dynamicContext}`
 
   // Prepare messages for the LLM
   // Reconstruct chat history server-side from DB (never trust client-supplied history)
@@ -376,7 +375,7 @@ chat.post('/', chatRateLimit, async (c) => {
     let totalChars = 0
 
     try {
-      const gen = getModelStream(modelId, systemPrompt, chatHistory)
+      const gen = getModelStream(modelId, systemParts, chatHistory)
 
       // Emit start event
       debugBus.emit('stream:start', {
@@ -386,7 +385,7 @@ chat.post('/', chatRateLimit, async (c) => {
         deckId,
         model: modelId,
         provider,
-        systemPromptChars: systemPrompt.length,
+        systemPromptChars: systemParts.staticPrompt.length + systemParts.dynamicContext.length,
         historyLength: chatHistory.length,
         timestamp: new Date(startedAt).toISOString(),
       })
@@ -434,7 +433,7 @@ chat.post('/', chatRateLimit, async (c) => {
       })
 
       // Estimate and record token usage
-      const allInputLength = systemPrompt.length + chatHistory.reduce((sum, m) => sum + (m.content?.length ?? 0), 0)
+      const allInputLength = systemParts.staticPrompt.length + systemParts.dynamicContext.length + chatHistory.reduce((sum, m) => sum + (m.content?.length ?? 0), 0)
       const inputTokens = Math.ceil(allInputLength / 4)
       const outputTokens = Math.ceil(fullResponse.length / 4)
       await db.insert(tokenUsage).values({
@@ -466,7 +465,7 @@ chat.post('/', chatRateLimit, async (c) => {
         deckId,
         model: modelId,
         provider,
-        systemPromptChars: systemPrompt.length,
+        systemPromptChars: systemParts.staticPrompt.length + systemParts.dynamicContext.length,
         historyLength: chatHistory.length,
         inputTokens,
         outputTokens,
@@ -497,7 +496,7 @@ chat.post('/', chatRateLimit, async (c) => {
           deckId,
           model: modelId,
           provider,
-          systemPromptChars: systemPrompt.length,
+          systemPromptChars: systemParts.staticPrompt.length + systemParts.dynamicContext.length,
           historyLength: chatHistory.length,
           inputTokens: 0,
           outputTokens: 0,

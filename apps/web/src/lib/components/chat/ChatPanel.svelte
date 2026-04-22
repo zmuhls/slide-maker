@@ -283,7 +283,7 @@
     const action = m?.action
     if (!action) return true
     // Destructive or deck-wide changes require approval
-    if (action === 'removeSlide' || action === 'reorderSlides' || action === 'setTheme') return true
+    if (action === 'removeSlide' || action === 'reorderSlides' || action === 'setTheme' || action === 'updateTheme') return true
     if (action === 'applyTemplate') {
       // Replacing an existing slide is riskier than creating a new one
       return Boolean(m?.payload?.slideId)

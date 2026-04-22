@@ -5,21 +5,19 @@
  */
 
 import DOMPurify from 'dompurify'
-import { API_URL } from '$lib/api'
 import { FRAMEWORK_CSS } from './framework-css-client'
 import { buildSourceWithConfig } from './artifact-config'
-import { isDark, darkenHex } from '$lib/stores/themes'
+import { isDark } from '$lib/stores/themes'
 import {
-  buildFontSizeAttr,
   buildInlineArtifactSrcdoc,
   containsHtmlMarkup,
   escapeHtml,
   getSlideSections,
-  inlineMarkdown,
-  markdownToHtml,
   renderFormattedContent,
   renderRichTextData,
 } from '@slide-maker/shared'
+
+const API_URL = (import.meta as any).env?.PUBLIC_API_URL ?? 'http://localhost:3001'
 
 const GOOGLE_FONTS_URL =
   'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap'
@@ -77,19 +75,12 @@ function renderModule(mod: Module, slide: Slide): string {
   switch (mod.type) {
     case 'heading': {
       const level = Math.min(Math.max(Number(d.level) || 1, 1), 4)
-      const extra = d.align ? [`text-align: ${esc(String(d.align))}`] : []
-      const styleAttr = buildFontSizeAttr(d.fontSize, esc, extra)
-      const raw = String(d.text || '')
-      const inner = containsHtmlMarkup(raw)
-        ? sanitize(raw).replace(/^<p>(.*)<\/p>$/s, '$1')
-        : esc(raw)
-      return `<h${level}${styleAttr}>${inner}</h${level}>`
+      return `<h${level}>${esc(String(d.text || ''))}</h${level}>`
     }
 
     case 'text': {
-      const styleAttr = buildFontSizeAttr(d.fontSize, esc)
       const html = renderRichTextData(d, sanitize)
-      return html ? `<div class="text-body"${styleAttr}>${html}</div>` : ''
+      return html ? `<div class="text-body">${html}</div>` : ''
     }
 
     case 'card': {
@@ -98,44 +89,32 @@ function renderModule(mod: Module, slide: Slide): string {
       const raw = String(d.body || d.content || '')
       const body = renderFormattedContent(raw, sanitize)
       const bodyHtml = containsHtmlMarkup(raw) ? body : `<p>${body}</p>`
-      const cStyleAttr = buildFontSizeAttr(d.fontSize, esc)
-      return `<div class="card${variant}"${cStyleAttr}>${title}${bodyHtml}</div>`
+      return `<div class="card${variant}">${title}${bodyHtml}</div>`
     }
 
     case 'label': {
       const color = d.color ? ` label-${esc(String(d.color))}` : ''
-      const raw = String(d.text || '')
-      const inner = containsHtmlMarkup(raw)
-        ? sanitize(raw).replace(/^<p>(.*)<\/p>$/s, '$1')
-        : esc(raw)
-      const lStyleAttr = buildFontSizeAttr(d.fontSize, esc)
-      return `<span class="label${color}"${lStyleAttr}>${inner}</span>`
+      return `<span class="label${color}">${esc(String(d.text || ''))}</span>`
     }
 
     case 'tip-box': {
       const title = d.title ? `<strong>${esc(String(d.title))}</strong>` : ''
       const raw = String(d.content || d.text || '')
       const body = renderFormattedContent(raw, sanitize)
-      const tbStyleAttr = buildFontSizeAttr(d.fontSize, esc)
-      return `<div class="tip-box"${tbStyleAttr}>${title}<div class="tip-box-content">${body}</div></div>`
+      return `<div class="tip-box">${title}${body}</div>`
     }
 
     case 'prompt-block': {
       const quality = d.quality ? ` prompt-${esc(String(d.quality))}` : ''
-      const pbStyleAttr = buildFontSizeAttr(d.fontSize, esc)
-      return `<div class="prompt-block${quality}"${pbStyleAttr}><pre>${esc(String(d.content || d.text || ''))}</pre></div>`
+      return `<div class="prompt-block${quality}"><pre>${esc(String(d.content || d.text || ''))}</pre></div>`
     }
 
     case 'image': {
       const src = rewriteAssetSrc(String(d.src || d.url || ''))
       const alt = esc(String(d.alt || ''))
       const caption = String(d.caption || '')
-      const imgW = typeof d.width === 'string' ? d.width : ''
-      const imgH = typeof d.height === 'string' ? d.height : ''
-      const sizeAttr = imgW || imgH ? ` style="${imgW ? `width:${esc(imgW)};` : ''}${imgH ? `max-height:${esc(imgH)};` : ''}object-fit:contain;"` : ''
-      const capStyleAttr = buildFontSizeAttr(d.fontSize, esc)
-      let html = `<figure><img src="${esc(src)}" alt="${alt}" loading="lazy"${sizeAttr}>`
-      if (caption) html += `<figcaption${capStyleAttr}>${esc(caption)}</figcaption>`
+      let html = `<figure><img src="${esc(src)}" alt="${alt}" loading="lazy">`
+      if (caption) html += `<figcaption>${esc(caption)}</figcaption>`
       html += `</figure>`
       return html
     }
@@ -151,8 +130,7 @@ function renderModule(mod: Module, slide: Slide): string {
 
     case 'comparison': {
       const panels = Array.isArray(d.panels) ? d.panels : []
-      const cpStyleAttr = buildFontSizeAttr(d.fontSize, esc)
-      let html = `<div class="comparison"${cpStyleAttr}>`
+      let html = '<div class="comparison">'
       for (const panel of panels) {
         const item = panel as Record<string, unknown>
         const title = item.title ? `<h3>${esc(String(item.title))}</h3>` : ''
@@ -168,17 +146,15 @@ function renderModule(mod: Module, slide: Slide): string {
     case 'card-grid': {
       const cards = Array.isArray(d.cards) ? d.cards : []
       const cols = Number(d.columns || d.cols) || 3
-      const gridStyle = buildFontSizeAttr(d.fontSize, esc, [`grid-template-columns: repeat(${cols}, 1fr)`])
-      let html = `<div class="card-grid"${gridStyle}>`
+      let html = `<div class="card-grid" style="grid-template-columns: repeat(${cols}, 1fr)">`
       for (const card of cards) {
         const item = card as Record<string, unknown>
-        const title = item.title ? `<h3 class="card-title">${esc(String(item.title))}</h3>` : ''
+        const title = item.title ? `<h3>${esc(String(item.title))}</h3>` : ''
         const raw = String(item.body || item.content || '')
-        const body = raw.includes('<') ? sanitize(raw) : markdownToHtml(raw)
+        const body = renderFormattedContent(raw, sanitize)
+        const bodyHtml = containsHtmlMarkup(raw) ? body : `<p>${body}</p>`
         const variant = item.variant ? ` card-${esc(String(item.variant))}` : ''
-        const color = typeof item.color === 'string' && item.color && !item.variant ? ` style="border-top:3px solid ${esc(item.color)}"` : ''
-        const bodyHtml = body ? `<div class="card-content">${body}</div>` : ''
-        html += `<div class="card${variant}"${color}>${title}${bodyHtml}</div>`
+        html += `<div class="card${variant}">${title}${bodyHtml}</div>`
       }
       html += '</div>'
       return html
@@ -186,15 +162,10 @@ function renderModule(mod: Module, slide: Slide): string {
 
     case 'flow': {
       const nodes = Array.isArray(d.nodes) ? d.nodes : []
-      const fStyleAttr = buildFontSizeAttr(d.fontSize, esc)
-      let html = `<div class="flow"${fStyleAttr}>`
-      nodes.forEach((node: unknown, i: number) => {
-        if (i > 0) html += `<div class="flow-arrow"></div>`
-        const n = node as Record<string, unknown>
-        const icon = typeof n.icon === 'string' ? n.icon : String(i + 1)
-        const label = sanitize(String(n.label || ''))
-        const desc = typeof n.description === 'string' ? `<div class="flow-desc">${sanitize(n.description)}</div>` : ''
-        html += `<div class="flow-node"><div class="flow-icon">${esc(icon)}</div><div class="flow-body"><div class="flow-label">${label}</div>${desc}</div></div>`
+      let html = '<div class="flow">'
+      nodes.forEach((node: unknown, index: number) => {
+        if (index > 0) html += '<div class="flow-arrow">→</div>'
+        html += `<div class="flow-node">${esc(String((node as Record<string, unknown>).label || node))}</div>`
       })
       html += '</div>'
       return html
@@ -202,47 +173,11 @@ function renderModule(mod: Module, slide: Slide): string {
 
     case 'stream-list': {
       const items = Array.isArray(d.items) ? d.items : []
-      const slStyleAttr = buildFontSizeAttr(d.fontSize, esc)
-      let html = `<ul class="stream-list"${slStyleAttr}>`
+      let html = '<ul class="stream-list">'
       for (const item of items) {
-        const o = typeof item === 'object' && item ? item as Record<string, unknown> : null
-        const text = o ? String(o.text || o.content || o.label || o.title || JSON.stringify(item)) : String(item)
-        const inner = containsHtmlMarkup(text)
-          ? sanitize(text).replace(/^<p>(.*)<\/p>$/s, '$1')
-          : inlineMarkdown(text)
-        html += `<li>${inner}</li>`
+        html += `<li>${esc(String((item as Record<string, unknown>).text || item))}</li>`
       }
       html += '</ul>'
-      return html
-    }
-
-    case 'video': {
-      const rawUrl = String(d.url || '')
-      const caption = String(d.caption || '')
-      let embedSrc = ''
-      try {
-        const u = new URL(rawUrl)
-        if (u.hostname.includes('youtube.com') || u.hostname.includes('youtu.be')) {
-          let vid = ''
-          if (u.hostname.includes('youtu.be')) vid = u.pathname.slice(1)
-          else if (u.pathname.startsWith('/embed/')) vid = u.pathname.split('/embed/')[1]?.split(/[?/]/)[0] || ''
-          else vid = u.searchParams.get('v') || ''
-          if (vid) embedSrc = `https://www.youtube.com/embed/${vid}`
-        } else if (u.hostname.includes('vimeo.com')) {
-          const vId = u.pathname.split('/').filter(Boolean)[0]
-          if (vId && /^\d+$/.test(vId)) embedSrc = `https://player.vimeo.com/video/${vId}`
-        } else if (u.hostname.includes('loom.com') && u.pathname.startsWith('/share/')) {
-          const lId = u.pathname.split('/share/')[1]?.split(/[?/]/)[0] || ''
-          if (lId) embedSrc = `https://www.loom.com/embed/${lId}`
-        } else if (u.pathname.includes('/embed')) {
-          embedSrc = rawUrl
-        }
-      } catch {}
-      if (!embedSrc) return ''
-      let html = '<div class="video-wrapper">'
-      html += `<div class="video-frame"><iframe src="${esc(embedSrc)}" title="${esc(caption || 'Embedded video')}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen loading="lazy"></iframe></div>`
-      if (caption) html += `<p class="video-caption">${esc(caption)}</p>`
-      html += '</div>'
       return html
     }
 
@@ -300,6 +235,21 @@ function renderModule(mod: Module, slide: Slide): string {
       return `<div class="artifact-wrapper" style="aspect-ratio:1;display:flex;align-items:center;justify-content:center;color:#94a3b8;font-size:13px;">${alt}</div>`
     }
 
+    case 'code': {
+      const code = String(d.code || d.content || '')
+      const language = String(d.language || '')
+      return `<div class="code-wrapper"><pre><code class="language-${esc(language)}">${esc(code)}</code></pre></div>`
+    }
+
+    case 'quote': {
+      const text = String(d.quote || d.text || '')
+      const cite = String(d.cite || d.author || '')
+      let html = `<blockquote><p>${esc(text)}</p>`
+      if (cite) html += `<cite>${esc(cite)}</cite>`
+      html += '</blockquote>'
+      return html
+    }
+
     default:
       return `<div class="text-body">${esc(JSON.stringify(d))}</div>`
   }
@@ -323,8 +273,6 @@ function buildThemeCss(theme: Theme | null | undefined): string {
   const border = dark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.08)'
   const splitBg = dark ? '#172a45' : '#e8eef6'
   const gridBg = dark ? '#0f3444' : '#e9f5f7'
-  const accentLabel = dark ? accent : darkenHex(accent, 0.55)
-  const secondaryLabel = dark ? secondary : darkenHex(secondary, 0.7)
 
   return `
     :root {
@@ -351,18 +299,11 @@ function buildThemeCss(theme: Theme | null | undefined): string {
     html, body { background: ${bg}; color: ${text}; font-family: '${bodyFont}', sans-serif; }
     h1, h2, h3, h4 { font-family: '${headingFont}', sans-serif; }
     .title-slide, .layout-divider, .closing-slide { background: ${primary}; color: ${primaryText}; }
-    .title-slide h1, .title-slide h2, .title-slide h3, .title-slide h4,
-    .layout-divider h1, .layout-divider h2, .layout-divider h3,
-    .closing-slide h1, .closing-slide h2, .closing-slide h3 { color: ${primaryText}; }
-    .title-slide p, .title-slide .text-body, .layout-divider p, .closing-slide p, .closing-slide .text-body { color: ${isDarkPrimary ? 'rgba(255,255,255,0.85)' : 'rgba(26,26,46,0.7)'}; }
-    .layout-full-dark { background: #0d1117; color: #f0f0f0; }
-    .layout-full-dark h1, .layout-full-dark h2, .layout-full-dark h3, .layout-full-dark h4 { color: #f0f0f0; }
-    .layout-full-dark p, .layout-full-dark .text-body { color: rgba(240,240,240,0.65); }
     .card { background: ${cardBg}; border-color: ${border}; }
     .card-cyan { border-left-color: ${accent}; }
     .card-navy { border-left-color: ${primary}; }
-    .label-cyan { color: ${accentLabel}; }
-    .label-blue { color: ${secondaryLabel}; }
+    .label-cyan { color: ${accent}; }
+    .label-blue { color: ${secondary}; }
     .tip-box { background: ${accent}0d; border-color: ${accent}1f; }
     .tip-box strong { color: ${accent}; }
     .stream-list li { border-left-color: ${accent}; background: ${cardBg}; color: ${textMuted}; }

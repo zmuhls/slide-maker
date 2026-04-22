@@ -1,7 +1,7 @@
 import { currentDeck, addSlideToDeck, removeSlideFromDeck, updateSlideInDeck } from '$lib/stores/deck'
 import { reorderBlocksInZone, moveBlockBetweenZones, reorderSlides as reorderSlidesTransform } from '@slide-maker/shared/dnd-transforms'
 import { LAYOUT_ZONES, type SlideLayout } from '@slide-maker/shared'
-import { activeSlideId } from '$lib/stores/ui'
+import { activeSlideId, lockConflictMessage } from '$lib/stores/ui'
 import { history } from '$lib/stores/history'
 import { logAction, lastAgentSlideId } from '$lib/stores/actions'
 import { get } from 'svelte/store'
@@ -9,6 +9,8 @@ import { API_URL } from '$lib/api'
 
 // Track in-flight save requests so export/preview can wait for them
 const pendingSaves = new Set<Promise<unknown>>()
+
+let lockConflictTimer: ReturnType<typeof setTimeout> | null = null
 
 export function trackSave(p: Promise<unknown>) {
   pendingSaves.add(p)
@@ -28,6 +30,14 @@ export async function apiCall(path: string, method: string, body?: unknown) {
       ...(body ? { body: JSON.stringify(body) } : {}),
     })
     if (res.ok) return res.json()
+    if (res.status === 409) {
+      const data = await res.json().catch(() => ({}))
+      const name = (data as { lockedBy?: { name?: string } })?.lockedBy?.name ?? 'Another editor'
+      lockConflictMessage.set(`Edit blocked — ${name} holds the lock`)
+      if (lockConflictTimer !== null) clearTimeout(lockConflictTimer)
+      lockConflictTimer = setTimeout(() => { lockConflictMessage.set(null); lockConflictTimer = null }, 5000)
+      return null
+    }
     console.error('API persist failed:', res.status, await res.text())
   } catch (err) {
     console.error('API persist error:', err)
@@ -359,9 +369,44 @@ export async function applyMutation(mutation: Record<string, unknown>): Promise<
 
     case 'setTheme': {
       const themeId = payload.themeId as string
+      const prevThemeId = deck.themeId
       await apiCall(`/api/decks/${deck.id}`, 'PATCH', { themeId })
       currentDeck.update((d) => (d ? { ...d, themeId } : d))
       logAction('AI: changed theme')
+      history.pushMutation(
+        { action: 'setTheme', payload: { themeId } },
+        { action: 'setTheme', payload: { themeId: prevThemeId } },
+      )
+      break
+    }
+
+    case 'updateTheme': {
+      const colors = payload.colors as Record<string, string> | undefined
+      const fonts = payload.fonts as Record<string, string> | undefined
+      const prevThemeId = deck.themeId
+
+      const { ensureThemesLoaded, themesStore, createTheme } = await import('../stores/themes')
+      await ensureThemesLoaded()
+      const allThemes = get(themesStore)
+      const currentTheme = allThemes.find(t => t.id === deck.themeId)
+
+      const baseColors = { primary: '#1e3a5f', secondary: '#2563eb', accent: '#64b5f6', bg: '#0f1923', ...(currentTheme?.colors ?? {}) }
+      const baseFonts = { heading: 'Outfit', body: 'Inter', ...(currentTheme?.fonts ?? {}) }
+      const mergedColors = { ...baseColors, ...colors } as { primary: string; secondary: string; accent: string; bg: string }
+      const mergedFonts = { ...baseFonts, ...fonts } as { heading: string; body: string }
+
+      // Always fork — avoids mutating built-in themes and ownership issues
+      const baseName = currentTheme?.name?.replace(/ \(custom\)$/, '') ?? 'Custom'
+      const newTheme = await createTheme({ name: `${baseName} (custom)`, colors: mergedColors, fonts: mergedFonts })
+      if (!newTheme) throw new Error('Failed to create theme')
+
+      await apiCall(`/api/decks/${deck.id}`, 'PATCH', { themeId: newTheme.id })
+      currentDeck.update(d => d ? { ...d, themeId: newTheme.id } : d)
+      logAction('AI: updated theme colors/fonts')
+      history.pushMutation(
+        { action: 'setTheme', payload: { themeId: newTheme.id } },
+        { action: 'setTheme', payload: { themeId: prevThemeId } },
+      )
       break
     }
 
@@ -369,6 +414,7 @@ export async function applyMutation(mutation: Record<string, unknown>): Promise<
     case 'updateDeckMeta': {
       const updates: Record<string, unknown> = {}
       if (payload.name !== undefined) updates.name = payload.name
+      const prevName = deck.name
       await apiCall(`/api/decks/${deck.id}`, 'PATCH', updates)
       currentDeck.update((d) => {
         if (!d) return d
@@ -377,6 +423,12 @@ export async function applyMutation(mutation: Record<string, unknown>): Promise<
           ...(payload.name !== undefined ? { name: payload.name as string } : {}),
         }
       })
+      if (payload.name !== undefined) {
+        history.pushMutation(
+          { action: 'updateDeckMeta', payload: { name: payload.name } },
+          { action: 'updateDeckMeta', payload: { name: prevName } },
+        )
+      }
       break
     }
 
