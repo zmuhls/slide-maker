@@ -5,16 +5,26 @@ import path from 'node:path'
 const API_URL = process.env.PUBLIC_API_URL ?? 'http://localhost:3001'
 
 function makeTinyPdf(text = 'Hello PDF for test'): Buffer {
-  const pdf = `%PDF-1.4\n`
-    + `1 0 obj << /Type /Catalog /Pages 2 0 R >> endobj\n`
-    + `2 0 obj << /Type /Pages /Count 1 /Kids [3 0 R] >> endobj\n`
-    + `3 0 obj << /Type /Page /Parent 2 0 R /MediaBox [0 0 200 200] /Contents 4 0 R /Resources << /Font << /F1 5 0 R >> >> >> endobj\n`
-    + `4 0 obj << /Length 60 >> stream\n`
-    + `BT /F1 12 Tf 36 100 Td (${text}) Tj ET\n`
-    + `endstream endobj\n`
-    + `5 0 obj << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >> endobj\n`
-    + `xref\n0 6\n0000000000 65535 f \n0000000010 00000 n \n0000000060 00000 n \n0000000116 00000 n \n0000000274 00000 n \n0000000371 00000 n \ntrailer << /Root 1 0 R /Size 6 >>\nstartxref\n450\n%%EOF\n`
-  return Buffer.from(pdf, 'utf8')
+  const header = '%PDF-1.4\n'
+  const obj1 = '1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n'
+  const obj2 = '2 0 obj\n<< /Type /Pages /Kids [3 0 R] /Count 1 >>\nendobj\n'
+  const obj3 = '3 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R /Resources << /Font << /F1 5 0 R >> >> >>\nendobj\n'
+  const streamContent = `BT /F1 12 Tf 100 700 Td (${text}) Tj ET`
+  const obj4 = `4 0 obj\n<< /Length ${streamContent.length} >>\nstream\n${streamContent}\nendstream\nendobj\n`
+  const obj5 = '5 0 obj\n<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>\nendobj\n'
+
+  const offsets: number[] = []
+  let pos = header.length
+  for (const obj of [obj1, obj2, obj3, obj4, obj5]) {
+    offsets.push(pos)
+    pos += Buffer.byteLength(obj, 'utf8')
+  }
+  const xrefStart = pos
+
+  const entries = ['0000000000 65535 f \n', ...offsets.map(o => `${String(o).padStart(10, '0')} 00000 n \n`)]
+  const xref = `xref\n0 6\n${entries.join('')}trailer\n<< /Size 6 /Root 1 0 R >>\nstartxref\n${xrefStart}\n%%EOF\n`
+
+  return Buffer.from(header + obj1 + obj2 + obj3 + obj4 + obj5 + xref, 'utf8')
 }
 
 test('uploading a PDF extracts Markdown sidecar for model context', async ({ authedPage, createDeck }) => {
@@ -22,6 +32,7 @@ test('uploading a PDF extracts Markdown sidecar for model context', async ({ aut
 
   const buffer = makeTinyPdf()
   const res = await authedPage.request.post(`${API_URL}/api/decks/${deckId}/files`, {
+    headers: { origin: 'http://localhost:5173' },
     multipart: {
       file: {
         name: 'sample.pdf',

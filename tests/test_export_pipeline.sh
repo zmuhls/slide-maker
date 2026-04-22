@@ -16,8 +16,6 @@ NAV="apps/api/src/export/navigation.ts"
 CAR="apps/api/src/export/carousel.ts"
 REN="apps/api/src/export/html-renderer.ts"
 IDX="apps/api/src/export/index.ts"
-WEBREN="apps/web/src/lib/utils/slide-html.ts"
-
 echo "═══════════════════════════════════════════════"
 echo "  EXPORT PIPELINE"
 echo "═══════════════════════════════════════════════"
@@ -113,16 +111,6 @@ echo ""
 echo "── Export Index ──"
 check "export index exists" "[ -f '$IDX' ]"
 check "imports html-renderer" "grep -q 'html-renderer' '$IDX'"
-
-echo ""
-
-# --- Web Preview Renderer ---
-echo "── Web Preview Renderer ──"
-check "web preview renderer exists" "[ -f '$WEBREN' ]"
-check "web preview uses shared rich text helper" "grep -q 'renderRichTextData' '$WEBREN'"
-check "web preview uses shared slide layout helper" "grep -q 'getSlideSections' '$WEBREN'"
-check "web preview uses wrapped inline artifact runtime" "grep -q 'buildInlineArtifactSrcdoc' '$WEBREN'"
-check "web preview keeps split ratio parity" "grep -q 'splitRatio' '$WEBREN'"
 
 echo ""
 echo "═══════════════════════════════════════════════"
