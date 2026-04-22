@@ -54,25 +54,24 @@ auth.post('/register', registerRateLimit, async (c) => {
   const userId = createId()
   const now = new Date()
 
-  await db.insert(users).values({
-    id: userId,
-    email: email.toLowerCase(),
-    name: trimmedName,
-    passwordHash,
-    emailVerified: false,
-    status: 'pending',
-    role: 'editor',
-    createdAt: now,
+  const token = createId()
+  const verificationId = createId()
+  const { sqlite } = await import('../db/index.js')
+  const registerTx = sqlite.transaction(() => {
+    sqlite.prepare(
+      'INSERT INTO users (id, email, name, password_hash, email_verified, status, role, created_at) VALUES (?, ?, ?, ?, 0, ?, ?, ?)'
+    ).run(userId, email.toLowerCase(), trimmedName, passwordHash, 'pending', 'editor', now.getTime())
+    sqlite.prepare(
+      'INSERT INTO email_verifications (id, user_id, token, expires_at) VALUES (?, ?, ?, ?)'
+    ).run(verificationId, userId, token, Date.now() + 24 * 60 * 60 * 1000)
   })
 
-  // Create verification token
-  const token = createId()
-  await db.insert(emailVerifications).values({
-    id: createId(),
-    userId,
-    token,
-    expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours
-  })
+  try {
+    registerTx()
+  } catch (err) {
+    console.error('Register transaction failed:', err)
+    return c.json({ error: 'Registration failed. Please try again.' }, 500)
+  }
 
   // Send verification email (don't fail registration if email fails)
   try {
